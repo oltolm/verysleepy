@@ -1,0 +1,62 @@
+{
+    "version": 3,
+    "configurePresets": [
+        {
+            "name": "gcc64",
+            "binaryDir": "build-gcc64",
+            "generator": "Ninja",
+            "cacheVariables": {
+                "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+                "CMAKE_BUILD_TYPE": "Release"
+            }
+        },
+        {
+            "name": "gcc32",
+            "binaryDir": "build-gcc32",
+            "generator": "Ninja",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release"
+            }
+        },
+        {
+            "name": "msvc",
+            "binaryDir": "build-msvc",
+            "generator": "Visual Studio 17 2022",
+            "architecture": {
+                "value": "x64"
+            },
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release"
+            }
+        },
+        {
+            "name": "clang64",
+            "binaryDir": "build-clang64",
+            "generator": "Ninja",
+            "cacheVariables": {
+                "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+                "CMAKE_BUILD_TYPE": "Debug"
+            }
+        },
+        {
+            "name": "iwyu",
+            "binaryDir": "build-clang64",
+            "generator": "Ninja",
+            "cacheVariables": {
+                "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+                "CMAKE_CXX_INCLUDE_WHAT_YOU_USE": "include-what-you-use;-Xiwyu;--mapping_file=${sourceDir}/verysleepy.imp",
+                "CMAKE_BUILD_TYPE": "Debug"
+            }
+        },
+        {
+            "name": "clang-tidy",
+            "binaryDir": "build-clang64",
+            "generator": "Ninja",
+            "cacheVariables": {
+                "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+                "CMAKE_CXX_CLANG_TIDY": "clang-tidy;--fix",
+                "CMAKE_BUILD_TYPE": "Debug"
+            }
+        }
+    ]
+}

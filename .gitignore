@@ -11,3 +11,9 @@
 *.sdf
 *.suo
 *.user
+
+build*/
+.cache/
+CMakeUserPresets.json
+compile_commands.json
+.vscode/
