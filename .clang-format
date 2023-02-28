@@ -1,0 +1,14 @@
+---
+BasedOnStyle: Microsoft
+Language: Cpp
+ColumnLimit: 100
+UseTab: Always
+IndentAccessModifiers: false
+AccessModifierOffset: -4
+AllowAllConstructorInitializersOnNextLine: false
+#SortIncludes: Never
+PackConstructorInitializers: Never
+ReferenceAlignment: Left
+AllowShortFunctionsOnASingleLine: Inline
+AlwaysBreakTemplateDeclarations: Yes
+SpaceAfterTemplateKeyword: false

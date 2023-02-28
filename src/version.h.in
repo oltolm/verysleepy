@@ -1,0 +1,5 @@
+#pragma once
+
+#define VERSION "@GIT_VERSION@"
+#define VERSION_PATCH @GIT_VERSION_PATCH@
+#define VERSION_DIRTY @GIT_VERSION_DIRTY@
