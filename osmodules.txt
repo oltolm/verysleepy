@@ -26,3 +26,7 @@ msvcr80d
 msvcr81d
 msvcr90d
 msvcr91d
+msvcr100
+msvcr100d
+msvcr110
+msvcr120
