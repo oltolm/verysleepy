@@ -163,7 +163,7 @@ void SourceView::showFile(std::wstring path, int proclinenum, const std::vector<
 	FILE *file = _wfopen(path.c_str(),L"r, ccs=UNICODE");
 	if(!file)
 	{
-		wchar_t *crtSub = L"\\crt\\src\\";
+		const wchar_t *crtSub = L"\\crt\\src\\";
 		wchar_t *crt = wcsstr((wchar_t *)path.c_str(), crtSub);
 		if(crt) {
 			for(size_t i=0;i<msDevPaths.size();i++) {

@@ -24,7 +24,7 @@ http://www.gnu.org/copyleft/gpl.html.
 #include <wx/imaglist.h>
 
 /* XPM */
-static char *sort_none_xpm[] = {
+static const char *sort_none_xpm[] = {
 /* columns rows colors chars-per-pixel */
 "16 16 2 1",
 ". c #ACA899",
@@ -49,7 +49,7 @@ static char *sort_none_xpm[] = {
 };
 
 /* XPM */
-static char *sort_up_xpm[] = {
+static const char *sort_up_xpm[] = {
 /* columns rows colors chars-per-pixel */
 "16 16 2 1",
 ". c #ACA899",
@@ -74,7 +74,7 @@ static char *sort_up_xpm[] = {
 };
 
 /* XPM */
-static char *sort_down_xpm[] = {
+static const char *sort_down_xpm[] = {
 /* columns rows colors chars-per-pixel */
 "16 16 2 1",
 ". c #ACA899",

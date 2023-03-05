@@ -22,8 +22,11 @@ http://www.gnu.org/copyleft/gpl.html..
 
 #pragma once
 
+#include <Dbgeng.h>
 #include <string>
+#include <winsock2.h>
 #include <windows.h>
+#include <wrl/client.h>
 #include "database.h"
 
 /*=====================================================================
@@ -48,9 +51,7 @@ private:
 	std::wstring file_to_delete;
 
 	// Dbgeng COM objects for minidump symbols
-	struct IDebugClient5  *debugClient5;
-	struct IDebugControl4 *debugControl4;
-	struct IDebugSymbols3 *debugSymbols3;
-
-
+	Microsoft::WRL::ComPtr<IDebugClient5>  debugClient5;
+	Microsoft::WRL::ComPtr<IDebugControl4> debugControl4;
+	Microsoft::WRL::ComPtr<IDebugSymbols3> debugSymbols3;
 };

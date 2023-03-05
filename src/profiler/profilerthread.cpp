@@ -36,6 +36,7 @@ http://www.gnu.org/copyleft/gpl.html..
 #include <assert.h>
 #include <algorithm>
 #include <Psapi.h>
+#include <timeapi.h>
 #include "../appinfo.h"
 
 #pragma comment(lib, "winmm.lib")

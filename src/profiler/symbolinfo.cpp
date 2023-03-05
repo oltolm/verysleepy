@@ -134,7 +134,7 @@ void SymbolInfo::loadSymbolsUsing(DbgHelp* dbgHelp, const std::wstring& sympath)
 
 		// Hook the debug output, so we actually can provide a clue as to
 		// what's happening.
-		dbgHelp->SymRegisterCallbackW64(process_handle, symCallback, NULL);
+		dbgHelp->SymRegisterCallbackW64(process_handle, symCallback, 0);
 
 		// Add our PDB search paths.
 		if (dbgHelp == &dbgHelpMs)
@@ -357,7 +357,7 @@ const std::wstring SymbolInfo::getProcForAddr(PROFILER_ADDR addr,
 		if(is64BitProcess)
 			swprintf(buf, 256, L"[%016llX]", addr);
 		else
-			swprintf(buf, 256, L"[%08X]", unsigned __int32(addr));
+			swprintf(buf, 256, L"[%08X]", (unsigned __int32)(addr));
 #else
 		swprintf(buf, 256, L"[%08X]", addr);
 #endif

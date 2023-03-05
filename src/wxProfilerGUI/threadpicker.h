@@ -39,7 +39,7 @@ class wxModalFrame : public wxFrame
 {
 public:
 	wxModalFrame() { m_evtLoop = NULL; m_retCode = -1; }
-	wxModalFrame::wxModalFrame(wxWindow *parent,
+	wxModalFrame(wxWindow *parent,
 			wxWindowID id,
 			const wxString& title,
 			const wxPoint& pos = wxDefaultPosition,

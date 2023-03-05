@@ -27,6 +27,7 @@ http://www.gnu.org/copyleft/gpl.html..
 #ifndef __PROFILER_H_666_
 #define __PROFILER_H_666_
 
+#include <winsock2.h>
 #include <windows.h>
 #include <map>
 #include <iostream>

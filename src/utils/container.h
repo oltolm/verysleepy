@@ -29,7 +29,7 @@ http://www.gnu.org/copyleft/gpl.html..
 template<typename MAP>
 static typename MAP::value_type::second_type map_get(const MAP &map, const typename MAP::key_type &key, const typename MAP::value_type::second_type defaultValue = MAP::value_type::second_type())
 {
-	MAP::const_iterator i = map.find(key);
+	typename MAP::const_iterator i = map.find(key);
 	if (i == map.end())
 		return defaultValue;
 	return i->second;
@@ -41,7 +41,7 @@ static typename MAP::value_type::second_type map_get(const MAP &map, const typen
 template<class MAP>
 static typename MAP::value_type::second_type& map_emplace(MAP &map, const typename MAP::key_type &key, bool *pinserted=NULL)
 {
-	auto pair = map.emplace(std::make_pair(key, MAP::value_type::second_type()));
+	auto pair = map.emplace(std::make_pair(key, typename MAP::value_type::second_type()));
 	if (pinserted) *pinserted = pair.second;
 	return pair.first->second;
 }
@@ -64,21 +64,21 @@ static ID map_string(std::vector<std::wstring> &list, std::unordered_map<std::ws
 #include <unordered_set>
 
 /// Nicer wrapper around set::count.
-template<class SET>
+template<typename SET>
 static bool set_get(const SET &set, const typename SET::key_type &key)
 {
 	return set.count(key) != 0;
 }
 
 /// Make sure the specified item is / isn't in the set, according to a boolean.
-template<class SET>
+template<typename SET>
 static void set_set(SET &set, const typename SET::key_type &key, bool value)
 {
 	if (value)
 		set.insert(key);
 	else
 	{
-		SET::const_iterator i = set.find(key);
+		typename SET::const_iterator i = set.find(key);
 		if (i != set.end())
 			set.erase(i);
 	}

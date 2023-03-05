@@ -1,4 +1,14 @@
+#pragma once
+
+#ifndef _MSC_VER
+#define __in
+#define __inout
+#define __out
+#endif
+
 #if defined(_WIN64)
+
+#include <windows.h>
 
 // Microsoft added a couple of functions that does not exist on Windows XP 64.
 // The function also needs a newer sdk.

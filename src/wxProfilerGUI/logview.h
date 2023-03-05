@@ -25,6 +25,8 @@ http://www.gnu.org/copyleft/gpl.html.
 #include <wx/config.h>
 #include <wx/textctrl.h>
 
+class LogViewLog;
+
 class LogView :	public wxTextCtrl
 {
 	friend class LogViewLog;

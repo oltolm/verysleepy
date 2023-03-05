@@ -27,6 +27,7 @@ http://www.gnu.org/copyleft/gpl.html.
 #include <wx/checkbox.h>
 #include <wx/listbox.h>
 #include <wx/radiobut.h>
+#include <wx/slider.h>
 
 class wxDirPickerCtrl;
 

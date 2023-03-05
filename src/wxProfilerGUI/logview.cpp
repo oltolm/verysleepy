@@ -45,7 +45,7 @@ public:
 	{
 	}
 
-	virtual LogViewLog::~LogViewLog()
+	virtual ~LogViewLog()
 	{
 		// Tell the view that we've been destroyed (by wxWidgets, probably).
 		view->log = NULL;
