@@ -23,6 +23,7 @@ http://www.gnu.org/copyleft/gpl.html..
 #pragma once
 
 #include <string>
+#include <winsock2.h>
 #include <windows.h>
 #include "database.h"
 
@@ -44,13 +45,13 @@ public:
 	void filterSymbol(Database::Address address, std::wstring &module, std::wstring &procname, std::wstring &sourcefile, unsigned &sourceline);
 
 private:
-	static wchar_t buffer[4096];
+	static CHAR buffer[4096];
 	std::wstring file_to_delete;
 
 	// Dbgeng COM objects for minidump symbols
-	struct IDebugClient5  *debugClient5;
-	struct IDebugControl4 *debugControl4;
-	struct IDebugSymbols3 *debugSymbols3;
+	struct IDebugClient4  *debugClient5;
+	struct IDebugControl3 *debugControl4;
+	struct IDebugSymbols2 *debugSymbols3;
 
 
 };

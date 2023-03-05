@@ -43,35 +43,35 @@ StringSet osFunctions(L"osfunctions.txt",true);
 
 bool IsOsFunction(wxString proc)
 {
-	return osFunctions.Contains(proc);
+	return osFunctions.Contains(proc.wc_str());
 }
 
 void AddOsFunction(wxString proc)
 {
-	osFunctions.Add(proc);
+	osFunctions.Add(proc.wc_str());
 	theMainWin->reload();
 }
 
 void RemoveOsFunction(wxString proc)
 {
-	osFunctions.Remove(proc);
+	osFunctions.Remove(proc.wc_str());
 	theMainWin->reload();
 }
 
 bool IsOsModule(wxString mod)
 {
-	return osModules.Contains(mod);
+	return osModules.Contains(mod.wc_str());
 }
 
 void AddOsModule(wxString mod)
 {
-	osModules.Add(mod);
+	osModules.Add(mod.wc_str());
 	theMainWin->reload();
 }
 
 void RemoveOsModule(wxString mod)
 {
-	osModules.Remove(mod);
+	osModules.Remove(mod.wc_str());
 	theMainWin->reload();
 }
 
@@ -234,7 +234,7 @@ void Database::loadSymbols(wxInputStream &file)
 			warnedDupAddress = true;
 			continue;
 		}
-		enforce(stream.eof(), "Trailing data in line: " + line);
+		enforce(stream.eof(), (L"Trailing data in line: " + line).wc_str());
 
 		// Late symbol lookup
 		late_sym_info->filterSymbol(addr, modulename, procname, sourcefilename, info.sourceline);
@@ -711,7 +711,7 @@ std::vector<double> Database::getLineCounts(FileID sourcefile)
 {
 	std::vector<double> linecounts;
 
-	for each (auto &pair in addrinfo)
+	for (auto &pair : addrinfo)
 		if (pair.second.symbol->sourcefile == sourcefile)
 		{
 			unsigned sourceline = pair.second.sourceline;

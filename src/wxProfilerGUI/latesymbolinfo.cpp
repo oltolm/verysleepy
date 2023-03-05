@@ -26,8 +26,14 @@ http://www.gnu.org/copyleft/gpl.html..
 #include <comdef.h>
 #include <sstream>
 #include "../utils/except.h"
+#include "../utils/stringutils.h"
 
 #include "profilergui.h"
+
+#ifndef _MSC_VER
+#define __in
+#define __out
+#endif
 
 void comenforce(HRESULT result, const char* where = NULL)
 {
@@ -58,13 +64,13 @@ LateSymbolInfo::~LateSymbolInfo()
 
 // Send debugger output to the wxWidgets current logging facility.
 // The UI implements a logging facility in the form of a log panel.
-struct DebugOutputCallbacksWide : public IDebugOutputCallbacksWide
+struct DebugOutputCallbacks : public IDebugOutputCallbacks
 {
 	HRESULT	STDMETHODCALLTYPE QueryInterface(__in REFIID WXUNUSED(InterfaceId), __out PVOID* WXUNUSED(Interface)) { return E_NOINTERFACE; }
 	ULONG	STDMETHODCALLTYPE AddRef() { return 1; }
 	ULONG	STDMETHODCALLTYPE Release() { return 0; }
 
-	HRESULT	STDMETHODCALLTYPE Output(__in ULONG WXUNUSED(Mask), __in PCWSTR Text)
+	HRESULT	STDMETHODCALLTYPE Output(__in ULONG WXUNUSED(Mask), __in PCSTR Text)
 	{
 		//OutputDebugStringW(Text);
 		wxLogMessage(L"%s", Text);
@@ -72,7 +78,7 @@ struct DebugOutputCallbacksWide : public IDebugOutputCallbacksWide
 	}
 };
 
-static DebugOutputCallbacksWide *debugOutputCallbacks = new DebugOutputCallbacksWide();
+static DebugOutputCallbacks *debugOutputCallbacks = new DebugOutputCallbacks();
 
 void LateSymbolInfo::loadMinidump(std::wstring& dumppath, bool delete_when_done)
 {
@@ -89,18 +95,17 @@ void LateSymbolInfo::loadMinidump(std::wstring& dumppath, bool delete_when_done)
 	IDebugClient *debugClient = NULL;
 
 	SetLastError(0);
-	comenforce(DebugCreate(__uuidof(IDebugClient), (void**)&debugClient), "DebugCreate");
-	comenforce(debugClient->QueryInterface(__uuidof(IDebugClient5 ), (void**)&debugClient5 ), "QueryInterface(IDebugClient5)" );
-	comenforce(debugClient->QueryInterface(__uuidof(IDebugControl4), (void**)&debugControl4), "QueryInterface(IDebugControl4)");
-	comenforce(debugClient->QueryInterface(__uuidof(IDebugSymbols3), (void**)&debugSymbols3), "QueryInterface(IDebugSymbols3)");
-	comenforce(debugClient5->SetOutputCallbacksWide(debugOutputCallbacks), "IDebugClient5::SetOutputCallbacksWide");
+	comenforce(DebugCreate(IID_PPV_ARGS(&debugClient)), "DebugCreate");
+	comenforce(debugClient->QueryInterface(IID_PPV_ARGS(&debugClient5) ), "QueryInterface(IDebugClient4)" );
+	comenforce(debugClient->QueryInterface(IID_PPV_ARGS(&debugControl4)), "QueryInterface(IDebugControl3)");
+	comenforce(debugClient->QueryInterface(IID_PPV_ARGS(&debugSymbols3)), "QueryInterface(IDebugSymbols2)");
+	comenforce(debugClient5->SetOutputCallbacks(debugOutputCallbacks), "IDebugClient4::SetOutputCallbacks");
 	comenforce(debugSymbols3->SetSymbolOptions(SYMOPT_UNDNAME | SYMOPT_LOAD_LINES | SYMOPT_OMAP_FIND_NEAREST | SYMOPT_AUTO_PUBLICS | SYMOPT_DEBUG), "IDebugSymbols::SetSymbolOptions");
 
 	std::wstring sympath;
 	prefs.AdjustSymbolPath(sympath, true);
 
-	comenforce(debugSymbols3->SetSymbolPathWide(sympath.c_str()), "IDebugSymbols::SetSymbolPath");
-	comenforce(debugClient5->OpenDumpFileWide(dumppath.c_str(), NULL), "IDebugClient4::OpenDumpFileWide");
+	comenforce(debugSymbols3->SetSymbolPath(toMultiByteString(sympath).c_str()), "IDebugSymbols::SetSymbolPath");
 	comenforce(debugControl4->WaitForEvent(0, INFINITE), "IDebugControl::WaitForEvent");
 
 	// Since we can't just enumerate all symbols in all modules referenced by the minidump,
@@ -140,7 +145,7 @@ void LateSymbolInfo::unloadMinidump()
 	}
 }
 
-wchar_t LateSymbolInfo::buffer[4096];
+CHAR LateSymbolInfo::buffer[4096];
 
 void LateSymbolInfo::filterSymbol(Database::Address address, std::wstring &module, std::wstring &procname, std::wstring &sourcefile, unsigned &sourceline)
 {
@@ -148,14 +153,15 @@ void LateSymbolInfo::filterSymbol(Database::Address address, std::wstring &modul
 	{
 		ULONG moduleindex;
 		if (debugSymbols3->GetModuleByOffset(address, 0, &moduleindex, NULL) == S_OK)
-			if (debugSymbols3->GetModuleNameStringWide(DEBUG_MODNAME_MODULE, moduleindex, 0, buffer, _countof(buffer), NULL) == S_OK)
-				module = buffer;
+			if (debugSymbols3->GetModuleNameString(DEBUG_MODNAME_MODULE, moduleindex, 0, buffer, _countof(buffer), NULL) == S_OK)
+				module = toWideString(buffer);
 
-		if (debugSymbols3->GetNameByOffsetWide(address, buffer, _countof(buffer), NULL, NULL) == S_OK)
+		if (debugSymbols3->GetNameByOffset(address, buffer, _countof(buffer), NULL, NULL) == S_OK)
 		{
-			if (module.compare(buffer) != 0)
+			std::wstring name = toWideString(buffer);
+			if (module.compare(name) != 0)
 			{
-				procname = buffer;
+				procname = name;
 
 				// Remove redundant "Module!" prefix
 				size_t modlength = module.length();
@@ -165,9 +171,9 @@ void LateSymbolInfo::filterSymbol(Database::Address address, std::wstring &modul
 		}
 
 		ULONG line;
-		if (debugSymbols3->GetLineByOffsetWide(address, &line, buffer, _countof(buffer), NULL, NULL) == S_OK)
+		if (debugSymbols3->GetLineByOffset(address, &line, buffer, _countof(buffer), NULL, NULL) == S_OK)
 		{
-			sourcefile = buffer;
+			sourcefile = toWideString(buffer);
 			sourceline = line;
 		}
 	}

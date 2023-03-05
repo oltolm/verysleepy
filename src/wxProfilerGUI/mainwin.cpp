@@ -26,6 +26,7 @@ http://www.gnu.org/copyleft/gpl.html.
 
 #include "../utils/stringutils.h"
 #include "CallstackView.h"
+#include <shellapi.h>
 #include <wx/aui/auibook.h>
 #include <wx/hashset.h>
 #include <wx/menu.h>
@@ -445,7 +446,7 @@ void MainWin::OnSaveAs(wxCommandEvent& WXUNUSED(event))
 		wxFD_SAVE|wxFD_OVERWRITE_PROMPT);
 	if (dlg.ShowModal() != wxID_CANCEL)
 	{
-		if (!CopyFile(profilepath.c_str(), dlg.GetPath(), FALSE))
+		if (!CopyFile(profilepath.c_str(), dlg.GetPath().wc_str(), FALSE))
 		{
 			wxLogSysError("Could not save profile data.\n");
 		}
@@ -475,7 +476,7 @@ void MainWin::OnExportAsCsv(wxCommandEvent& WXUNUSED(event))
 		txt << L"Source File,";
 		txt << L"Source Line\n";
 		double totalCount = database->getMainList().totalcount;
-		for each (const Database::Item &item in database->getMainList().items)
+		for (const Database::Item &item : database->getMainList().items)
 		{
 			writeQuote(txt, item.symbol->procname, '"'); txt << ",";
 			txt << item.exclusive << ",";
@@ -543,7 +544,7 @@ void MainWin::OnExportAsCallgrind(wxCommandEvent& WXUNUSED(event))
 			childCost_SampleCounts.clear();
 			childCost_CallCounts.clear();
 			auto callstacks = database->getCallstacksContaining(symbol);
-			for each (const Database::CallStack* callstack in callstacks)
+			for (const Database::CallStack* callstack : callstacks)
 			{
 				for (size_t i=0, callstackCount=callstack->addresses.size(), callstackTop=callstackCount-1; i<callstackCount; i++)
 				{
@@ -614,10 +615,10 @@ void MainWin::OnExportAsCallgrind(wxCommandEvent& WXUNUSED(event))
 			CallgrindHelper::WriteName(txt, mapFl, "fl", database->getFileName(symbol->sourcefile), true);
 			CallgrindHelper::WriteName(txt, mapFn, "fn", symbol->procname);
 
-			for each (const auto &pair in selfCostLines)
+			for (const auto &pair : selfCostLines)
 				CallgrindHelper::WriteEvents(txt, pair.first, pair.second, statsDuration);
 
-			for each (const auto &childcall_samplecount in childCost_SampleCounts)
+			for (const auto &childcall_samplecount : childCost_SampleCounts)
 			{
 				const LineChildPair& key = childcall_samplecount.first;
 				CallgrindHelper::WriteName(txt, mapOb, "cob", database->getModuleName(key.second->module));
@@ -911,7 +912,7 @@ void MainWin::setFilter(const wxString &name, const wxString &value)
 
 void MainWin::setHighlight(const std::vector<Database::Address> &addresses, bool set)
 {
-	for each (Database::Address address in addresses)
+	for (Database::Address address : addresses)
 		set_set(viewstate.highlighted, address, set);
 	refresh();
 }

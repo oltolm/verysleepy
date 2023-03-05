@@ -25,7 +25,15 @@ http://www.gnu.org/copyleft/gpl.html.
 
 // Use our own copy of dbghelp.h, to make sure it's the latest version.
 #include <windows.h>
+#ifdef _MSC_VER
 #include "..\..\thirdparty\ms\dbghelp.h"
+#else
+#include <dbghelp.h>
+#define __in
+#define __inout
+#define __in_opt
+#define __out
+#endif
 
 // We provide a wrapper around the dbghelp functions we need, so that
 // we can switch to either the MS or Wine versions at runtime.
@@ -166,5 +174,12 @@ extern DbgHelp dbgHelpWine;
 extern DbgHelp dbgHelpWineWow64;
 
 bool dbgHelpInit();
+
+#ifndef _MSC_VER
+#undef __in
+#undef __inout
+#undef __in_opt
+#undef __out
+#endif
 
 #endif // __DBGINTERFACE_H__

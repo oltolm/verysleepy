@@ -138,4 +138,7 @@ public:
 	const std::wstring& Get() const { return string; }
 };
 
+std::wstring toWideString(const std::string& str);
+std::string toMultiByteString(const std::wstring& str);
+
 #endif //__STRINGUTILS_H__

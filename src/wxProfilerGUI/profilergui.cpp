@@ -40,7 +40,9 @@ http://www.gnu.org/copyleft/gpl.html.
 #include <wx/stdpaths.h>
 #include <wx/filedlg.h>
 #include <wx/scopeguard.h>
-#include "crashback.h"
+#ifdef _MSC_VER
+#include "../crashback/client/crashback.h"
+#endif
 #include "aboutdlg.h"
 #include "../utils/except.h"
 #include "../appinfo.h"
@@ -138,7 +140,7 @@ wxBitmap LoadPngResource(const wchar_t *szName, const wxWindowBase* w)
 
 void CleanupTempFiles()
 {
-	for each(std::wstring s in tmp_files)
+	for (std::wstring& s : tmp_files)
 	{
 		DeleteFile(s.c_str());
 	}
@@ -446,7 +448,7 @@ AttachInfo * ProfilerGUI::AttachToProcess(const std::wstring& processId)
 	}
 	catch (const std::exception&)
 	{
-		throw SleepyException("Not valid process id: "+ processId);
+		throw SleepyException(L"Not valid process id: " + processId);
 	}
 	ProcessInfo process_info = ProcessInfo::FindProcessById(processId_dw);
 	AttachInfo* attach_info = new AttachInfo();
@@ -551,8 +553,10 @@ bool ProfilerGUI::OnInit()
 #ifndef _DEBUG
 	if (getenv("SLEEPY_SILENT_CRASH"))
 		SetErrorMode(SEM_FAILCRITICALERRORS | SEM_NOGPFAULTERRORBOX);
+#ifdef _MSC_VER
 	else
 		cbStartup();
+#endif
 #endif
 	wxInitAllImageHandlers();
 	try

@@ -25,14 +25,14 @@ http://www.gnu.org/copyleft/gpl.html..
 
 static __int64 getDiff(FILETIME before, FILETIME after)
 {
-	__int64 i0 = (__int64(before.dwHighDateTime) << 32) + before.dwLowDateTime;
-	__int64 i1 = (__int64(after.dwHighDateTime) << 32) + after.dwLowDateTime;
+	__int64 i0 = ((__int64)(before.dwHighDateTime) << 32) + before.dwLowDateTime;
+	__int64 i1 = ((__int64)(after.dwHighDateTime) << 32) + after.dwLowDateTime;
 	return i1 - i0;
 }
 
 static __int64 getTotal(FILETIME time)
 {
-	return (__int64(time.dwHighDateTime) << 32) + time.dwLowDateTime;
+	return ((__int64)(time.dwHighDateTime) << 32) + time.dwLowDateTime;
 }
 
 typedef HRESULT( WINAPI *GetThreadDescriptionFunc )(HANDLE, PWSTR*);

@@ -29,7 +29,7 @@ DbgHelp dbgHelpDrMingw;
 DbgHelp dbgHelpWine;
 DbgHelp dbgHelpWineWow64;
 
-#define IMPORT(name) *(void **)&dest->name = GetProcAddress(hMod, #name)
+#define IMPORT(name) *(void **)&dest->name = (void*)GetProcAddress(hMod, #name)
 
 static bool dbgHelpTryLoad(LPCWSTR name, DbgHelp* dest)
 {

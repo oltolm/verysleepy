@@ -26,6 +26,7 @@ http://www.gnu.org/copyleft/gpl.html..
 
 
 #include <string>
+#include <winsock2.h>
 #include <windows.h>
 #include <vector>
 #include "profiler.h"
