@@ -53,7 +53,7 @@ public:
 	std::vector<ThreadInfo> threads;
 
 	const std::wstring& getName() const { return name; }
-	const DWORD getID() const { return id; }
+	DWORD getID() const { return id; }
 	HANDLE getProcessHandle() const { return process_handle; }
 #ifdef _WIN64
 	bool getIs64Bits() const { return is64Bits; }

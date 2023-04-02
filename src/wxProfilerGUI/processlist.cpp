@@ -325,7 +325,7 @@ void ProcessList::fillList()
 			strcpy(str, "-");
 		this->SetItem(i, COL_TOTALCPU, str);
 
-		sprintf(str, "%i", processes[i].getID());
+		sprintf(str, "%li", processes[i].getID());
 		this->SetItem(i, COL_PID, str);
 #ifdef _WIN64
 		if(Is64BitProcess(processes[i].getProcessHandle())) {
@@ -368,7 +368,7 @@ void ProcessList::updateProcesses()
 	}
 
 	// Select the selected process last time the program was run..
-	if(selectedProcessId == ~0) {
+	if(selectedProcessId == (DWORD)~0) {
 		wxString prevProcess;
 		config.Read("PrevProcess", &prevProcess, "");
 		if(!prevProcess.IsEmpty()) {

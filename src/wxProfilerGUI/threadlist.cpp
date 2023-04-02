@@ -269,7 +269,7 @@ void ThreadList::fillList()
 			strcpy(str, "-");
 		this->SetItem(i, COL_TOTALCPU, str);
 
-		sprintf(str, "%d", threads[i].getID());
+		sprintf(str, "%ld", threads[i].getID());
 		this->SetItem(i, COL_ID, str);
 
 		this->SetItem(i, COL_NAME, threads[i].getName());
