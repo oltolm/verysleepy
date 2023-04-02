@@ -45,9 +45,9 @@ http://www.gnu.org/copyleft/gpl.html..
 // RM: 20130614: Profiler time can now be limited (-1 = until cancelled)
 ProfilerThread::ProfilerThread(HANDLE target_process_, const std::vector<HANDLE>& target_threads, SymbolInfo *sym_info_, Debugger *debugger_)
 :	profilers(),
+	debugger(debugger_),
 	target_process(target_process_),
-	sym_info(sym_info_),
-	debugger(debugger_)
+	sym_info(sym_info_)
 {
 	// AA: 20210822: If we have a debugger, it will report all available threads
 	//               So, only use the passed vector when we have no debugger

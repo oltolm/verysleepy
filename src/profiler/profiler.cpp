@@ -51,22 +51,22 @@ typedef CONTEXT CONTEXT32;
 
 Profiler::Profiler(HANDLE target_process_, HANDLE target_thread_, DWORD target_thread_id_,
 				   std::map<CallStack, SAMPLE_TYPE>& callstacks_)
-:	target_process(target_process_),
+:	callstacks(&callstacks_),
+	is64BitProcess(Is64BitProcess(target_process_)),
+	target_process(target_process_),
 	target_thread(target_thread_),
-	target_thread_id(target_thread_id_),
-	callstacks(&callstacks_),
-	is64BitProcess(Is64BitProcess(target_process_))
+	target_thread_id(target_thread_id_)
 {
 }
 
 // DE: 20090325: Need copy constructor since it is put in a std::vector
 
 Profiler::Profiler(const Profiler& iOther)
-:	target_process(iOther.target_process),
+:	callstacks(iOther.callstacks),
+	is64BitProcess(iOther.is64BitProcess),
+	target_process(iOther.target_process),
 	target_thread(iOther.target_thread),
-	target_thread_id(iOther.target_thread_id),
-	callstacks(iOther.callstacks),
-	is64BitProcess(iOther.is64BitProcess)
+	target_thread_id(iOther.target_thread_id)
 {
 }
 
@@ -112,7 +112,7 @@ void applyHacks(HANDLE process_handle, CONTEXT32 &context)
 
 	// First, skip over any stub functions (a useless push/mov/pop header, followed by a jump).
 	// Move instead to the jump target.
-	if (ReadProcessMemory(process_handle, (LPCVOID)context.Eip, tmp, 16, &numRead) && numRead >= 16)
+	if (ReadProcessMemory(process_handle, (LPCVOID)(uintptr_t)context.Eip, tmp, 16, &numRead) && numRead >= 16)
 	{
 		int n = 0;
 
@@ -136,13 +136,13 @@ void applyHacks(HANDLE process_handle, CONTEXT32 &context)
 	}
 
 	// Skip over any jmp [__imp__blah] thunks.
-	if (ReadProcessMemory(process_handle, (LPCVOID)context.Eip, tmp, 16, &numRead) && numRead >= 16)
+	if (ReadProcessMemory(process_handle, (LPCVOID)(uintptr_t)context.Eip, tmp, 16, &numRead) && numRead >= 16)
 	{
 		// Look for "jmp [foo]", and move the IP forward to '[foo]'.
 		if (tmp[0] == 0xff && tmp[1] == 0x25)
 		{
 			DWORD ptr = (tmp[5] << 24) | (tmp[4] << 16) | (tmp[3] << 8) | (tmp[2] << 0);
-			if (ReadProcessMemory(process_handle, (LPCVOID)ptr, tmp, 4, &numRead) && numRead >= 4)
+			if (ReadProcessMemory(process_handle, (LPCVOID)(uintptr_t)ptr, tmp, 4, &numRead) && numRead >= 4)
 			{
 				context.Eip = (tmp[3] << 24) | (tmp[2] << 16) | (tmp[1] << 8) | (tmp[0] << 0);
 			}
@@ -173,7 +173,7 @@ bool Profiler::sampleTarget(SAMPLE_TYPE timeSpent, SymbolInfo *syminfo)
 		machine = IMAGE_FILE_MACHINE_AMD64;
 
 		// Can fail occasionally, for example if you have a debugger attached to the process.
-		HRESULT result = SuspendThread(target_thread);
+		DWORD result = SuspendThread(target_thread);
 		if(result == 0xffffffff)
 			return false;
 
@@ -197,7 +197,7 @@ bool Profiler::sampleTarget(SAMPLE_TYPE timeSpent, SymbolInfo *syminfo)
 		machine = IMAGE_FILE_MACHINE_I386;
 
 		// Can fail occasionally, for example if you have a debugger attached to the process.
-		HRESULT result = fn_Wow64SuspendThread(target_thread);
+		DWORD result = fn_Wow64SuspendThread(target_thread);
 		if(result == 0xffffffff)
 			return false;
 

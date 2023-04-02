@@ -434,7 +434,7 @@ std::wstring toWideString(const std::string& str)
 std::string toMultiByteString(const std::wstring& str)
 {
 	BOOL usedDefaultChar;
-	CHAR defaultChar;
+	CHAR defaultChar{};
 	int len = WideCharToMultiByte(CP_ACP, 0, str.c_str(), str.size(), nullptr, 0, &defaultChar, &usedDefaultChar);
 	std::string mbstr;
 	mbstr.resize(len);

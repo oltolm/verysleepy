@@ -30,8 +30,8 @@ http://www.gnu.org/copyleft/gpl.html..
 #include <tlhelp32.h>
 
 ProcessInfo::ProcessInfo(DWORD id_, const std::wstring& name_, HANDLE process_handle_)
-:	id(id_),
-	name(name_),
+:	name(name_),
+	id(id_),
 	process_handle(process_handle_)
 {
 	prevKernelTime.dwHighDateTime = prevKernelTime.dwLowDateTime = 0;

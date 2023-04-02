@@ -45,8 +45,8 @@ END_EVENT_TABLE()
 
 ProcList::ProcList(wxWindow *parent, bool isroot, Database *database)
 :	wxSortedListCtrl(parent, ProcList_List, wxDefaultPosition, wxDefaultSize, wxLC_REPORT /*style*/),
-	isroot(isroot), database(database),
-	updating(false)
+	isroot(isroot), updating(false),
+	database(database)
 {
 	InitSort();
 

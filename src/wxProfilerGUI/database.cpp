@@ -617,7 +617,7 @@ Database::List Database::getCallers(const Database::Symbol *symbol) const
 		list.items.push_back(item);
 	}
 
-	return std::move(list);
+	return list;
 }
 
 Database::List Database::getCallees(const Database::Symbol *symbol) const

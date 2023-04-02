@@ -48,7 +48,7 @@ public:
 
 	~ThreadInfo();
 
-	const DWORD getID() const { return id; }
+	DWORD getID() const { return id; }
 	HANDLE getThreadHandle() const { return thread_handle; }
 
 	const std::wstring& getLocation() const { return location; }
