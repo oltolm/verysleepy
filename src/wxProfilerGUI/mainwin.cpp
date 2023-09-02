@@ -427,7 +427,7 @@ void MainWin::OnOpen(wxCommandEvent& WXUNUSED(event))
 
 	try
 	{
-		database->loadFromPath(filename.c_str().AsWChar(), collapseOSCalls->IsChecked(), false);
+		database->loadFromPath(filename.wc_str(), collapseOSCalls->IsChecked(), false);
 
 		SetTitle(wxString::Format("%s - %s", APPNAME, filename.c_str()));
 	}
@@ -871,8 +871,8 @@ void MainWin::setSourcePos(const std::wstring& currentfile_, int currentline_)
 
 void MainWin::updateStatusBar()
 {
-	SetStatusText(std::wstring("Source file: " + currentfile).c_str(), 0);
-	SetStatusText(std::wstring("Line " + ::toString(currentline)).c_str(), 1);
+	SetStatusText(L"Source file: " + currentfile, 0);
+	SetStatusText(wxString::Format(L"Line %d", currentline), 1);
 }
 
 void MainWin::applyFilters()

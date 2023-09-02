@@ -213,11 +213,10 @@ void Database::loadSymbols(wxInputStream &file)
 		if (line.IsEmpty())
 			break;
 
-		std::wistringstream stream(line.c_str().AsWChar());
+		std::wistringstream stream(line.wc_str());
 
-		std::wstring addrstr;
-		stream >> addrstr;
-		Address addr = hexStringTo64UInt(addrstr);
+		Address addr;
+		stream >> std::hex >> addr;
 
 		std::wstring sourcefilename, modulename, procname;
 
@@ -230,7 +229,7 @@ void Database::loadSymbols(wxInputStream &file)
 		if (!inserted)
 		{
 			if (!warnedDupAddress)
-				wxLogWarning("Duplicate address in symbol list:\nAddress: " + addrstr + "\nSymbol: " + procname);
+				wxLogWarning("Duplicate address in symbol list:\nAddress: %#llx\nSymbol: %s", addr, procname);
 			warnedDupAddress = true;
 			continue;
 		}
@@ -333,7 +332,7 @@ void Database::loadCallstacks(wxInputStream &file,bool collapseKernelCalls)
 		if (lineAddr.IsEmpty() || lineSamples.IsEmpty())
 			break;
 
-		std::wistringstream streamAddr(lineAddr.c_str().AsWChar());
+		std::wistringstream streamAddr(lineAddr.wc_str());
 
 		CallStack callstack;
 		AddrInfo *topAddrInfo = NULL;
@@ -341,11 +340,10 @@ void Database::loadCallstacks(wxInputStream &file,bool collapseKernelCalls)
 		int depth = 0;
 		while (true)
 		{
-			std::wstring addrstr;
-			streamAddr >> addrstr;
-			if (addrstr.empty())
+			Address addr;
+			streamAddr >> std::hex >> addr;
+			if (!streamAddr)
 				break;
-			Address addr = hexStringTo64UInt(addrstr);
 
 			if (depth == 0)
 			{
@@ -360,7 +358,7 @@ void Database::loadCallstacks(wxInputStream &file,bool collapseKernelCalls)
 			++depth;
 		}
 
-		std::wistringstream streamSamples(lineSamples.c_str().AsWChar());
+		std::wistringstream streamSamples(lineSamples.wc_str());
 		while (true)
 		{
 			ThreadID tid;
@@ -456,7 +454,7 @@ void Database::loadThreads(wxInputStream &file)
 		if (lineTid.IsEmpty() || lineName.IsEmpty())
 			break;
 
-		std::wistringstream streamTid(lineTid.c_str().AsWChar());
+		std::wistringstream streamTid(lineTid.wc_str());
 
 		ThreadID tid;
 		streamTid >> tid;
@@ -481,7 +479,7 @@ void Database::loadStats(wxInputStream &file)
 		if (line.IsEmpty())
 			break;
 
-		stats.push_back(line.c_str().AsWChar());
+		stats.push_back(line.wc_str());
 	}
 }
 

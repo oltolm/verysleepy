@@ -179,7 +179,7 @@ void SourceView::showFile(std::wstring path, int proclinenum, const std::vector<
 
 	if(!file)
 	{
-		updateText(std::wstring("[ Could not open file '" + path + "'. ]").c_str());
+		updateText(L"[ Could not open file '" + path + L"'. ]");
 		return;
 	}
 
