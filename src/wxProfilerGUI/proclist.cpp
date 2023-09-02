@@ -233,8 +233,8 @@ void ProcList::displayList()
 		setColumnValue(c, COL_CALLSPCT,		exclusivepercent);
 		setColumnValue(c, COL_MODULE,		database->getModuleName(sym->module));
 		setColumnValue(c, COL_SOURCEFILE,	database->getFileName  (sym->sourcefile));
-		setColumnValue(c, COL_SOURCELINE,	::toString((int)addrinfo->sourceline));
-		setColumnValue(c, COL_ADDRESS,	    ::toHexString(i->address));
+		setColumnValue(c, COL_SOURCELINE,	wxString::Format("%u", addrinfo->sourceline));
+		setColumnValue(c, COL_ADDRESS,	    wxString::Format("%#llx", i->address));
 
 		if (state & wxLIST_STATE_FOCUSED)
 			EnsureVisible(c);

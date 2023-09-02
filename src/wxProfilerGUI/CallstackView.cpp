@@ -235,7 +235,7 @@ void CallstackView::updateList()
 		listCtrl->SetItem(i, COL_MODULE    , database->getModuleName(snow->module));
 		listCtrl->SetItem(i, COL_SOURCEFILE, database->getFileName  (snow->sourcefile));
 		listCtrl->SetItem(i, COL_SOURCELINE, wxString::Format("%d", addrinfo->sourceline));
-		listCtrl->SetItem(i, COL_ADDRESS   , ::toHexString(addr));
+		listCtrl->SetItem(i, COL_ADDRESS   , wxString::Format("%#llx", addr));
 
 		wxFont font = listCtrl->GetFont();
 		if(snow == currSymbol)
@@ -268,7 +268,7 @@ void CallstackView::exportCSV(wxFileOutputStream &file)
 		wxListItem column;
 		column.SetMask(wxLIST_MASK_TEXT);
 		listCtrl->GetColumn(columnIndex, column);
-		writeQuote(txt, std::wstring(column.GetText()), '"');
+		writeQuote(txt, column.GetText().ToStdWstring(), '"');
 		txt << ((columnIndex == (columnCount - 1)) ? "\n" : ",");
 	}
 
@@ -276,7 +276,7 @@ void CallstackView::exportCSV(wxFileOutputStream &file)
 	{
 		for(int columnIndex = 0; columnIndex < columnCount; columnIndex++ )
 		{
-			writeQuote(txt, std::wstring(listCtrl->GetItemText(rowIndex, columnIndex)), '"');
+			writeQuote(txt, listCtrl->GetItemText(rowIndex, columnIndex).ToStdWstring(), '"');
 			txt << ((columnIndex == (columnCount - 1)) ? "\n" : ",");
 		}
 	}

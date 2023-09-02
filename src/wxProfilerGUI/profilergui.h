@@ -158,7 +158,7 @@ public:
 			sympath += L"SRV*";
 			sympath += symCacheDir.GetValue();
 			if ( download )
-				sympath += std::wstring(L"*") + symServer.GetValue();
+				sympath += L"*" + symServer.GetValue();
 		}
 	}
 
