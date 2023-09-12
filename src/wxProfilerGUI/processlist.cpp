@@ -30,7 +30,7 @@ http://www.gnu.org/copyleft/gpl.html.
 
 BEGIN_EVENT_TABLE(ProcessList, wxListCtrl)
 EVT_LIST_ITEM_SELECTED(PROCESS_LIST, ProcessList::OnSelected)
-EVT_LIST_COL_CLICK(-1, ProcessList::OnSort)
+EVT_LIST_COL_CLICK(wxID_ANY, ProcessList::OnSort)
 EVT_TIMER(PROCESS_LIST_TIMER, ProcessList::OnTimer)
 END_EVENT_TABLE()
 

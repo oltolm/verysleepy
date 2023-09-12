@@ -36,7 +36,7 @@ http://www.gnu.org/copyleft/gpl.html.
 BEGIN_EVENT_TABLE(ThreadList, wxListCtrl)
 EVT_LIST_ITEM_SELECTED(THREADS_LIST, ThreadList::OnSelected)
 EVT_LIST_ITEM_DESELECTED(THREADS_LIST, ThreadList::OnDeSelected)
-EVT_LIST_COL_CLICK(-1, ThreadList::OnSort)
+EVT_LIST_COL_CLICK(wxID_ANY, ThreadList::OnSort)
 EVT_TIMER(THREADS_LIST_TIMER, ThreadList::OnTimer)
 END_EVENT_TABLE()
 
