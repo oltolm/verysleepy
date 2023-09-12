@@ -83,7 +83,7 @@ void symLogCallback(const wchar_t *text)
 }
 
 ThreadPicker::ThreadPicker()
-:	wxModalFrame(NULL, -1, wxString(APPNAME),
+:	wxModalFrame(NULL, wxID_ANY, APPNAME,
 			 wxDefaultPosition, wxDefaultSize,
 			 wxDEFAULT_FRAME_STYLE), attach_info(NULL)
 {
@@ -153,11 +153,11 @@ ThreadPicker::ThreadPicker()
 	threadlist = new ThreadList(panel, wxDefaultPosition, wxDefaultSize, ok_button, all_button);
 	processlist = new ProcessList(panel, wxDefaultPosition, wxDefaultSize, threadlist);
 
-	leftsizer->Add(new wxStaticText(panel, -1, "Select a process to profile:"), 0, wxTOP, FromDIP(5));
+	leftsizer->Add(new wxStaticText(panel, wxID_ANY, "Select a process to profile:"), 0, wxTOP, FromDIP(5));
 	leftsizer->Add(processlist, 1, wxEXPAND | wxTOP, FromDIP(3));
 
 	// DE: 20090325 title for thread list
-	rightsizer->Add(new wxStaticText(panel, -1, "Select thread(s) to profile: (CTRL-click for multiple)"), 0, wxTOP, FromDIP(5));
+	rightsizer->Add(new wxStaticText(panel, wxID_ANY, "Select thread(s) to profile: (CTRL-click for multiple)"), 0, wxTOP, FromDIP(5));
 	rightsizer->Add(threadlist, 1, wxEXPAND | wxTOP, FromDIP(3));
 
 	wxButton *refreshButton = new wxButton(panel, ProcWin_Refresh, "Refresh", wxDefaultPosition, wxDefaultSize);

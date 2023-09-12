@@ -695,7 +695,7 @@ void MainWin::OnCollapseOS(wxCommandEvent& WXUNUSED(event))
 
 void MainWin::OnStats(wxCommandEvent& WXUNUSED(event))
 {
-	wxDialog dlg(this, -1, wxString("Statistics"), wxDefaultPosition, wxDefaultSize, wxRESIZE_BORDER|wxDEFAULT_DIALOG_STYLE);
+	wxDialog dlg(this, wxID_ANY, "Statistics", wxDefaultPosition, wxDefaultSize, wxRESIZE_BORDER|wxDEFAULT_DIALOG_STYLE);
 	wxSizer *sizer = new wxBoxSizer(wxVERTICAL);
 
 	wxString string;

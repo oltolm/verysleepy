@@ -75,7 +75,7 @@ END_EVENT_TABLE()
 unsigned WM_TASKBARBUTTONCREATED = RegisterWindowMessage(L"TaskbarButtonCreated");
 
 CaptureWin::CaptureWin()
-:	wxDialog(NULL, -1, wxString(_T(APPNAME) _T(" - profiling")),
+:	wxDialog(NULL, wxID_ANY, wxString(_T(APPNAME) _T(" - profiling")),
 			 wxDefaultPosition, wxDefaultSize,
 			 wxDEFAULT_DIALOG_STYLE)
 {
@@ -89,8 +89,8 @@ CaptureWin::CaptureWin()
 
 	wxPanel *panel = new wxPanel(this);
 
-	progressText = new wxStaticText( panel, -1, "Waiting..." );
-	progressBar = new wxGauge( panel, -1, 0, wxDefaultPosition, FromDIP(wxSize(100, 18)));
+	progressText = new wxStaticText( panel, wxID_ANY, "Waiting..." );
+	progressBar = new wxGauge( panel, wxID_ANY, 0, wxDefaultPosition, FromDIP(wxSize(100, 18)));
 	progressBar->SetRange(MAX_RANGE);
 
 	wxBitmap pause = LoadPngResource(L"button_pause", this);

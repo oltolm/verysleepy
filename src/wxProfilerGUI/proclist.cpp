@@ -39,7 +39,7 @@ enum
 BEGIN_EVENT_TABLE(ProcList, wxListCtrl)
 EVT_LIST_ITEM_SELECTED(ProcList_List, ProcList::OnSelected)
 EVT_LIST_ITEM_ACTIVATED(ProcList_List, ProcList::OnActivated)
-EVT_LIST_COL_CLICK(-1, ProcList::OnSort)
+EVT_LIST_COL_CLICK(wxID_ANY, ProcList::OnSort)
 EVT_CONTEXT_MENU(ProcList::OnContextMenu)
 END_EVENT_TABLE()
 

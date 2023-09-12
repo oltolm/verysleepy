@@ -26,7 +26,7 @@ http://www.gnu.org/copyleft/gpl.html.
 BEGIN_EVENT_TABLE(ThreadsView, wxListCtrl)
 EVT_LIST_ITEM_SELECTED(THREADS_VIEW, ThreadsView::OnSelected)
 EVT_LIST_ITEM_DESELECTED(THREADS_VIEW, ThreadsView::OnDeSelected)
-EVT_LIST_COL_CLICK(-1, ThreadsView::OnSort)
+EVT_LIST_COL_CLICK(wxID_ANY, ThreadsView::OnSort)
 EVT_TIMER(THREADS_VIEW_TIMER, ThreadsView::OnTimer)
 END_EVENT_TABLE()
 
@@ -204,7 +204,7 @@ void ThreadsView::fillList()
 
 
 BEGIN_EVENT_TABLE(ThreadSamplesView, wxListCtrl)
-EVT_LIST_COL_CLICK(-1, ThreadSamplesView::OnSort)
+EVT_LIST_COL_CLICK(wxID_ANY, ThreadSamplesView::OnSort)
 EVT_LIST_ITEM_ACTIVATED(THREAD_SAMPLES_VIEW, ThreadSamplesView::OnActivated)
 END_EVENT_TABLE()
 

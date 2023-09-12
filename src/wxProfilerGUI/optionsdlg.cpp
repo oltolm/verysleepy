@@ -79,7 +79,7 @@ EVT_CHECKBOX(Options_SaveMinidump, OptionsDlg::OnSaveMinidump)
 END_EVENT_TABLE()
 
 OptionsDlg::OptionsDlg()
-:	wxDialog(NULL, -1, wxString(_T("Options")),
+:	wxDialog(NULL, wxID_ANY, wxString(_T("Options")),
 			 wxDefaultPosition, wxDefaultSize,
 			 wxDEFAULT_DIALOG_STYLE)
 {
@@ -120,18 +120,18 @@ OptionsDlg::OptionsDlg()
 	symPathSizer->Add(symPathButtonSizer, FromDIP(1), wxSHRINK);
 
 	useSymServer = new wxCheckBox(this, Options_UseSymServer, "Use symbol server");
-	symCacheDir = new wxDirPickerCtrl(this, -1, prefs.symCacheDir.GetConfigValue(), "Select a directory to store local symbols in:",
+	symCacheDir = new wxDirPickerCtrl(this, wxID_ANY, prefs.symCacheDir.GetConfigValue(), "Select a directory to store local symbols in:",
 		wxDefaultPosition, wxDefaultSize, wxDIRP_USE_TEXTCTRL);
-	symServer = new wxTextCtrl(this, -1, prefs.symServer.GetValue());
+	symServer = new wxTextCtrl(this, wxID_ANY, prefs.symServer.GetValue());
 
 	wxBoxSizer *minGwDbgHelpSizer = new wxBoxSizer(wxHORIZONTAL);
-	minGwDbgHelpSizer->Add(new wxStaticText(this, -1, "MinGW DbgHelp engine:   "));
+	minGwDbgHelpSizer->Add(new wxStaticText(this, wxID_ANY, "MinGW DbgHelp engine:   "));
 
-	mingwWine = new wxRadioButton(this, -1, "Wine  ");
+	mingwWine = new wxRadioButton(this, wxID_ANY, "Wine  ");
 	mingwWine->SetToolTip("Use Wine's DbgHelp implementation for MinGW symbols (dbghelpw.dll).");
 	minGwDbgHelpSizer->Add(mingwWine);
 
-	mingwDrMingw = new wxRadioButton(this, -1, "Dr. MinGW");
+	mingwDrMingw = new wxRadioButton(this, wxID_ANY, "Dr. MinGW");
 	mingwDrMingw->SetToolTip("Use Dr. MinGW's DbgHelp implementation for MinGW symbols (dbghelpdr.dll).");
 	minGwDbgHelpSizer->Add(mingwDrMingw);
 
@@ -149,7 +149,7 @@ OptionsDlg::OptionsDlg()
 
 	saveMinidumpTimeValue = prefs.saveMinidump.GetConfigValue() < 0 ? 0 : prefs.saveMinidump.GetValue();
 	saveMinidumpTime = new wxTextCtrl(
-		this, -1,
+		this, wxID_ANY,
 		wxEmptyString, wxDefaultPosition,
 		wxSize(FromDIP(40), -1),
 		0,
@@ -160,7 +160,7 @@ OptionsDlg::OptionsDlg()
 		"You can set a delay after which a minidump will be saved.");
 	saveMinidumpTime->Enable(prefs.saveMinidump.GetValue() >= 0);
 	saveMinidumpSizer->Add(saveMinidumpTime, 0, wxTOP, FromDIP(-3));
-	saveMinidumpSizer->Add(new wxStaticText(this, -1, " seconds"));
+	saveMinidumpSizer->Add(new wxStaticText(this, wxID_ANY, " seconds"));
 
 	symPaths->Append(wxSplit(prefs.symSearchPath.GetValue(), ';', 0));
 	useSymServer->SetValue(prefs.useSymServer.GetValue());
@@ -171,9 +171,9 @@ OptionsDlg::OptionsDlg()
 	symdirsizer->Add(symPathSizer, 0, wxALL|wxEXPAND, FromDIP(5));
 
 	symsrvsizer->Add(useSymServer, 0, wxALL, FromDIP(5));
-	symsrvsizer->Add(new wxStaticText(this, -1, "Local cache directory:"), 0, wxLEFT|wxTOP, FromDIP(5));
+	symsrvsizer->Add(new wxStaticText(this, wxID_ANY, "Local cache directory:"), 0, wxLEFT|wxTOP, FromDIP(5));
 	symsrvsizer->Add(symCacheDir, 0, wxALL|wxEXPAND, FromDIP(5));
-	symsrvsizer->Add(new wxStaticText(this, -1, "Symbol server location:"), 0, wxLEFT|wxTOP, FromDIP(5));
+	symsrvsizer->Add(new wxStaticText(this, wxID_ANY, "Symbol server location:"), 0, wxLEFT|wxTOP, FromDIP(5));
 	symsrvsizer->Add(symServer, 0, wxALL|wxEXPAND, FromDIP(5));
 
 	symsizer->Add(symdirsizer, 0, wxALL|wxEXPAND, FromDIP(5));
@@ -185,7 +185,7 @@ OptionsDlg::OptionsDlg()
 	throttle = new wxPercentSlider(this, Options_Throttle, prefs.throttle.GetValue(), 1, 100, wxDefaultPosition, wxDefaultSize,
 		wxSL_HORIZONTAL|wxSL_TICKS|wxSL_TOP|wxSL_LABELS);
 	throttle->SetTickFreq(10);
-	throttlesizer->Add(new wxStaticText(this, -1,
+	throttlesizer->Add(new wxStaticText(this, wxID_ANY,
 		"Adjusts the sample rate speed. Useful for doing longer captures\n"
 		"where you wish to reduce the profiler overhead.\n"
 		"Higher values increase accuracy; lower values result in better\n"

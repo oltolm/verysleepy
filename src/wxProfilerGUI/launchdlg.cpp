@@ -40,9 +40,9 @@ LaunchDlg::LaunchDlg(wxWindow *parent)
 	wxBoxSizer *rootsizer = new wxBoxSizer( wxVERTICAL );
 	wxBoxSizer *topsizer = new wxBoxSizer( wxVERTICAL );
 
-	topsizer->Add(new wxStaticText(this, -1, "Enter a command to execute, with any additional arguments."), 0, wxBOTTOM, FromDIP(5));
+	topsizer->Add(new wxStaticText(this, wxID_ANY, "Enter a command to execute, with any additional arguments."), 0, wxBOTTOM, FromDIP(5));
 
-	m_cmdctl = new wxTextCtrl(this, -1, "", wxDefaultPosition, FromDIP(wxSize(500, 22)));
+	m_cmdctl = new wxTextCtrl(this, wxID_ANY, "", wxDefaultPosition, FromDIP(wxSize(500, 22)));
 	wxButton *cmdpick = new wxButton(this, ID_CMD_CHOOSE, "...", wxDefaultPosition, FromDIP(wxSize(22, 22)));
 	wxBoxSizer *rowsizer = new wxBoxSizer( wxHORIZONTAL );
 	rowsizer->Add(m_cmdctl, 0, wxRIGHT, FromDIP(5));
@@ -52,9 +52,9 @@ LaunchDlg::LaunchDlg(wxWindow *parent)
 	topsizer->AddSpacer(FromDIP(10));
 
 
-	topsizer->Add(new wxStaticText(this, -1, "Working directory."), 0, wxBOTTOM, FromDIP(5));
+	topsizer->Add(new wxStaticText(this, wxID_ANY, "Working directory."), 0, wxBOTTOM, FromDIP(5));
 	rowsizer = new wxBoxSizer( wxHORIZONTAL );
-	m_cwdctl = new wxTextCtrl(this, -1, "", wxDefaultPosition, FromDIP(wxSize(500, 22)));
+	m_cwdctl = new wxTextCtrl(this, wxID_ANY, "", wxDefaultPosition, FromDIP(wxSize(500, 22)));
 	rowsizer->Add(m_cwdctl, 0, wxRIGHT, FromDIP(4));
 	rowsizer->Add(new wxButton(this, ID_CWD_CHOOSE, "...", wxDefaultPosition, FromDIP(wxSize(22, 22))));
 

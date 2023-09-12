@@ -77,7 +77,7 @@ EVT_CONTEXT_MENU(CallstackView::OnContextMenu)
 END_EVENT_TABLE()
 
 CallstackView::CallstackView(wxWindow *parent,Database *_database)
-:	wxWindow(parent,-1), database(_database), callstackActive(0), currSymbol(NULL), itemSelected(~0u)
+:	wxWindow(parent,wxID_ANY), database(_database), callstackActive(0), currSymbol(NULL), itemSelected(~0u)
 {
 	listCtrl = new wxListCtrl(this,LIST_CTRL,wxDefaultPosition,wxDefaultSize,wxLC_REPORT);
 	setupColumn(COL_NAME,			170,	_T("Name"));
@@ -90,7 +90,7 @@ CallstackView::CallstackView(wxWindow *parent,Database *_database)
 	toolBar->AddTool(TOOL_PREV,"-",LoadPngResource(L"button_prev", this),_T("Previous"));
 	toolBar->AddTool(TOOL_NEXT,"+",LoadPngResource(L"button_next", this),_T("Next"));
 	toolBar->AddTool(TOOL_EXPORT_CSV,"CSV",LoadPngResource(L"button_exportcsv", this),_T("Export as CSV"));
-	toolRange = new wxStaticTextTransparent(toolBar,-1);
+	toolRange = new wxStaticTextTransparent(toolBar,wxID_ANY);
 	toolBar->AddControl(toolRange);
 
 	toolBar->Realize();
