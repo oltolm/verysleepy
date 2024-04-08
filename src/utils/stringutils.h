@@ -20,8 +20,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 http://www.gnu.org/copyleft/gpl.html.
 =====================================================================*/
-#ifndef __STRINGUTILS_H__
-#define __STRINGUTILS_H__
+#pragma once
 
 
 //NOTE: not all of this code has been used/tested for ages.
@@ -71,5 +70,3 @@ public:
 
 std::wstring toWideString(const std::string& str);
 std::string toMultiByteString(const std::wstring& str);
-
-#endif //__STRINGUTILS_H__

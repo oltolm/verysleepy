@@ -20,8 +20,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 http://www.gnu.org/copyleft/gpl.html..
 =====================================================================*/
-#ifndef __DEBUGGER_H_666_
-#define __DEBUGGER_H_666_
+#pragma once
 
 #include <windows.h>
 #include <functional>
@@ -67,5 +66,3 @@ protected:
 	void deactivateDebugging();
 
 };
-
-#endif // __DEBUGGER_H_666_

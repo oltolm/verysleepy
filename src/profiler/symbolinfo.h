@@ -21,8 +21,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 http://www.gnu.org/copyleft/gpl.html..
 =====================================================================*/
-#ifndef __SYMBOLINFO_H_666_
-#define __SYMBOLINFO_H_666_
+#pragma once
 
 
 #include <string>
@@ -84,5 +83,3 @@ private:
 };
 
 extern SymLogFn *g_symLog;
-
-#endif //__SYMBOLINFO_H_666_

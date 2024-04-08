@@ -23,8 +23,6 @@ http://www.gnu.org/copyleft/gpl.html.
 =====================================================================*/
 
 #pragma once
-#ifndef __OSUTILS_H__
-#define __OSUTILS_H__
 
 #include <windows.h>
 
@@ -36,4 +34,3 @@ bool Is64BitProcess(HANDLE hProcess);
 
 bool CanProfileProcess(HANDLE hProcess);
 
-#endif // __OSUTILS_H__

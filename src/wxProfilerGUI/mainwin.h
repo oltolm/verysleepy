@@ -21,8 +21,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 http://www.gnu.org/copyleft/gpl.html.
 =====================================================================*/
-#ifndef __MAINWIN_H_666_
-#define __MAINWIN_H_666_
+#pragma once
 
 #include "profilergui.h"
 #include "proclist.h"
@@ -187,7 +186,3 @@ private:
 };
 
 extern MainWin *theMainWin;
-
-
-
-#endif //__MAINWIN_H_666_

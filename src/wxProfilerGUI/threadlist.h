@@ -21,8 +21,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 http://www.gnu.org/copyleft/gpl.html.
 =====================================================================*/
-#ifndef __THREADSLIST_H_666_
-#define __THREADSLIST_H_666_
+#pragma once
 
 #include "profilergui.h"
 #include "../profiler/threadinfo.h"
@@ -99,6 +98,3 @@ enum
 	THREADS_LIST = 4000,
 	THREADS_LIST_TIMER = 4001
 };
-
-
-#endif //__PROCESSLIST_H_666_

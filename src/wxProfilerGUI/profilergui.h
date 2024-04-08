@@ -21,8 +21,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 http://www.gnu.org/copyleft/gpl.html.
 =====================================================================*/
-#ifndef __PROFILERGUI_H_666_
-#define __PROFILERGUI_H_666_
+#pragma once
 
 #include <wx/config.h>
 #include <wx/app.h>
@@ -217,5 +216,3 @@ DECLARE_APP(ProfilerGUI)
 
 extern Prefs prefs;
 extern wxConfig config;
-
-#endif //__PROFILERGUI_H_666_

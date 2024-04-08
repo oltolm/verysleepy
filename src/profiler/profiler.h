@@ -24,8 +24,6 @@ http://www.gnu.org/copyleft/gpl.html..
 =====================================================================*/
 
 #pragma once
-#ifndef __PROFILER_H_666_
-#define __PROFILER_H_666_
 
 #include <winsock2.h>
 #include <windows.h>
@@ -130,7 +128,3 @@ private:
 	HANDLE target_process, target_thread;
 	DWORD target_thread_id;
 };
-
-
-
-#endif //__PROFILER_H_666_

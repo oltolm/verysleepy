@@ -24,8 +24,6 @@ http://www.gnu.org/copyleft/gpl.html..
 =====================================================================*/
 
 #pragma once
-#ifndef __PROFILERTHREAD_H_666_
-#define __PROFILERTHREAD_H_666_
 
 #include "../utils/mythread.h"
 #include "profiler.h"
@@ -115,7 +113,3 @@ private:
 
 	DWORD startTick;
 };
-
-
-
-#endif //__PROFILERTHREAD_H_666_

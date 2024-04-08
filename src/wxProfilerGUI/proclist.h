@@ -21,8 +21,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 http://www.gnu.org/copyleft/gpl.html.
 =====================================================================*/
-#ifndef __PROCLIST_H_666_
-#define __PROCLIST_H_666_
+#pragma once
 
 #include "profilergui.h"
 #include "database.h"
@@ -96,5 +95,3 @@ private:
 	/// Displays our in-memory list. Preserves selection.
 	void displayList();
 };
-
-#endif //__PROCLIST_H_666_

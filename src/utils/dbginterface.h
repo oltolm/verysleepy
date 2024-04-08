@@ -20,8 +20,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 http://www.gnu.org/copyleft/gpl.html.
 =====================================================================*/
-#ifndef __DBGINTERFACE_H__
-#define __DBGINTERFACE_H__
+#pragma once
 
 // Use our own copy of dbghelp.h, to make sure it's the latest version.
 #include <windows.h>
@@ -181,5 +180,3 @@ bool dbgHelpInit();
 #undef __in_opt
 #undef __out
 #endif
-
-#endif // __DBGINTERFACE_H__

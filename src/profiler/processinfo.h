@@ -21,8 +21,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 http://www.gnu.org/copyleft/gpl.html..
 =====================================================================*/
-#ifndef __PROCESSINFO_H_666_
-#define __PROCESSINFO_H_666_
+#pragma once
 
 #include <windows.h>
 #include "threadinfo.h"
@@ -70,7 +69,3 @@ private:
 	bool is64Bits;
 #endif
 };
-
-
-
-#endif //__PROCESSINFO_H_666_
