@@ -21,14 +21,12 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 http://www.gnu.org/copyleft/gpl.html.
 =====================================================================*/
+#pragma once
 
 class CallstackView;
 
 #include "profilergui.h"
 #include "database.h"
-
-#ifndef __CALLSTTACKVIEW_H_
-#define __CALLSTTACKVIEW_H_
 
 class wxStaticTextTransparent;
 
@@ -84,5 +82,3 @@ public:
 	DECLARE_EVENT_TABLE()
 
 };
-
-#endif

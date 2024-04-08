@@ -21,8 +21,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 http://www.gnu.org/copyleft/gpl.html.
 =====================================================================*/
-#ifndef __PROCESSLIST_H_666_
-#define __PROCESSLIST_H_666_
+#pragma once
 
 #include "profilergui.h"
 #include "../profiler/processinfo.h"
@@ -108,6 +107,3 @@ enum
 	PROCESS_LIST = 4000,
 	PROCESS_LIST_TIMER = 4001
 };
-
-
-#endif //__PROCESSLIST_H_666_

@@ -20,8 +20,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 http://www.gnu.org/copyleft/gpl.html.
 =====================================================================*/
-#ifndef __THREADSVIEW_H_666_
-#define __THREADSVIEW_H_666_
+#pragma once
 
 #include "database.h"
 #include "../utils/sortlist.h"
@@ -118,5 +117,3 @@ enum {
 	THREADS_VIEW_TIMER,
 	THREAD_SAMPLES_VIEW,
 };
-
-#endif // __THREADSVIEW_H_666_

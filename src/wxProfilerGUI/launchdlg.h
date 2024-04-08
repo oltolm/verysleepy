@@ -20,8 +20,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 http://www.gnu.org/copyleft/gpl.html.
 =====================================================================*/
-#ifndef __LAUNCHDLG_H__
-#define __LAUNCHDLG_H__
+#pragma once
 
 #include "profilergui.h"
 
@@ -51,5 +50,3 @@ protected:
 
 	DECLARE_EVENT_TABLE()
 };
-
-#endif // __LAUNCHDLG_H__

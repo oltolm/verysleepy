@@ -20,8 +20,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 http://www.gnu.org/copyleft/gpl.html.
 =====================================================================*/
-#ifndef __MYTHREAD_H_666_
-#define __MYTHREAD_H_666_
+#pragma once
 
 #include <windows.h>
 
@@ -48,5 +47,3 @@ private:
 
 	HANDLE thread_handle;
 };
-
-#endif //__MYTHREAD_H_666_

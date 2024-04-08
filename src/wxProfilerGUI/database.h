@@ -21,8 +21,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 http://www.gnu.org/copyleft/gpl.html.
 =====================================================================*/
-#ifndef __DATABASE_H_666_
-#define __DATABASE_H_666_
+#pragma once
 
 #include "profilergui.h"
 #include "../utils/container.h"
@@ -193,5 +192,3 @@ private:
 	// Any additional symbols we can load after opening a capture
 	class LateSymbolInfo *late_sym_info;
 };
-
-#endif //__DATABASE_H_666_

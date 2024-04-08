@@ -21,8 +21,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 http://www.gnu.org/copyleft/gpl.html.
 =====================================================================*/
-#ifndef __SOURCEVIEW_H_666_
-#define __SOURCEVIEW_H_666_
+#pragma once
 
 #include "profilergui.h"
 
@@ -70,6 +69,3 @@ enum
 {
 	SOURCE_VIEW					  = 1005
 };
-
-
-#endif //__SOURCEVIEW_H_666_

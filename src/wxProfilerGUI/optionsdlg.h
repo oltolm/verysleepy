@@ -20,8 +20,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 http://www.gnu.org/copyleft/gpl.html.
 =====================================================================*/
-#ifndef __OPTIONSDLG_H__
-#define __OPTIONSDLG_H__
+#pragma once
 
 #include "profilergui.h"
 #include <wx/checkbox.h>
@@ -63,6 +62,3 @@ private:
 
 	DECLARE_EVENT_TABLE()
 };
-
-
-#endif // __OPTIONSDLG_H__
