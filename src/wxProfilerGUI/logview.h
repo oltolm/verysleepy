@@ -22,18 +22,16 @@ http://www.gnu.org/copyleft/gpl.html.
 =====================================================================*/
 #pragma once
 
-#include <wx/config.h>
+#include <wx/log.h>
 #include <wx/textctrl.h>
 
 class LogViewLog;
 
 class LogView :	public wxTextCtrl
 {
-	friend class LogViewLog;
-
 public:
 	LogView(wxWindow *parent);
-	virtual ~LogView();
+	virtual ~LogView() = default;
 
 	void OnContextMenu(wxContextMenuEvent& event);
 	void OnCopy(wxCommandEvent& event);
@@ -42,8 +40,40 @@ public:
 	void OnIdle(wxIdleEvent& event);
 
 private:
-	class wxLog *previous_log;
-	LogViewLog *log;
+	wxMenu* menu;
+	// class wxLog *previous_log;
+	// LogViewLog *log;
 
 	DECLARE_EVENT_TABLE()
+};
+
+//////////////////////////////////////////////////////////////////////////
+// LogViewLog
+//////////////////////////////////////////////////////////////////////////
+
+// We can't use the same class for both wxTextCtrl and wxLog,
+// because wxWidgets will destroy the active log BEFORE it
+// destroys the window. That means we'd be left with a dangling
+// pointer in wxWidgets' window hierarchy that we can't do
+// anything about.
+class LogViewLog : public wxLogTextCtrl
+{
+	LogView *view;
+
+public:
+	LogViewLog(LogView *view)
+		: wxLogTextCtrl(view),
+		  view(view)
+	{
+	}
+
+	virtual ~LogViewLog()
+	{
+		// Tell the view that we've been destroyed (by wxWidgets, probably).
+		// view->log = NULL;
+		// If we are destroyed by wxWidgets, we don't need to worry about
+		// setting the old log target back - wxWidgets does that.
+	}
+
+	void DoLogRecord(wxLogLevel level, const wxString& msg, const wxLogRecordInfo& info);
 };

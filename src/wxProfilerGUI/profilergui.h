@@ -25,11 +25,7 @@ http://www.gnu.org/copyleft/gpl.html.
 
 #include <wx/config.h>
 #include <wx/app.h>
-#include <wx/listctrl.h>
-#include <wx/splitter.h>
-#include <wx/notebook.h>
-#include <wx/aui/aui.h>
-#include <wx/progdlg.h>
+#include <wx/filehistory.h>
 #include <wx/wfstream.h>
 #include <wx/zipstrm.h>
 #include <wx/txtstrm.h>
@@ -38,11 +34,12 @@ http://www.gnu.org/copyleft/gpl.html.
 #include <wx/tipwin.h>
 #include <string>
 #include <vector>
-#include <map>
 
 extern wxIcon sleepy_icon;
 
+class CaptureWin;
 class SymbolInfo;
+class ThreadPicker;
 
 enum AttachMode
 {
@@ -59,7 +56,7 @@ struct AttachInfo
 	HANDLE process_handle;
 	std::vector<HANDLE> thread_handles;
 	bool attach_all_threads;
-	SymbolInfo *sym_info;
+	std::unique_ptr<SymbolInfo> sym_info;
 	int limit_profile_time;
 };
 
@@ -180,19 +177,21 @@ class ProfilerGUI : public wxApp
 {
 public:
 	ProfilerGUI();
-	virtual ~ProfilerGUI();
-	virtual bool OnInit();
-	virtual bool ProcessIdle();
-	virtual int OnExit();
+	virtual ~ProfilerGUI() = default;
+	bool OnInit() override;
+	bool ProcessIdle() override;
+	int OnExit() override;
 
 	static void ShowAboutBox();
 	static wxString PromptOpen(wxWindow *parent);
 
-	virtual wxAppTraits *CreateTraits();
+	wxAppTraits *CreateTraits() override;
+	// void OnUnhandledException() override;
+	// bool OnExceptionInMainLoop() override;
 
 protected:
-	virtual void OnInitCmdLine(wxCmdLineParser& parser);
-	virtual bool OnCmdLineParsed(wxCmdLineParser& parser);
+	void OnInitCmdLine(wxCmdLineParser& parser) override;
+	bool OnCmdLineParsed(wxCmdLineParser& parser) override;
 
 private:
 	void HandleInit();
@@ -208,8 +207,10 @@ private:
 	void LoadProfileData(const std::wstring &filename);
 	std::wstring ObtainProfileData();
 
-	class CaptureWin *captureWin;
+	CaptureWin* captureWin;
 	bool initialized;
+	ThreadPicker* threadpicker;
+	wxFileHistory m_fileHistory;
 };
 
 DECLARE_APP(ProfilerGUI)

@@ -22,20 +22,21 @@ http://www.gnu.org/copyleft/gpl.html.
 =====================================================================*/
 #pragma once
 
-#include "profilergui.h"
+#include <wx/dialog.h>
+
+class wxGauge;
+class wxStaticText;
 
 class CaptureWin : public wxDialog
 {
 public:
 	CaptureWin();
-	virtual ~CaptureWin();
+	virtual ~CaptureWin() = default;
 
-	bool UpdateProgress(const wchar_t *status, double progress);
+	bool UpdateProgress(const wxString& status, double progress);
 
-	bool Paused() { return paused; }
-	bool Cancelled() { return cancelled; }
-
-	virtual WXLRESULT MSWWindowProc(WXUINT nMsg, WXWPARAM wParam, WXLPARAM lParam);
+	bool Paused() const { return paused; }
+	bool Cancelled() const { return cancelled; }
 
 private:
 	void OnOk( wxCommandEvent & event );
@@ -46,7 +47,6 @@ private:
 	wxGauge *progressBar;
 	wxStaticText *progressText;
 	class wxBitmapToggleButton *pauseButton;
-	struct ITaskbarList3 *win7taskBar;
 
 	DECLARE_EVENT_TABLE()
 };

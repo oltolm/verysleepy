@@ -21,45 +21,48 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 http://www.gnu.org/copyleft/gpl.html.
 =====================================================================*/
-#include "threadList.h"
-#include "database.h"
+#include "../profiler/processinfo.h"
 #include "../profiler/profiler.h"
 #include "../profiler/symbolinfo.h"
-#include "../utils/osutils.h"
+#include "database.h"
+#include "threadlist.h"
+
 #include <algorithm>
+#include <cstddef>
+#include <utility>
 #include <wx/button.h>
+#include <wx/listbase.h>
+#include <wx/listctrl.h>
 
 #define UPDATE_DELAY 1000	 // 1 second interval
 #define MAX_NUM_THREAD_LOCATIONS 100 // getting location of thread is very expensive, so only show it for the first X threads in the list
 #define MAX_NUM_DISPLAYED_THREADS 1000 // creating very large tables is expensive, limit number of threads to first X in selected sort order
 
-BEGIN_EVENT_TABLE(ThreadList, wxListCtrl)
+BEGIN_EVENT_TABLE(ThreadList, wxListView)
 EVT_LIST_ITEM_SELECTED(THREADS_LIST, ThreadList::OnSelected)
-EVT_LIST_ITEM_DESELECTED(THREADS_LIST, ThreadList::OnDeSelected)
+EVT_LIST_ITEM_DESELECTED(THREADS_LIST, ThreadList::OnDeselected)
 EVT_LIST_COL_CLICK(wxID_ANY, ThreadList::OnSort)
 EVT_TIMER(THREADS_LIST_TIMER, ThreadList::OnTimer)
 END_EVENT_TABLE()
 
 ThreadList::ThreadList(wxWindow *parent, const wxPoint& pos,
 						 const wxSize& size, wxButton *_ok_button, wxButton *_all_button)
-						 :	wxSortedListCtrl(parent, THREADS_LIST, pos, size, wxLC_REPORT),
+						 : wxListView(parent, THREADS_LIST, pos, size, wxLC_REPORT | wxLC_VIRTUAL),
 						 timer(this, THREADS_LIST_TIMER),
 						 ok_button(_ok_button), all_button(_all_button)
 {
-	InitSort();
-
 	wxListItem itemCol;
-	itemCol.m_mask = wxLIST_MASK_TEXT/* | wxLIST_MASK_IMAGE*/;
-	itemCol.m_image = -1;
-	itemCol.m_text = _T("Location");
+	itemCol.SetMask(wxLIST_MASK_TEXT)/* | wxLIST_MASK_IMAGE*/;
+	itemCol.SetImage(-1);
+	itemCol.SetText(_T("Location"));
 	InsertColumn(COL_LOCATION, itemCol);
-	itemCol.m_text = _T("CPU");
+	itemCol.SetText(_T("CPU"));
 	InsertColumn(COL_CPUUSAGE, itemCol);
-	itemCol.m_text = _T("Total CPU");
+	itemCol.SetText(_T("Total CPU"));
 	InsertColumn(COL_TOTALCPU, itemCol);
-	itemCol.m_text = _T("TID");
+	itemCol.SetText(_T("TID"));
 	InsertColumn(COL_ID, itemCol);
-	itemCol.m_text = _T("Thread Name");
+	itemCol.SetText(_T("Thread Name"));
 	InsertColumn(COL_NAME, itemCol);
 
 	SetColumnWidth(COL_LOCATION, FromDIP(270));
@@ -74,9 +77,7 @@ ThreadList::ThreadList(wxWindow *parent, const wxPoint& pos,
 	else
 		SetColumnWidth(COL_NAME, 0);
 
-	sort_column = COL_CPUUSAGE;
-	sort_dir = SORT_DOWN;
-	SetSortImage(sort_column, sort_dir);
+	ShowSortIndicator(COL_CPUUSAGE, false);
 
 	process_handle = NULL;
 	syminfo = NULL;
@@ -87,21 +88,14 @@ ThreadList::ThreadList(wxWindow *parent, const wxPoint& pos,
 }
 
 
-ThreadList::~ThreadList()
+void ThreadList::OnSelected(wxListEvent&)
 {
-
-}
-
-void ThreadList::OnSelected(wxListEvent& event)
-{
-	this->selected_threads.insert(event.m_itemIndex);
 	ok_button->Enable(true);
 }
 
-void ThreadList::OnDeSelected(wxListEvent& event)
+void ThreadList::OnDeselected(wxListEvent&)
 {
-	this->selected_threads.erase(event.m_itemIndex);
-	if (this->selected_threads.empty())
+	if(GetSelectedItemCount() != wxNOT_FOUND)
 		ok_button->Enable(false);
 }
 
@@ -109,19 +103,14 @@ std::vector<const ThreadInfo*> ThreadList::getSelectedThreads(bool all)
 {
 	std::vector<const ThreadInfo*> selectedThreads;
 	if(all) {
-		selectedThreads.reserve(this->threads.size());
-		for(size_t i=0;i<threads.size();i++) {
-			selectedThreads.push_back(&threads[i]);
+		selectedThreads.reserve(threads.size());
+		for(const auto & thread : threads) {
+			selectedThreads.push_back(&thread);
 		}
 	} else {
-		selectedThreads.reserve(this->selected_threads.size());
-		for (auto it = this->selected_threads.begin(); it != this->selected_threads.end(); ++it)
+		for(long item = GetFirstSelected(); item != wxNOT_FOUND; item = GetNextSelected(item))
 		{
-			int selected_thread = *it;
-			if(selected_thread >= 0 && selected_thread < (int)threads.size())
-			{
-				selectedThreads.push_back(&threads[selected_thread]);
-			}
+			selectedThreads.push_back(&threads.at(item));
 		}
 	}
 	return selectedThreads;
@@ -132,179 +121,106 @@ void ThreadList::OnTimer(wxTimerEvent& WXUNUSED(event))
 	updateTimes();
 }
 
-struct LocationAscPred { bool operator () (const ThreadInfo &a, const ThreadInfo &b) {
-	return a.getLocation() < b.getLocation();
-} };
-
-struct LocationDescPred { bool operator () (const ThreadInfo &a, const ThreadInfo &b) {
-	return a.getLocation() > b.getLocation();
-} };
-
-struct CpuUsageAscPred { bool operator () (const ThreadInfo &a, const ThreadInfo &b) {
-	return a.cpuUsage < b.cpuUsage;
-} };
-
-struct CpuUsageDescPred { bool operator () (const ThreadInfo &a, const ThreadInfo &b) {
-	return a.cpuUsage > b.cpuUsage;
-} };
-
-struct TotalCpuTimeAscPred { bool operator () (const ThreadInfo &a, const ThreadInfo &b) {
-	return a.totalCpuTimeMs < b.totalCpuTimeMs;
-} };
-
-struct TotalCpuTimeDescPred { bool operator () (const ThreadInfo &a, const ThreadInfo &b) {
-	return a.totalCpuTimeMs > b.totalCpuTimeMs;
-} };
-
-struct IdAscPred { bool operator () (const ThreadInfo &a, const ThreadInfo &b) {
-	return a.getID() < b.getID();
-} };
-
-struct IdDescPred { bool operator () (const ThreadInfo &a, const ThreadInfo &b) {
-	return a.getID() > b.getID();
-} };
-
-struct NameAscPred { bool operator () (const ThreadInfo &a, const ThreadInfo &b) {
-	return a.getName() < b.getName();
-} };
-
-struct NameDescPred { bool operator () (const ThreadInfo &a, const ThreadInfo &b) {
-	return a.getName() > b.getName();
-} };
-
-void ThreadList::sortByLocation()
+struct ThreadInfoPred
 {
-	if (sort_dir == SORT_UP)
-		std::stable_sort(threads.begin(), threads.end(), LocationAscPred());
-	else
-		std::stable_sort(threads.begin(), threads.end(), LocationDescPred());
-}
+	ThreadInfoPred(wxListView *listView)
+		: m_listView(listView)
+	{
+	}
 
-void ThreadList::sortByCpuUsage()
-{
-	if (sort_dir == SORT_UP)
-		std::stable_sort(threads.begin(), threads.end(), CpuUsageAscPred());
-	else
-		std::stable_sort(threads.begin(), threads.end(), CpuUsageDescPred());
-}
+	bool operator()(const ThreadInfo& item1, const ThreadInfo& item2) const
+	{
+		auto sort_column = m_listView->GetSortIndicator();
+		auto ascending = m_listView->IsAscendingSortIndicator();
+		auto a = &item1;
+		auto b = &item2;
+		if (!ascending)
+			std::swap(a, b);
 
-void ThreadList::sortByTotalCpuTime()
-{
-	if (sort_dir == SORT_UP)
-		std::stable_sort(threads.begin(), threads.end(), TotalCpuTimeAscPred());
-	else
-		std::stable_sort(threads.begin(), threads.end(), TotalCpuTimeDescPred());
-}
+		switch (sort_column)
+		{
+		case ThreadList::COL_LOCATION:
+			return a->getLocation() < b->getLocation();
+		case ThreadList::COL_CPUUSAGE:
+			return a->cpuUsage < b->cpuUsage;
+		case ThreadList::COL_TOTALCPU:
+			return a->totalCpuTimeMs < b->totalCpuTimeMs;
+		case ThreadList::COL_ID:
+			return a->getID() < b->getID();
+		case ThreadList::COL_NAME:
+			return a->getName() < b->getName();
+		case ThreadList::NUM_COLUMNS:
+			break;
+		}
+		return false;
+	}
 
-void ThreadList::sortByID()
-{
-	if (sort_dir == SORT_UP)
-		std::stable_sort(threads.begin(), threads.end(), IdAscPred());
-	else
-		std::stable_sort(threads.begin(), threads.end(), IdDescPred());
-}
-
-void ThreadList::sortByName()
-{
-	if (sort_dir == SORT_UP)
-		std::stable_sort(threads.begin(), threads.end(), NameAscPred());
-	else
-		std::stable_sort(threads.begin(), threads.end(), NameDescPred());
-}
+private:
+	wxListView *m_listView;
+};
 
 void ThreadList::OnSort(wxListEvent& event)
 {
-	SetSortImage(sort_column, SORT_NONE);
-
-	if (sort_column == event.m_col)
+	bool ascending;
+	if (GetSortIndicator() == event.GetColumn())
 	{
 		// toggle if we clicked on the same column as last time
-		sort_dir = (SortType)((SORT_UP+SORT_DOWN) - sort_dir);
+		ascending = GetUpdatedAscendingSortIndicator(event.GetColumn());
 	} else {
 		// if switching columns, start with the default sort for that column type
-		sort_column = event.m_col;
-		sort_dir = (sort_column >= 1 && sort_column <= 4) ? SORT_DOWN : SORT_UP;
+		ascending = event.GetColumn() < 1 || event.GetColumn() > 4;
 	}
 
-	SetSortImage(sort_column, sort_dir);
-	updateSorting();
-}
-
-void ThreadList::updateSorting()
-{
-	switch(sort_column) {
-		case COL_LOCATION:	sortByLocation(); break;
-		case COL_CPUUSAGE:	sortByCpuUsage(); break;
-		case COL_TOTALCPU:	sortByTotalCpuTime(); break;
-		case COL_ID:		sortByID(); break;
-		case COL_NAME:		sortByName(); break;
-	}
-	fillList();
+	ShowSortIndicator(event.GetColumn(), ascending);
+	std::stable_sort(threads.begin(), threads.end(), ThreadInfoPred(this));
 }
 
 int ThreadList::getNumDisplayedThreads() {
-	int numThreads = (int) threads.size();
-	return numThreads < MAX_NUM_DISPLAYED_THREADS ? numThreads : MAX_NUM_DISPLAYED_THREADS;
+	int numThreads = threads.size();
+	return std::min(numThreads, MAX_NUM_DISPLAYED_THREADS);
 }
 
-void ThreadList::fillList()
+wxString  ThreadList::OnGetItemText (long item, long column) const
 {
-	Freeze();
-
-	int numDisplayedThreads = getNumDisplayedThreads();
-	for(int i=0; i<numDisplayedThreads; ++i)
+	const ThreadInfo* thread = &threads.at(item);
+	switch(column)
 	{
-		this->SetItem(i, COL_LOCATION, threads[i].getLocation());
+		case COL_LOCATION: return thread->getLocation();
 
-		char str[32];
-		if (threads[i].cpuUsage >= 0)
-			sprintf(str, "%i%%", threads[i].cpuUsage);
-		else
-			strcpy(str, "-");
-		this->SetItem(i, COL_CPUUSAGE, str);
+		case COL_CPUUSAGE:
+		return thread->cpuUsage >= 0 ? wxString::Format("%i%%", thread->cpuUsage): "-";
 
-		if (threads[i].totalCpuTimeMs >= 0)
-			sprintf(str, "%0.1f s", (double) (threads[i].totalCpuTimeMs) / 1000);
-		else
-			strcpy(str, "-");
-		this->SetItem(i, COL_TOTALCPU, str);
+		case COL_TOTALCPU:
+		return thread->totalCpuTimeMs >= 0 ? wxString::Format("%0.1f s", (double) (thread->totalCpuTimeMs) / 1000) : "-";
 
-		sprintf(str, "%ld", threads[i].getID());
-		this->SetItem(i, COL_ID, str);
+		case COL_ID:
+		return wxString::Format("%ld", thread->getID());
 
-		this->SetItem(i, COL_NAME, threads[i].getName());
+		case COL_NAME:
+		return thread->getName();
 	}
-	Thaw();
+	return "";
 }
 
 void ThreadList::updateThreads(const ProcessInfo* processInfo, SymbolInfo *symInfo)
 {
-	this->selected_threads.clear();
-	DeleteAllItems();
-	this->threads.clear();
+	threads.clear();
+	SetItemCount(0);
 	ok_button->Enable(false);
 	all_button->Enable(false);
 
 	if(processInfo != NULL)
 	{
-		this->process_handle = processInfo->getProcessHandle();
-		this->syminfo = symInfo;
+		process_handle = processInfo->getProcessHandle();
+		syminfo = symInfo;
 
-		this->threads = processInfo->threads;
+		threads = processInfo->threads;
 
-		int numDisplayedThreads = getNumDisplayedThreads();
-		for(int i=0; i<numDisplayedThreads; ++i)
-		{
-			long tmp = this->InsertItem(i, "", -1);
-			SetItemData(tmp, i);
-		}
-
-		all_button->Enable(this->threads.size() != 0);
+		all_button->Enable(!threads.empty());
 
 		lastTime = wxGetLocalTimeMillis();
+		SetItemCount(threads.size());
 		updateTimes();
-		updateSorting();
-		fillList();
 	}
 }
 
@@ -314,25 +230,24 @@ void ThreadList::updateTimes()
 	int sampleTimeDiff = (now - lastTime).ToLong();
 	lastTime = now;
 
-	for(int i=0; i<(int)this->threads.size(); ++i)
+	for(size_t i=0; i<threads.size(); ++i)
 	{
-		if (!this->threads[i].recalcUsage(sampleTimeDiff))
+		if (!threads[i].recalcUsage(sampleTimeDiff))
 			continue;
 
-		HANDLE thread_handle = this->threads[i].getThreadHandle();
+		HANDLE thread_handle = threads[i].getThreadHandle();
 		if (thread_handle == NULL)
 			continue;
 
-		DWORD thread_id = this->threads[i].getID();
+		DWORD thread_id = threads[i].getID();
 
-		this->threads[i].setLocation(L"-");
+		threads[i].setLocation(L"-");
 		if (i < MAX_NUM_THREAD_LOCATIONS) {
 			std::wstring loc = getLocation(thread_handle, thread_id);
-			this->threads[i].setLocation(loc);
+			threads[i].setLocation(loc);
 		}
 	}
-
-	fillList();
+	Refresh();
 }
 
 std::wstring ThreadList::getLocation(HANDLE thread_handle, DWORD thread_id) {
@@ -341,7 +256,7 @@ std::wstring ThreadList::getLocation(HANDLE thread_handle, DWORD thread_id) {
 		std::map<CallStack, SAMPLE_TYPE> callstacks;
 		Profiler profiler(process_handle, thread_handle, thread_id, callstacks);
 		bool ok = profiler.sampleTarget(0, syminfo);
-		if (ok && !profiler.targetExited() && callstacks.size() > 0)
+		if (ok && !profiler.targetExited() && !callstacks.empty())
 		{
 			const CallStack &stack = callstacks.begin()->first;
 			profaddr = stack.addr[0];
@@ -363,12 +278,9 @@ std::wstring ThreadList::getLocation(HANDLE thread_handle, DWORD thread_id) {
 
 				for (int n=(int)stack.depth-1;n>=0;n--)
 				{
-					std::wstring file;
-					int line;
-
 					PROFILER_ADDR addr = stack.addr[n];
-					std::wstring loc = syminfo->getProcForAddr(addr, file, line);
-					if (IsOsFunction(loc))
+					ProcedureInfo proc = syminfo->getProcForAddr(addr);
+					if (IsOsFunction(proc.name))
 					{
 						profaddr = addr;
 						break;
@@ -382,11 +294,8 @@ std::wstring ThreadList::getLocation(HANDLE thread_handle, DWORD thread_id) {
 
 	if (profaddr && syminfo)
 	{
-		std::wstring file;
-		int line;
-
 		// Grab the name of the current IP location.
-		return syminfo->getProcForAddr(profaddr, file, line);
+		return syminfo->getProcForAddr(profaddr).name;
 	}
 
 	return L"-";

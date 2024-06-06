@@ -23,8 +23,6 @@ http://www.gnu.org/copyleft/gpl.html.
 =====================================================================*/
 #pragma once
 
-#include "profilergui.h"
-
 #include <wx/stc/stc.h>
 
 class MainWin;
@@ -44,15 +42,13 @@ public:
 	=====================================================================*/
 	SourceView(wxWindow *parent, MainWin* mainwin);
 
-	virtual ~SourceView();
+	virtual ~SourceView() = default;
 
 	void OnPaint(wxPaintEvent& event);
 	void OnUpdateUI(wxUpdateUIEvent& event);
 
 	void showFile(std::wstring path, int linenum, const std::vector<double> &linecounts);
 	void reset();
-
-	const std::wstring& getCurrentFile() const { return currentfile; }
 private:
 	void setPlainMode();
 	void setCppMode();
@@ -62,7 +58,6 @@ private:
 	MainWin* mainwin;
 
 	DECLARE_EVENT_TABLE()
-
 };
 
 enum

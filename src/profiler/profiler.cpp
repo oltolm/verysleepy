@@ -25,16 +25,13 @@ http://www.gnu.org/copyleft/gpl.html..
 
 #include "profiler.h"
 
-
-#include "../utils/stringutils.h"
-#include "../utils/osutils.h"
-#include "symbolinfo.h"
-#include <process.h>
-#include <iostream>
-#include <assert.h>
-#include <winnt.h>
 #include "../utils/dbginterface.h"
+#include "../utils/osutils.h"
 #include "../utils/WoW64.h"
+#include "symbolinfo.h"
+
+#include <process.h>
+#include <winnt.h>
 
 #ifdef _WIN64
 #define CONTEXT64_FLAGS		(CONTEXT_AMD64 | CONTEXT_FULL)
@@ -57,35 +54,6 @@ Profiler::Profiler(HANDLE target_process_, HANDLE target_thread_, DWORD target_t
 	target_thread(target_thread_),
 	target_thread_id(target_thread_id_)
 {
-}
-
-// DE: 20090325: Need copy constructor since it is put in a std::vector
-
-Profiler::Profiler(const Profiler& iOther)
-:	callstacks(iOther.callstacks),
-	is64BitProcess(iOther.is64BitProcess),
-	target_process(iOther.target_process),
-	target_thread(iOther.target_thread),
-	target_thread_id(iOther.target_thread_id)
-{
-}
-
-// DE: 20090325: Need copy assignement since it is put in a std::vector
-
-Profiler& Profiler::operator=(const Profiler& iOther)
-{
-	target_process = iOther.target_process;
-	target_thread = iOther.target_thread;
-	target_thread_id = iOther.target_thread_id;
-	callstacks = iOther.callstacks;
-	assert(is64BitProcess == iOther.is64BitProcess);
-
-	return *this;
-}
-
-Profiler::~Profiler()
-{
-
 }
 
 // There are a couple of things than can cause StackWalk64 to not produce a correct callstack,
@@ -174,7 +142,7 @@ bool Profiler::sampleTarget(SAMPLE_TYPE timeSpent, SymbolInfo *syminfo)
 
 		// Can fail occasionally, for example if you have a debugger attached to the process.
 		DWORD result = SuspendThread(target_thread);
-		if(result == 0xffffffff)
+		if(result == (DWORD) -1)
 			return false;
 
 		int prev_priority = GetThreadPriority(target_thread);
@@ -198,7 +166,7 @@ bool Profiler::sampleTarget(SAMPLE_TYPE timeSpent, SymbolInfo *syminfo)
 
 		// Can fail occasionally, for example if you have a debugger attached to the process.
 		DWORD result = fn_Wow64SuspendThread(target_thread);
-		if(result == 0xffffffff)
+		if(result == (DWORD) -1)
 			return false;
 
 		int prev_priority = GetThreadPriority(target_thread);
@@ -223,16 +191,16 @@ bool Profiler::sampleTarget(SAMPLE_TYPE timeSpent, SymbolInfo *syminfo)
 	machine = IMAGE_FILE_MACHINE_I386;
 
 	// Can fail occasionally, for example if you have a debugger attached to the process.
-	HRESULT hresult = SuspendThread(target_thread);
-	if(hresult == 0xffffffff)
+	DWORD dwResult = SuspendThread(target_thread);
+	if(dwResult == (DWORD) -1)
 		return false;
 
 	int prev_priority = GetThreadPriority(target_thread);
 	SetThreadPriority(target_thread, THREAD_PRIORITY_TIME_CRITICAL);
-	hresult = GetThreadContext(target_thread, &threadcontext32);
+	dwResult = GetThreadContext(target_thread, &threadcontext32);
 	SetThreadPriority(target_thread, prev_priority);
 
-	if(!hresult){
+	if(!dwResult){
 		// DE: 20090325: If GetThreadContext fails we must be sure to resume thread again
 		ResumeThread(target_thread);
 		return false;
@@ -308,7 +276,7 @@ bool Profiler::sampleTarget(SAMPLE_TYPE timeSpent, SymbolInfo *syminfo)
 
 	// TODO: Don't count samples for suspended threads
 
-	if (ResumeThread(target_thread) == 0xffffffff)
+	if (ResumeThread(target_thread) == (DWORD) -1)
 		throw ProfilerExcep(L"ResumeThread failed.");
 
 	//NOTE: this has to go after ResumeThread.  Otherwise mem allocation needed by std::map
@@ -326,17 +294,3 @@ bool Profiler::targetExited() const
 	DWORD code = WaitForSingleObject(target_thread, 0);
 	return code != WAIT_TIMEOUT;
 }
-
-
-//void Profiler::saveIPs(std::ostream& stream)
-//{
-//	for (auto i = counts.begin(); i != counts.end(); ++i)
-//	{
-//		const Sample &sample = i->first;
-//		int count = i->second;
-//		stream << ::toHexString(sample.addr) << " " << count << "\n";
-//	}
-//
-//	stream.flush();
-//}
-//

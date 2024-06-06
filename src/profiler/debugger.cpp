@@ -21,10 +21,9 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 http://www.gnu.org/copyleft/gpl.html..
 =====================================================================*/
 #include "debugger.h"
-#include "../utils/mythread.h"
 #include <assert.h>
-#include <map>
 #include <tlhelp32.h>
+#include <unordered_set>
 
 Debugger::Debugger(DWORD processId_)
 	: processId(processId_)
@@ -139,13 +138,13 @@ void Debugger::updateFromSnapshot()
 
 	if (Thread32First(snapshot, &thread))
 	{
-		std::map<DWORD, bool> threads;
+		std::unordered_set<DWORD> threads;
 		do
 		{
 			if (thread.th32OwnerProcessID != processId)
 				continue;
 
-			threads.insert(std::make_pair(thread.th32ThreadID, true));
+			threads.insert(thread.th32ThreadID);
 			if (knownThreads.find(thread.th32ThreadID) != knownThreads.end())
 				continue;
 
@@ -206,7 +205,7 @@ void Debugger::updateDebugging()
 				assert(!processHandle);
 				processHandle = dbgEvent.u.CreateProcessInfo.hProcess;
 				notifyNewThread(dbgEvent.dwThreadId, dbgEvent.u.CreateProcessInfo.hThread);
-				knownThreads.insert(std::make_pair(dbgEvent.dwThreadId, true));
+				knownThreads.insert(dbgEvent.dwThreadId);
 				// We're not using the image file, close the handle
 				CloseHandle(dbgEvent.u.CreateProcessInfo.hFile);
 				break;
@@ -216,7 +215,7 @@ void Debugger::updateDebugging()
 				break;
 
 			case CREATE_THREAD_DEBUG_EVENT:
-				knownThreads.insert(std::make_pair(dbgEvent.dwThreadId, true));
+				knownThreads.insert(dbgEvent.dwThreadId);
 				notifyNewThread(dbgEvent.dwThreadId, dbgEvent.u.CreateThread.hThread);
 				break;
 

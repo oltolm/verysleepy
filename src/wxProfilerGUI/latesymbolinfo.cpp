@@ -20,15 +20,17 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 http://www.gnu.org/copyleft/gpl.html..
 =====================================================================*/
 
-#include "latesymbolinfo.h"
-#include <Dbgeng.h>
 #include "../utils/dbginterface.h"
-#include <comdef.h>
-#include <sstream>
 #include "../utils/except.h"
 #include "../utils/stringutils.h"
-
+#include "latesymbolinfo.h"
 #include "profilergui.h"
+
+#include <comdef.h>
+#include <Dbgeng.h>
+#include <sstream>
+#include <wrl/client.h>
+
 
 #ifndef _MSC_VER
 #define __in
@@ -53,7 +55,6 @@ void comenforce(HRESULT result, const char* where = NULL)
 
 
 LateSymbolInfo::LateSymbolInfo()
-	:	debugClient5(NULL), debugControl4(NULL), debugSymbols3(NULL)
 {
 }
 
@@ -66,11 +67,11 @@ LateSymbolInfo::~LateSymbolInfo()
 // The UI implements a logging facility in the form of a log panel.
 struct DebugOutputCallbacks : public IDebugOutputCallbacks
 {
-	HRESULT	STDMETHODCALLTYPE QueryInterface(__in REFIID WXUNUSED(InterfaceId), __out PVOID* WXUNUSED(Interface)) { return E_NOINTERFACE; }
-	ULONG	STDMETHODCALLTYPE AddRef() { return 1; }
-	ULONG	STDMETHODCALLTYPE Release() { return 0; }
+	HRESULT	STDMETHODCALLTYPE QueryInterface(__in REFIID WXUNUSED(InterfaceId), __out PVOID* WXUNUSED(Interface)) noexcept { return E_NOINTERFACE; }
+	ULONG	STDMETHODCALLTYPE AddRef() noexcept { return 1; }
+	ULONG	STDMETHODCALLTYPE Release() noexcept { return 0; }
 
-	HRESULT	STDMETHODCALLTYPE Output(__in ULONG WXUNUSED(Mask), __in PCSTR Text)
+	HRESULT	STDMETHODCALLTYPE Output(__in ULONG WXUNUSED(Mask), __in PCSTR Text) noexcept
 	{
 		//OutputDebugStringW(Text);
 		wxLogMessage(L"%s", Text);
@@ -92,13 +93,13 @@ void LateSymbolInfo::loadMinidump(std::wstring& dumppath, bool delete_when_done)
 		unloadMinidump();
 	}
 
-	IDebugClient *debugClient = NULL;
+	Microsoft::WRL::ComPtr<IDebugClient> debugClient;
 
 	SetLastError(0);
 	comenforce(DebugCreate(IID_PPV_ARGS(&debugClient)), "DebugCreate");
-	comenforce(debugClient->QueryInterface(IID_PPV_ARGS(&debugClient5) ), "QueryInterface(IDebugClient4)" );
-	comenforce(debugClient->QueryInterface(IID_PPV_ARGS(&debugControl4)), "QueryInterface(IDebugControl3)");
-	comenforce(debugClient->QueryInterface(IID_PPV_ARGS(&debugSymbols3)), "QueryInterface(IDebugSymbols2)");
+	comenforce(debugClient.As(&debugClient5), "QueryInterface(IDebugClient4)" );
+	comenforce(debugClient.As(&debugControl4), "QueryInterface(IDebugControl3)");
+	comenforce(debugClient.As(&debugSymbols3), "QueryInterface(IDebugSymbols2)");
 	comenforce(debugClient5->SetOutputCallbacks(debugOutputCallbacks), "IDebugClient4::SetOutputCallbacks");
 	comenforce(debugSymbols3->SetSymbolOptions(SYMOPT_UNDNAME | SYMOPT_LOAD_LINES | SYMOPT_OMAP_FIND_NEAREST | SYMOPT_AUTO_PUBLICS | SYMOPT_DEBUG), "IDebugSymbols::SetSymbolOptions");
 
@@ -112,8 +113,6 @@ void LateSymbolInfo::loadMinidump(std::wstring& dumppath, bool delete_when_done)
 	// we have to keep the debugger session open and query symbols as requested by the
 	// profiler GUI.
 
-	debugClient->Release(); // but keep the other ones
-
 	// If we are given a temporary file, clean it up later
 	if (delete_when_done)
 		file_to_delete = dumppath;
@@ -124,19 +123,10 @@ void LateSymbolInfo::unloadMinidump()
 	if (debugClient5)
 	{
 		debugClient5->EndSession(DEBUG_END_ACTIVE_TERMINATE);
-		debugClient5->Release();
-		debugClient5 = NULL;
+		debugClient5 = nullptr;
 	}
-	if (debugControl4)
-	{
-		debugControl4->Release();
-		debugControl4 = NULL;
-	}
-	if (debugSymbols3)
-	{
-		debugSymbols3->Release();
-		debugSymbols3 = NULL;
-	}
+	debugControl4 = nullptr;
+	debugSymbols3 = nullptr;
 
 	if (!file_to_delete.empty())
 	{
@@ -152,26 +142,26 @@ void LateSymbolInfo::filterSymbol(Database::Address address, std::wstring &modul
 	if (debugSymbols3)
 	{
 		ULONG moduleindex;
-		if (debugSymbols3->GetModuleByOffset(address, 0, &moduleindex, NULL) == S_OK)
-			if (debugSymbols3->GetModuleNameString(DEBUG_MODNAME_MODULE, moduleindex, 0, buffer, _countof(buffer), NULL) == S_OK)
+		if (SUCCEEDED(debugSymbols3->GetModuleByOffset(address, 0, &moduleindex, NULL)))
+			if (SUCCEEDED(debugSymbols3->GetModuleNameString(DEBUG_MODNAME_MODULE, moduleindex, 0, buffer, _countof(buffer), NULL)))
 				module = toWideString(buffer);
 
-		if (debugSymbols3->GetNameByOffset(address, buffer, _countof(buffer), NULL, NULL) == S_OK)
+		if (SUCCEEDED(debugSymbols3->GetNameByOffset(address, buffer, _countof(buffer), NULL, NULL)))
 		{
 			std::wstring name = toWideString(buffer);
-			if (module.compare(name) != 0)
+			if (module != name)
 			{
 				procname = name;
 
 				// Remove redundant "Module!" prefix
-				size_t modlength = module.length();
-				if (procname.length() > modlength+1 && module.compare(0, modlength, procname, 0, modlength)==0 && procname[modlength] == '!')
-					procname.erase(0, modlength+1);
+				auto prefix = module + L'!';
+				if (procname.compare(0, prefix.size(), prefix) == 0)
+					procname.erase(0, prefix.size());
 			}
 		}
 
 		ULONG line;
-		if (debugSymbols3->GetLineByOffset(address, &line, buffer, _countof(buffer), NULL, NULL) == S_OK)
+		if (SUCCEEDED(debugSymbols3->GetLineByOffset(address, &line, buffer, _countof(buffer), NULL, NULL)))
 		{
 			sourcefile = toWideString(buffer);
 			sourceline = line;

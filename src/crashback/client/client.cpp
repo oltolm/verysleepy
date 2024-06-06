@@ -148,7 +148,7 @@ void cbGetProgramName()
 	char tmp[256];
 	if ( !GetModuleFileNameA( NULL, tmp, 256 ) )
 		strcpy_s( tmp, 256, "unknown" );
-	tmp[255] = 0; // ensure it's terminated, just in case
+	tmp[255] = '\0'; // ensure it's terminated, just in case
 
 	char *modName = strrchr( tmp, '\\' );
 	if ( modName )
@@ -160,7 +160,7 @@ void cbGetProgramName()
 	for (int n=0;n<256;n++)
 	{
 		char &c = cbProgName[n];
-		if ( c == 0 )
+		if ( c == '\0' )
 			break;
 
 		if ( ( c >= 'a' && c <= 'z' ) || ( c >= 'A' && c <= 'Z' ) || ( c >= '0' && c <= '9' ) )
@@ -188,7 +188,7 @@ extern "C" void cbStartup()
 	wcscpy_s( cbReportExeDir, MAX_PATH, cbReportExePath );
 	wchar_t *p = wcsrchr( cbReportExeDir, '\\' );
 	if ( p )
-		*p = 0;
+		*p = L'\0';
 
 	wcscpy_s( cbReportExePath, MAX_PATH, cbReportExeDir );
 	wcscat_s( cbReportExePath, MAX_PATH, L"\\" );

@@ -22,9 +22,9 @@ http://www.gnu.org/copyleft/gpl.html..
 =====================================================================*/
 #pragma once
 
-#include <windows.h>
 #include <functional>
-#include <map>
+#include <unordered_set>
+#include <windows.h>
 
 class Debugger
 {
@@ -48,11 +48,11 @@ public:
 	void detach();
 
 	void update();
-protected:
+private:
 	DWORD processId;
 	HANDLE processHandle;
 	std::function<void(NotifyData const &notification)> notifyFunc;
-	std::map<DWORD, bool> knownThreads;
+	std::unordered_set<DWORD> knownThreads;
 	bool debuggingActive;
 	bool attached;
 

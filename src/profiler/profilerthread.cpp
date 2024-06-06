@@ -23,30 +23,48 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 http://www.gnu.org/copyleft/gpl.html..
 =====================================================================*/
 
-#include "../wxprofilergui/profilergui.h"
-#include "profilerthread.h"
-#include "threadinfo.h"
+#include "../appinfo.h"
+#include "../utils/stringutils.h"
+#include "../wxProfilerGUI/profilergui.h"
 #include "debugger.h"
+#include "profilerthread.h"
+#include "symbolinfo.h"
+#include "threadinfo.h"
+
+#include <algorithm>
+#include <memory>
+#include <Psapi.h>
+#include <random>
+#include <timeapi.h>
+#include <unordered_set>
+#include <utility>
+#include <vector>
+#include <windows.h>
+#include <wx/txtstrm.h>
 #include <wx/wfstream.h>
 #include <wx/zipstrm.h>
-#include <wx/txtstrm.h>
 
-#include "../utils/stringutils.h"
-#include <fstream>
-#include <assert.h>
-#include <algorithm>
-#include <Psapi.h>
-#include <timeapi.h>
-#include "../appinfo.h"
-
+#ifdef _MSC_VER
 #pragma comment(lib, "winmm.lib")
+#endif
 
 // DE: 20090325: Profiler has a list of threads to profile
 // RM: 20130614: Profiler time can now be limited (-1 = until cancelled)
-ProfilerThread::ProfilerThread(HANDLE target_process_, const std::vector<HANDLE>& target_threads, SymbolInfo *sym_info_, Debugger *debugger_)
-:	profilers(),
-	debugger(debugger_),
+ProfilerThread::ProfilerThread(HANDLE target_process_, const std::vector<HANDLE>& target_threads, SymbolInfo *sym_info_, std::unique_ptr<Debugger> debugger_)
+:	symbolsPermille(0),
+	profilers(),
+	debugger(std::move(debugger_)),
+	duration(0),
+	status(L"Initializing"),
+	numsamplessofar(0),
+	numThreadsRunning(target_threads.size()),
+	done(false),
+	paused(false),
+	failed(false),
+	cancelled(false),
+	commit_suicide(false),
 	target_process(target_process_),
+	filename(wxFileName::CreateTempFileName(wxEmptyString)),
 	sym_info(sym_info_)
 {
 	// AA: 20210822: If we have a debugger, it will report all available threads
@@ -55,32 +73,13 @@ ProfilerThread::ProfilerThread(HANDLE target_process_, const std::vector<HANDLE>
 	{
 		// DE: 20090325: Profiler has a list of threads to profile, one Profiler instance per thread
 		profilers.reserve(target_threads.size());
-		for (HANDLE thread_h : target_threads)
+		for (HANDLE hThread : target_threads)
 		{
-			DWORD thread_id = GetThreadId(thread_h);
-			profilers.push_back(Profiler(target_process_, thread_h, thread_id, callstacks));
-			thread_names[thread_id] = getThreadDescriptorName(thread_h);
+			DWORD dwThread = GetThreadId(hThread);
+			profilers.emplace_back(target_process_, hThread, dwThread, callstacks);
+			thread_names[dwThread] = getThreadDescriptorName(hThread);
 		}
 	}
-
-	numsamplessofar = 0;
-	done = false;
-	failed = false;
-	paused = false;
-	cancelled = false;
-	commit_suicide = false;
-	symbolsPermille = 0;
-	duration = 0;
-	numThreadsRunning = (int)target_threads.size();
-	status = L"Initializing";
-
-	filename = wxFileName::CreateTempFileName(wxEmptyString);
-}
-
-
-ProfilerThread::~ProfilerThread()
-{
-	delete debugger;
 }
 
 
@@ -94,58 +93,31 @@ void ProfilerThread::sample(const SAMPLE_TYPE timeSpent)
 
 	duration += timeSpent;
 
-	const size_t count = profilers.size();
-	if ( count == 0)
+	if (profilers.empty())
 		return;
 
-	size_t *order = (size_t *)alloca( count * sizeof(size_t) );
-	for (size_t n=0;n<count;n++)
-		order[n] = n;
-	for (size_t n=count;n--;)
-	{
-		size_t i = rand() * count / (RAND_MAX+1);
-		assert( i < count );
-		std::swap( order[i], order[n] );
-	}
+	std::default_random_engine dre;
+	std::shuffle(profilers.begin(), profilers.end(), dre);
 
-	char *failedProfilers = (char *)alloca(count);
-	memset(failedProfilers, 0, count);
-
-	for (size_t n = 0;n < count; ++n)
-	{
-		Profiler& profiler = profilers[order[n]];
-		try {
-			if (profiler.sampleTarget(timeSpent, sym_info))
+	auto failedAndExited = [&](Profiler& p) -> bool {
+		try
+		{
+			bool failed = !p.sampleTarget(timeSpent, sym_info);
+			if (!failed)
 				++numsamplessofar;
-			else
-				failedProfilers[order[n]] = true;
+			return failed && p.targetExited();
 		}
 		catch (const ProfilerExcep& e)
 		{
 			error(_T("ProfilerExcep: ") + e.what());
-			this->commit_suicide = true;
+			commit_suicide = true;
+			return false;
 		}
-	}
+	};
+	profilers.erase(std::remove_if(profilers.begin(), profilers.end(), failedAndExited), profilers.end());
 
-	for (ptrdiff_t n = (ptrdiff_t)count-1; n >= 0; --n)
-	{
-		if (!failedProfilers[n] || !profilers[n].targetExited())
-			continue;
-		profilers[n] = profilers.back();
-		profilers.erase(std::prev(profilers.end()));
-	}
-
-	numThreadsRunning = (int)profilers.size();
+	numThreadsRunning = profilers.size();
 }
-
-class ProcPred
-{
-public:
-	bool operator () (std::pair<std::wstring, int>& a, std::pair<std::wstring, int>& b)
-	{
-		return a.second > b.second;
-	}
-};
 
 void ProfilerThread::sampleLoop()
 {
@@ -158,7 +130,7 @@ void ProfilerThread::sampleLoop()
 
 	bool minidump_saved = false;
 
-	while(!this->commit_suicide)
+	while(!commit_suicide)
 	{
 		if (paused)
 		{
@@ -240,16 +212,15 @@ void ProfilerThread::saveData()
 	//------------------------------------------------------------------------
 	beginProgress(L"Summarizing results");
 
-	std::map<PROFILER_ADDR, bool> used_addresses;
-	std::map<DWORD, bool> used_thread_ids;
+	std::unordered_set<PROFILER_ADDR> used_addresses;
+	std::unordered_set<DWORD> used_thread_ids;
 
-	for (auto i = callstacks.begin(); i != callstacks.end(); ++i)
+	for (const auto & [callstack, cost] : callstacks)
 	{
-		const CallStack &callstack = i->first;
-		used_thread_ids[callstack.thread_id] = true;
+		used_thread_ids.insert(callstack.thread_id);
 		for (size_t n=0;n<callstack.depth;n++)
 		{
-			used_addresses[callstack.addr[n]] = true;
+			used_addresses.insert(callstack.addr[n]);
 		}
 	}
 
@@ -257,22 +228,21 @@ void ProfilerThread::saveData()
 	beginProgress(L"Querying and saving symbols", used_addresses.size());
 	zip.PutNextEntry(_T("Symbols.txt"));
 
-	for (auto i = used_addresses.begin(); i != used_addresses.end(); ++i)
+	for (const auto & used_address : used_addresses)
 	{
-		int proclinenum;
-		std::wstring procfile;
-		PROFILER_ADDR addr = i->first;
+		PROFILER_ADDR addr = used_address;
 
-		const std::wstring proc_name = sym_info->getProcForAddr(addr, procfile, proclinenum);
+		ProcedureInfo proc = sym_info->getProcForAddr(addr);
 		txt <<  wxString::Format("%#llx", addr);
 		txt << " ";
-		writeQuote(txt, sym_info->getModuleNameForAddr(addr));
+		std::wstring module_name = sym_info->getModuleNameForAddr(addr);
+		writeQuote(txt, module_name);
 		txt << " ";
-		writeQuote(txt, proc_name);
+		writeQuote(txt, proc.name);
 		txt << " ";
-		writeQuote(txt, procfile);
+		writeQuote(txt, proc.filepath);
 		txt << " ";
-		txt << proclinenum;
+		txt << proc.linenum;
 		txt << '\n';
 
 		if (updateProgress())
@@ -310,10 +280,10 @@ void ProfilerThread::saveData()
 	beginProgress(L"Saving threads", used_thread_ids.size());
 	zip.PutNextEntry(_T("Threads.txt"));
 
-	for (auto &tid : used_thread_ids)
+	for (const auto tid : used_thread_ids)
 	{
-		txt << (unsigned)tid.first << "\n";
-		txt << thread_names[tid.first] << "\n";
+		txt << (unsigned)tid << "\n";
+		txt << thread_names[tid] << "\n";
 
 		if (updateProgress())
 			return;
@@ -341,7 +311,7 @@ void ProfilerThread::run()
 		debugger->attach([this](Debugger::NotifyData const &notification) {
 			if (notification.eventType != Debugger::NOTIFY_NEW_THREAD)
 				return;
-			profilers.push_back(Profiler(target_process, notification.threadHandle, notification.threadId, callstacks));
+			profilers.emplace_back(target_process, notification.threadHandle, notification.threadId, callstacks);
 			thread_names[notification.threadId] = getThreadDescriptorName(notification.threadHandle);
 		});
 
@@ -351,10 +321,9 @@ void ProfilerThread::run()
 		sampleLoop();
 	} catch(ProfilerExcep& e) {
 		// see if it's an actual error, or did the thread just finish naturally
-		for (auto it = profilers.begin(); it != profilers.end(); ++it)
+		for (const auto & profiler : profilers)
 		{
-			const Profiler& profiler(*it);
-			if (!profiler.targetExited())
+				if (!profiler.targetExited())
 			{
 				error(L"ProfilerExcep: " + e.what());
 				return;
@@ -389,7 +358,7 @@ void ProfilerThread::error(const std::wstring& what)
 
 void ProfilerThread::beginProgress(std::wstring stage, int total)
 {
-	symbolsStage = stage;
+	symbolsStage = std::move(stage);
 	symbolsDone = 0;
 	symbolsTotal = total;
 	symbolsPermille = 0;

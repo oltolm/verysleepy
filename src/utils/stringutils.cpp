@@ -22,22 +22,22 @@ http://www.gnu.org/copyleft/gpl.html.
 =====================================================================*/
 #include "stringutils.h"
 #include "except.h"
-#include <algorithm>
 #include <shlwapi.h>
+#include <string>
 
 
 // Reads string from between double quotes.
-void readQuote(std::wistream& stream, std::wstring& str_out)
+std::wstring readQuote(std::wistream& stream)
 {
 	wchar_t c;
-	str_out = L"";
+	std::wstring result;
 
 	// Parse to first "
 	for (;;)
 	{
 		stream.get(c);
 		enforce(stream.good(), "Expected quoted string, got end of stream");
-		if (c == '"')
+		if (c == L'"')
 			break;
 		enforce(isspace(c), std::wstring(L"Expected quoted string, got ") + c);
 	}
@@ -50,20 +50,21 @@ void readQuote(std::wistream& stream, std::wstring& str_out)
 		enforce(stream.good(), "Unexpected end of stream while reading quoted string");
 		if (escaping)
 		{
-			str_out.push_back(c);
+			result.push_back(c);
 			escaping = false;
 		}
 		else
 		{
-			if (c == '\\')
+			if (c == L'\\')
 				escaping = true;
 			else
-				if (c == '"')
+				if (c == L'"')
 					break;
 			else
-				str_out.push_back(c);
+				result.push_back(c);
 		}
 	}
+	return result;
 }
 
 template<typename T>
@@ -97,78 +98,47 @@ static void Parse(const wchar_t *file, T* dst)
 		while(*start && isspace(*start))
 			start++;
 
-		if (*start == 0)
+		if (*start == L'\0')
 			continue;
 
 		wchar_t *end = line+wcslen(line)-1;
 		while(end != start && isspace(*end))
-			*end-- = 0;
+			*end-- = L'\0';
 
 		dst->Add(start);
 	}
 	fclose(fp);
 }
 
-StringSet::StringSet(const wchar_t *file, bool caseCheck)
+template<bool caseCheck>
+StringSet<caseCheck>::StringSet(const wchar_t *file)
 {
-	this->caseCheck = caseCheck;
 	Parse(file, this);
 }
 
-void StringSet::Add(const wchar_t *string)
+template<bool caseCheck>
+void StringSet<caseCheck>::Add(const wchar_t *string)
 {
-	wchar_t *tmp = wcsdup(string);
-	if (!caseCheck)
-		wcslwr(tmp);
-	strings.push_back(tmp);
-	free(tmp);
-
-	std::sort(strings.begin(), strings.end());
+	strings.insert(string);
 }
 
-void StringSet::Remove(const wchar_t *string)
+template<bool caseCheck>
+void StringSet<caseCheck>::Remove(const wchar_t *string)
 {
-	wchar_t *tmp = wcsdup(string);
-	if (!caseCheck)
-		wcslwr(tmp);
-
-	for (size_t n=0;n<strings.size();n++)
-	{
-		if (strings[n] == tmp)
-		{
-			strings.erase(strings.begin()+n);
-			break;
-		}
-	}
-
-	free(tmp);
-	std::sort(strings.begin(), strings.end());
+	auto it = strings.find(string);
+	if (it != strings.end())
+		strings.erase(it);
 }
 
-bool StringSet::Contains(const wchar_t *str) const
+template<bool caseCheck>
+bool StringSet<caseCheck>::Contains(const wchar_t *str) const
 {
-	size_t low = 0, high = strings.size();
-	while(low < high)
-	{
-		size_t guess = (low + high) >> 1;
-		const wchar_t *cmp = strings[guess].c_str();
-		int match;
-
-		if (caseCheck)
-			match = wcscmp(str, cmp);
-		else
-			match = wcsicmp(str, cmp);
-
-		if (match < 0)
-			high = guess;
-		else if (match > 0)
-			low = guess+1;
-		else
-			return true;
-	}
-
-	return false;
+	return strings.count(str) != 0;
 }
+
+// explicit template instantiation
+template struct StringSet<true>;
+template struct StringSet<false>;
 
 StringList::StringList(const wchar_t *file)
 {

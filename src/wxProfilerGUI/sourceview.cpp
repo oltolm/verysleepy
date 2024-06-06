@@ -21,12 +21,15 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 http://www.gnu.org/copyleft/gpl.html.
 =====================================================================*/
-#include "sourceview.h"
-
-#define countof(_x) (sizeof(_x)/sizeof(_x[0]))
-
 #include "../utils/stringutils.h"
 #include "mainwin.h"
+#include "sourceview.h"
+
+#include <cstddef>
+#include <vector>
+#include <wx/string.h>
+
+#define countof(_x) (sizeof(_x)/sizeof(_x[0]))
 
 BEGIN_EVENT_TABLE(SourceView, wxStyledTextCtrl)
 	EVT_PAINT(SourceView::OnPaint)
@@ -37,9 +40,18 @@ END_EVENT_TABLE()
 StringList keywords(L"keywords.txt");
 
 
-class MSDevPaths: public std::vector<std::wstring>
+class MSDevPaths
 {
 public:
+	std::vector<std::wstring> paths;
+
+	static const MSDevPaths& get()
+	{
+		static MSDevPaths* instance = new MSDevPaths();
+		return *instance;
+	}
+
+private:
 	MSDevPaths()
 	{
 		int idx=0;
@@ -52,12 +64,10 @@ public:
 			if(!env)
 				continue;
 			env++;
-			push_back(std::wstring(env) + L"..\\..\\vc\\crt\\src\\");
+			paths.push_back(std::wstring(env) + L"..\\..\\vc\\crt\\src\\");
 		}
 	}
 };
-
-MSDevPaths msDevPaths;
 
 static const int MARGIN_TEXT_STYLE = wxSTC_STYLE_LASTPREDEFINED+1;
 
@@ -71,10 +81,6 @@ SourceView::SourceView(wxWindow *parent, MainWin* mainwin_)
 	SetTabWidth(8);
 
 	reset();
-}
-
-SourceView::~SourceView()
-{
 }
 
 void SourceView::updateText(const wxString& text)
@@ -153,7 +159,7 @@ void SourceView::showFile(std::wstring path, int proclinenum, const std::vector<
 		return;
 	}
 
-	if (path == "" || path == "[unknown]")
+	if (path.empty() || path == "[unknown]")
 	{
 		updateText("[ No source file available for this location. ]");
 		return;
@@ -164,10 +170,9 @@ void SourceView::showFile(std::wstring path, int proclinenum, const std::vector<
 	if(!file)
 	{
 		const wchar_t *crtSub = L"\\crt\\src\\";
-		wchar_t *crt = wcsstr((wchar_t *)path.c_str(), crtSub);
+		const wchar_t *crt = wcsstr(path.c_str(), crtSub);
 		if(crt) {
-			for(size_t i=0;i<msDevPaths.size();i++) {
-				std::wstring newPath(msDevPaths[i]);
+			for(auto newPath : MSDevPaths::get().paths) {
 				newPath += crt+wcslen(crtSub);
 				path = newPath;
 				file = _wfopen(path.c_str(),L"r");
@@ -197,14 +202,13 @@ void SourceView::showFile(std::wstring path, int proclinenum, const std::vector<
 	updateText(displaytext);
 
 	// Show line counts in margin
-	for (int line=1,lineCount=linecounts.size(); line<lineCount; ++line)
+	for (size_t line=1; line<linecounts.size(); ++line)
 	{
 		if (linecounts[line])
 		{
-			wchar_t currCount[32];
-			swprintf(currCount, countof(currCount), L"%0.2fs ", linecounts[line]);
-			MarginSetText (line-1, currCount);
-			MarginSetStyle(line-1, MARGIN_TEXT_STYLE);
+			wxString currCount = wxString::Format(L"%0.2fs ", linecounts[line]);
+			MarginSetText ((int)line-1, currCount);
+			MarginSetStyle((int)line-1, MARGIN_TEXT_STYLE);
 		}
 	}
 

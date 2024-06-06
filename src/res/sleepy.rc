@@ -1,9 +1,9 @@
 #define wxUSE_RC_MANIFEST 1
 #define wxUSE_DPI_AWARE_MANIFEST 1
 
-#include "wx/msw/wx.rc"
-
 sleepy ICON "sleepy.ico"
+
+#include "wx/msw/wx.rc"
 
 button_next PNG "Button-Next.png"
 button_prev PNG "Button-Previous.png"

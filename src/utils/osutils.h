@@ -33,4 +33,3 @@ void EnableDebugPrivilege();
 bool Is64BitProcess(HANDLE hProcess);
 
 bool CanProfileProcess(HANDLE hProcess);
-

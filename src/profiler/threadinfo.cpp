@@ -23,14 +23,14 @@ http://www.gnu.org/copyleft/gpl.html..
 =====================================================================*/
 #include "threadinfo.h"
 
-static __int64 getDiff(FILETIME before, FILETIME after)
+static __int64 difference(FILETIME before, FILETIME after)
 {
 	__int64 i0 = ((__int64)(before.dwHighDateTime) << 32) + before.dwLowDateTime;
 	__int64 i1 = ((__int64)(after.dwHighDateTime) << 32) + after.dwLowDateTime;
 	return i1 - i0;
 }
 
-static __int64 getTotal(FILETIME time)
+static __int64 total(FILETIME time)
 {
 	return ((__int64)(time.dwHighDateTime) << 32) + time.dwLowDateTime;
 }
@@ -73,10 +73,6 @@ ThreadInfo::ThreadInfo(DWORD id_, HANDLE thread_handle_)
 	name = getThreadDescriptorName(thread_handle);
 }
 
-ThreadInfo::~ThreadInfo()
-{
-}
-
 bool ThreadInfo::recalcUsage(int sampleTimeDiff)
 {
 	cpuUsage = -1;
@@ -97,16 +93,16 @@ bool ThreadInfo::recalcUsage(int sampleTimeDiff)
 	))
 		return false;
 	
-	__int64 kernel_diff = getDiff(prevKernelTime, KernelTime);
-	__int64 user_diff = getDiff(prevUserTime, UserTime);
+	__int64 kernel_diff = difference(prevKernelTime, KernelTime);
+	__int64 user_diff = difference(prevUserTime, UserTime);
 	prevKernelTime = KernelTime;
 	prevUserTime = UserTime;
 
 	if (sampleTimeDiff > 0) {
-		__int64 total_diff = ((kernel_diff + user_diff) / 10000) * 100;
-		cpuUsage = static_cast<int>(total_diff / sampleTimeDiff);
+		__int64 total_diff = ((kernel_diff + user_diff) / 10'000) * 100;
+		cpuUsage = total_diff / sampleTimeDiff;
 	}
-	totalCpuTimeMs = (getTotal(KernelTime) + getTotal(UserTime)) / 10000;
+	totalCpuTimeMs = (total(KernelTime) + total(UserTime)) / 10'000;
 
 	return true;
 }

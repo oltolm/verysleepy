@@ -23,16 +23,16 @@ http://www.gnu.org/copyleft/gpl.html.
 =====================================================================*/
 #pragma once
 
-#include "profilergui.h"
-#include "processlist.h"
 #include "logview.h"
-#include <vector>
-
-#include <wx/checkbox.h>
-#include <wx/valnum.h>
-
-// DE: 20090325 Include for list to pick thread(s)
+#include "processlist.h"
+#include "profilergui.h"
 #include "threadlist.h"
+
+#include <memory>
+#include <wx/checkbox.h>
+#include <wx/filehistory.h>
+#include <wx/frame.h>
+#include <wx/valnum.h>
 
 class wxModalFrame : public wxFrame
 {
@@ -56,9 +56,8 @@ public:
 		modal = true;
 		Show();
 
-		m_evtLoop = new wxModalEventLoop(this);
+		m_evtLoop.reset(new wxModalEventLoop(this));
 		m_evtLoop->Run();
-		delete m_evtLoop;
 		m_evtLoop = NULL;
 
 		Hide();
@@ -75,7 +74,7 @@ public:
 	bool IsModal() const { return modal; }
 
 protected:
-	wxModalEventLoop *m_evtLoop;
+	std::unique_ptr<wxModalEventLoop> m_evtLoop;
 	int m_retCode;
 	bool modal;
 };
@@ -85,12 +84,11 @@ class ThreadPicker : public wxModalFrame
 public:
 	enum Mode { QUIT, OPEN, ATTACH, RUN };
 
-	ThreadPicker();
+	ThreadPicker(wxFileHistory* fileHistory);
 	virtual ~ThreadPicker();
 
 	bool TryAttachToProcess(bool allThreads);
 	void AttachToProcess(bool allThreads);
-	void UpdateSorting();
 
 	void OnOpen(wxCommandEvent& event);
 	void OnClose(wxCloseEvent& event);
@@ -107,20 +105,25 @@ public:
 	void OnDoubleClicked(wxListEvent& event);
 	void OnTimeCheck(wxCommandEvent& event);
 
-	AttachInfo *attach_info;
+	std::unique_ptr<AttachInfo> attach_info;
 	std::wstring run_filename, run_cwd, open_filename;
-	LogView *log;
+
+private:
+	LogView* log;
+	LogViewLog* logViewLog;
+	
 	wxCheckBox *time_check;
 	wxTextCtrl *time_ctrl;
 	int time_value;
-	wxIntegerValidator<int>* time_validator;
+	std::unique_ptr<wxIntegerValidator<int>> time_validator;
 
-private:
 	ProcessList* processlist;
 
 	// DE: 20090325 Include for list to pick thread(s)
 	ThreadList* threadlist;
-	wxBitmap* bitmap;
+
+	wxFileHistory* m_fileHistory;
+	void OnMRUFile(wxCommandEvent& event);
 
 	DECLARE_EVENT_TABLE()
 };

@@ -39,9 +39,6 @@
     <ClCompile Include="src\utils\osutils.cpp">
       <Filter>utils</Filter>
     </ClCompile>
-    <ClCompile Include="src\utils\sortlist.cpp">
-      <Filter>utils</Filter>
-    </ClCompile>
     <ClCompile Include="src\utils\stringutils.cpp">
       <Filter>utils</Filter>
     </ClCompile>
@@ -126,9 +123,6 @@
       <Filter>utils</Filter>
     </ClInclude>
     <ClInclude Include="src\utils\osutils.h">
-      <Filter>utils</Filter>
-    </ClInclude>
-    <ClInclude Include="src\utils\sortlist.h">
       <Filter>utils</Filter>
     </ClInclude>
     <ClInclude Include="src\utils\stringutils.h">

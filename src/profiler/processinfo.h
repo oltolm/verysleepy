@@ -23,9 +23,9 @@ http://www.gnu.org/copyleft/gpl.html..
 =====================================================================*/
 #pragma once
 
-#include <windows.h>
 #include "threadinfo.h"
 #include <vector>
+#include <windows.h>
 
 /*=====================================================================
 ProcessInfo
@@ -42,11 +42,11 @@ public:
 	=====================================================================*/
 	ProcessInfo(DWORD id, const std::wstring& name, HANDLE process_handle);
 
-	~ProcessInfo();
+	~ProcessInfo() = default;
 
 
 
-	static void enumProcesses(std::vector<ProcessInfo>& processes_out);
+	static std::vector<ProcessInfo> enumProcesses();
 	static ProcessInfo FindProcessById(DWORD process_id);
 
 	std::vector<ThreadInfo> threads;
@@ -57,11 +57,12 @@ public:
 #ifdef _WIN64
 	bool getIs64Bits() const { return is64Bits; }
 #endif
-  FILETIME prevKernelTime, prevUserTime;
-  int cpuUsage;
-  __int64 totalCpuTimeMs;
+	bool recalcUsage(int sampleTimeDiff);
+	int cpuUsage;
+	__int64 totalCpuTimeMs;
 
 private:
+	FILETIME prevKernelTime, prevUserTime;
 	std::wstring name;
 	DWORD id;
 	HANDLE process_handle;

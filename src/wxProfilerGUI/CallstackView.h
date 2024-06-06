@@ -23,29 +23,27 @@ http://www.gnu.org/copyleft/gpl.html.
 =====================================================================*/
 #pragma once
 
-class CallstackView;
-
-#include "profilergui.h"
 #include "database.h"
 
+#include <wx/window.h>
+
+class wxAuiToolBar;
+class wxFileOutputStream;
+class wxListEvent;
+class wxListView;
 class wxStaticTextTransparent;
+
+struct AddressList
+{
+	virtual Database::Address getAddress(int item) const = 0;
+};
 
 class CallstackView : public wxWindow
 {
 	wxAuiToolBar			*toolBar;
-	wxListCtrl				*listCtrl;
+	wxListView				*listCtrl;
 	wxStaticTextTransparent	*toolRange;
 	Database				*database;
-
-	enum ColumnType
-	{
-		COL_NAME,
-		COL_MODULE,
-		COL_SOURCEFILE,
-		COL_SOURCELINE,
-		COL_ADDRESS,
-		MAX_COLUMNS
-	};
 
 	enum ToolId
 	{
@@ -54,31 +52,26 @@ class CallstackView : public wxWindow
 		TOOL_EXPORT_CSV,
 	};
 
-	enum ListCtrl {
-		LIST_CTRL = 1000
-	};
-
 	std::vector<const Database::CallStack*> callstacks;
 	size_t									callstackActive;
 	wxString								callstackStats;
 	const Database::Symbol					*currSymbol;
-	size_t									itemSelected;
 
-	void setupColumn(ColumnType id, int width, const wxString &name);
 	void updateList();
 	void updateTools();
 	void exportCSV(wxFileOutputStream &file);
 
+	friend class CallstackViewProcList;
+
 public:
 	CallstackView(wxWindow *parent, Database *database);
-	virtual ~CallstackView(void);
+	virtual ~CallstackView() = default;
 	void OnSize(wxSizeEvent& event);
 	void OnTool(wxCommandEvent &event);
 	void OnSelected(wxListEvent& event);
 	void OnContextMenu(wxContextMenuEvent& event);
-public:
 	void showCallStack(const Database::Symbol *symbol);
 	void reset();
+	
 	DECLARE_EVENT_TABLE()
-
 };

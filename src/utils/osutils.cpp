@@ -63,7 +63,7 @@ int GetCoresForProcess(HANDLE process){
 	DWORD_PTR processAffinityMask = 0;
 	DWORD_PTR systemAffinityMask = 0;
 	BOOL okFlag = ::GetProcessAffinityMask(process, &processAffinityMask, &systemAffinityMask);
-	if((okFlag == FALSE) || (processAffinityMask == 0)){
+	if(okFlag == FALSE || processAffinityMask == 0){
 		return GetCPUCores();
 	}
 	else{

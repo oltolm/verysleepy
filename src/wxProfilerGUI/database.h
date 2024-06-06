@@ -23,8 +23,11 @@ http://www.gnu.org/copyleft/gpl.html.
 =====================================================================*/
 #pragma once
 
-#include "profilergui.h"
-#include "../utils/container.h"
+#include <memory>
+#include <unordered_map>
+#include <vector>
+
+class wxInputStream;
 
 bool IsOsFunction(wxString proc);
 void AddOsFunction(wxString proc);
@@ -95,7 +98,7 @@ public:
 
 	struct List
 	{
-		List() { totalcount = 0; }
+		List() : totalcount(0) { }
 
 		std::vector<Item> items;
 		double totalcount;
@@ -125,14 +128,14 @@ public:
 	void loadFromPath(const std::wstring& profilepath,bool collapseOSCalls,bool loadMinidump);
 	void reload(bool collapseOSCalls, bool loadMinidump);
 
-	const Symbol *getSymbol(Symbol::ID id) const { return symbols[id]; }
+	const Symbol *getSymbol(Symbol::ID id) const { return symbols[id].get(); }
 	Symbol::ID getSymbolCount() const { return symbols.size(); }
 	const std::wstring &getFileName(FileID id) const { return files[id]; }
 	FileID getFileCount() const { return files.size(); }
 	const std::wstring &getModuleName(ModuleID id) const { return modules[id]; }
 	ModuleID getModuleCount() const { return modules.size(); }
 
-	const AddrInfo *getAddrInfo(Address addr) { return &addrinfo.at(addr); }
+	const AddrInfo *getAddrInfo(Address addr) const { return &addressInfos.at(addr); }
 
 	void setRoot(const Symbol *root);
 	const Symbol *getRoot() const { return currentRoot; }
@@ -142,7 +145,7 @@ public:
 	List getCallees(const Symbol *symbol) const;
 	SymbolSamples getSymbolSamples(const Symbol *symbol) const;
 	std::vector<const CallStack*> getCallstacksContaining(const Symbol *symbol) const;
-	std::vector<double> getLineCounts(FileID sourcefile);
+	std::vector<double> getLineCounts(FileID sourcefile) const;
 
 	std::vector<std::wstring> stats;
 
@@ -154,12 +157,11 @@ public:
 
 	std::unordered_map<ThreadID, std::wstring> const &getThreadNames() const { return threadNames; }
 
-	std::vector<ThreadID> const &getFilterThreads() { return filterThreads; }
-	void setFilterThreads(std::vector<ThreadID> const &threads);
+	void setFilterThreads(std::vector<ThreadID> threads);
 
 private:
 	/// Symbol::ID -> Symbol*
-	std::vector<Symbol *> symbols;
+	std::vector<std::unique_ptr<Symbol>> symbols;
 
 	/// filename <-> FileID
 	std::vector<std::wstring> files;
@@ -170,7 +172,7 @@ private:
 	std::unordered_map<std::wstring, ModuleID> modulemap;
 
 	/// Address -> module/procname/sourcefile/sourceline
-	std::unordered_map<Address, AddrInfo> addrinfo;
+	std::unordered_map<Address, AddrInfo> addressInfos;
 
 	std::unordered_map<ThreadID, std::wstring> threadNames;
 
@@ -190,5 +192,5 @@ private:
 	bool includeCallstack(const CallStack &callstack) const;
 
 	// Any additional symbols we can load after opening a capture
-	class LateSymbolInfo *late_sym_info;
+	std::unique_ptr<class LateSymbolInfo> late_sym_info;
 };

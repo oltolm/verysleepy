@@ -26,40 +26,56 @@ http://www.gnu.org/copyleft/gpl.html.
 //NOTE: not all of this code has been used/tested for ages.
 //Your mileage may vary; test the code before you use it!!!!
 
+#include <functional>
 #include <string>
-#include <assert.h>
-#include <vector>
-#include <sstream>
+#include <unordered_set>
 
-void readQuote(std::wistream& stream, std::wstring& str_out);//reads string from between double quotes.
+std::wstring readQuote(std::wistream& stream);//reads string from between double quotes.
 
 template<typename T>
-void writeQuote(T& stream, const std::wstring& s, wchar_t escape = '\\')
+void writeQuote(T& stream, const std::wstring& s, wchar_t escape = L'\\')
 {
 	stream << '"';
-	for (size_t i = 0; i < s.length(); i++)
+	for (wchar_t c : s)
 	{
-		wchar_t c = s[i];
-		if (c == escape || c == '"')
+		if (c == escape || c == L'"')
 			stream << escape;
 		stream << c;
 	}
 	stream << '"';
 }
 
+struct StringCompIgnoreCase
+{
+	bool operator()(const std::wstring &a, const std::wstring &b) const { return wcsicmp(a.c_str(), b.c_str()) == 0; }
+};
+
+struct HashIgnoreCase
+{
+	size_t operator()(const std::wstring &a) const
+	{
+		std::wstring tmp = a;
+		wcslwr(tmp.data());
+		return std::hash<std::wstring>{}(tmp);
+	};
+};
+
+template<bool caseCheck>
 struct StringSet
 {
-	std::vector<std::wstring>	strings;
-	bool caseCheck;
+	std::unordered_set<std::wstring,
+					   std::conditional_t<caseCheck, std::hash<std::wstring>, HashIgnoreCase>,
+					   std::conditional_t<caseCheck, std::equal_to<std::wstring>, StringCompIgnoreCase>>
+		strings;
+
 public:
-	StringSet(const wchar_t *file, bool caseCheck);
+	StringSet(const wchar_t *file);
 	void Add(const wchar_t *string);
 	void Remove(const wchar_t *string);
 	bool Contains(const wchar_t *string) const;
 };
 
-
-struct StringList
+class StringList
 {
 	std::wstring string;
 public:

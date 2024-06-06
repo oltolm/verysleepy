@@ -22,43 +22,35 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 http://www.gnu.org/copyleft/gpl.html.
 =====================================================================*/
-#include "profilergui.h"
-#include <wx/mstream.h>
-#include <wx/apptrait.h>
-#include <wx/msw/apptrait.h>
-#include <wx/msgdlg.h>
-#include <memory>
-
-#include "threadpicker.h"
+#include "../appinfo.h"
+#include "../profiler/debugger.h"
+#include "../profiler/profilerthread.h"
+#include "../utils/dbginterface.h"
+#include "../utils/except.h"
+#include "../utils/osutils.h"
+#include "aboutdlg.h"
 #include "capturewin.h"
 #include "mainwin.h"
-#include "../utils/dbginterface.h"
-#include "../profiler/profilerthread.h"
-#include "../profiler/debugger.h"
-#include "../utils/stringutils.h"
-#include "../utils/osutils.h"
-#include <wx/stdpaths.h>
+#include "profilergui.h"
+#include "threadpicker.h"
+
+#include <cstddef>
+#include <limits>
+#include <memory>
+#include <processthreadsapi.h>
+#include <string>
+#include <wx/apptrait.h>
 #include <wx/filedlg.h>
+#include <wx/msgdlg.h>
+#include <wx/mstream.h>
+#include <wx/progdlg.h>
 #include <wx/scopeguard.h>
+#include <wx/stdpaths.h>
+#include <wx/string.h>
+
 #ifdef _MSC_VER
 #include "../crashback/client/crashback.h"
 #endif
-#include "aboutdlg.h"
-#include "../utils/except.h"
-#include "../appinfo.h"
-#include <limits>
-
-// DE: 20090325 Linking fails in debug target under visual studio 2005
-// RJM: works for me :-/
-//#include <wx/apptrait.h>
-//#if wxUSE_STACKWALKER && defined( __WXDEBUG__ )
-//// silly workaround for the link error with debug configuration:
-//// \src\common\appbase.cpp
-//wxString wxAppTraitsBase::GetAssertStackTrace()
-//{
-//   return wxT("");
-//}
-//#endif
 
 static const wxCmdLineEntryDesc g_cmdLineDesc[] =
 {
@@ -98,16 +90,9 @@ Prefs prefs;
 wxConfig config(_T(APPNAME), _T(VENDOR));
 
 ProfilerGUI::ProfilerGUI()
+	: captureWin(nullptr), initialized(false), threadpicker(nullptr)
 {
-	initialized = false;
-	captureWin = NULL;
 	InitSysInfo();
-}
-
-
-ProfilerGUI::~ProfilerGUI()
-{
-
 }
 
 
@@ -140,7 +125,7 @@ wxBitmap LoadPngResource(const wchar_t *szName, const wxWindowBase* w)
 
 void CleanupTempFiles()
 {
-	for (std::wstring& s : tmp_files)
+	for (const std::wstring& s : tmp_files)
 	{
 		DeleteFile(s.c_str());
 	}
@@ -165,15 +150,13 @@ wxString ProfilerGUI::PromptOpen(wxWindow *parent)
 
 void ProfilerGUI::CreateProgressWindow()
 {
-	captureWin = new CaptureWin();
 	captureWin->Show();
 	captureWin->Update();
 }
 
 void ProfilerGUI::DestroyProgressWindow()
 {
-	delete captureWin;
-	captureWin = NULL;
+	captureWin->Hide();
 }
 
 /// Returns the path to the profile archive, or an empty string
@@ -181,32 +164,31 @@ void ProfilerGUI::DestroyProgressWindow()
 std::wstring ProfilerGUI::LaunchProfiler(const AttachInfo *info)
 {
 	// AA: 20210822 if we're attaching to all threads, launch a debugger to update the threads
-	Debugger *debugger = NULL;
+	std::unique_ptr<Debugger> debugger;
 	if (info->attach_all_threads)
 	{
 		DWORD processId = GetProcessId(info->process_handle);
 		if (processId)
-			debugger = new Debugger(processId);
+			debugger.reset(new Debugger(processId));
 	}
 
 	//------------------------------------------------------------------------
 	//create the profiler thread
 	//------------------------------------------------------------------------
 	// DE: 20090325 attaches to a specific list of threads
-	ProfilerThread* profilerthread = new ProfilerThread(
+	std::unique_ptr<ProfilerThread> profilerthread(new ProfilerThread(
 		info->process_handle,
 		info->thread_handles,
-		info->sym_info,
-		debugger
-		);
+		info->sym_info.get(),
+		std::move(debugger)
+		));
 
 	//------------------------------------------------------------------------
 	//start the profiler thread
 	//------------------------------------------------------------------------
 	bool aborted = false;
 	{
-		if (!captureWin)
-			CreateProgressWindow();
+		CreateProgressWindow();
 
 		profilerthread->launch(THREAD_PRIORITY_TIME_CRITICAL);
 
@@ -230,20 +212,18 @@ std::wstring ProfilerGUI::LaunchProfiler(const AttachInfo *info)
 			{
 				timer.fired = false;
 
-				const wchar_t *status = profilerthread->getStatus();
+				wxString status = profilerthread->getStatus();
 				int numSamples = profilerthread->getSampleProgress();
 				int numThreads = profilerthread->getNumThreadsRunning();
 				int timeout = info->limit_profile_time;
 				double elapsed = profilerthread->getDuration();
 
-				wchar_t tmp[256];
 				if (!status)
 				{
 					if (timeout == -1)
-						swprintf(tmp, L"%i samples, %.1fs elapsed, %i threads running", numSamples, elapsed, numThreads);
+						status = wxString::Format(L"%i samples, %.1fs elapsed, %i threads running", numSamples, elapsed, numThreads);
 					else
-						swprintf(tmp, L"%i samples, %.1fs/%ds elapsed, %i threads running", numSamples, elapsed, timeout, numThreads);
-					status = tmp;
+						status = wxString::Format(L"%i samples, %.1fs/%ds elapsed, %i threads running", numSamples, elapsed, timeout, numThreads);
 				}
 
 				double progress = timeout == -1 ? std::numeric_limits<double>::quiet_NaN() : (elapsed / timeout);
@@ -273,7 +253,6 @@ std::wstring ProfilerGUI::LaunchProfiler(const AttachInfo *info)
 	{
 		profilerthread->cancel();
 		profilerthread->join();
-		delete profilerthread;
 		return std::wstring();
 	}
 
@@ -298,7 +277,6 @@ std::wstring ProfilerGUI::LaunchProfiler(const AttachInfo *info)
 	bool failed = profilerthread->getFailed();
 	std::wstring output_filename = profilerthread->getFilename();
 
-	delete profilerthread;
 	profilerthread = NULL;
 
 	if (failed)
@@ -324,21 +302,19 @@ AttachInfo::~AttachInfo()
 {
 	if (process_handle)
 		CloseHandle(process_handle);
-	if (sym_info)
-		delete sym_info;
 }
 
 static HANDLE getMostBusyThread(ProcessInfo& process_info)
 {
 	int max = -1;
 	HANDLE mostBusy = NULL;
-	for (auto thread_info = process_info.threads.begin(); thread_info != process_info.threads.end(); ++thread_info)
+	for (auto & thread : process_info.threads)
 	{
-		thread_info->recalcUsage(0);
-		if (max < thread_info->totalCpuTimeMs)
+		thread.recalcUsage(0);
+		if (max < thread.totalCpuTimeMs)
 		{
-			max = thread_info->totalCpuTimeMs;
-			mostBusy = thread_info->getThreadHandle();
+			max = thread.totalCpuTimeMs;
+			mostBusy = thread.getThreadHandle();
 		}
 	}
 
@@ -373,9 +349,9 @@ static std::vector<HANDLE> getThreadsByAttachMode(ProcessInfo& process_info)
 
 	default: // all thread
 		threadHandles.reserve(process_info.threads.size());
-		for (auto thread_info = process_info.threads.begin(); thread_info != process_info.threads.end(); ++thread_info)
+		for (const auto & thread : process_info.threads)
 		{
-			threadHandles.push_back(thread_info->getThreadHandle());
+			threadHandles.push_back(thread.getThreadHandle());
 		}
 		return threadHandles;
 	}
@@ -386,9 +362,8 @@ AttachInfo *ProfilerGUI::RunProcess(const std::wstring &run_cmd, const std::wstr
 	STARTUPINFO si = {sizeof(si)};
 	PROCESS_INFORMATION pi = {};
 
-	std::vector<wchar_t> run_cmd_dup(run_cmd.size() + 1); // CreateProcess lpCommandLine must be mutable
-	std::copy(run_cmd.begin(), run_cmd.end(), run_cmd_dup.begin());
-	wenforce(CreateProcess( NULL, &run_cmd_dup[0], NULL, NULL, FALSE, 0, NULL, run_cwd.size() ? run_cwd.c_str() : NULL, &si, &pi ), "CreateProcess");
+	std::wstring run_cmd_dup = run_cmd; // CreateProcess lpCommandLine must be mutable
+	wenforce(CreateProcess( NULL, run_cmd_dup.data(), NULL, NULL, FALSE, 0, NULL, run_cwd.c_str(), &si, &pi ), "CreateProcess");
 
 	if (!CanProfileProcess(pi.hProcess))
 	{
@@ -434,28 +409,28 @@ AttachInfo *ProfilerGUI::RunProcess(const std::wstring &run_cmd, const std::wstr
 		output->attach_all_threads = getAttachToAllThreads();
 	}
 
-	output->sym_info = new SymbolInfo;
+	output->sym_info.reset(new SymbolInfo);
 	TryLoadSymbols(output.get());
 	return output.release();
 }
 
 AttachInfo * ProfilerGUI::AttachToProcess(const std::wstring& processId)
 {
-	DWORD processId_dw;
+	DWORD dwProcessId;
 	try
 	{
-		processId_dw = std::stoi(processId);
+		dwProcessId = std::stoul(processId);
 	}
 	catch (const std::exception&)
 	{
 		throw SleepyException(L"Not valid process id: " + processId);
 	}
-	ProcessInfo process_info = ProcessInfo::FindProcessById(processId_dw);
+	ProcessInfo process_info = ProcessInfo::FindProcessById(dwProcessId);
 	AttachInfo* attach_info = new AttachInfo();
 	attach_info->process_handle = process_info.getProcessHandle();
 	attach_info->thread_handles = getThreadsByAttachMode(process_info);
 	attach_info->attach_all_threads = getAttachToAllThreads();
-	attach_info->sym_info = new SymbolInfo();
+	attach_info->sym_info.reset(new SymbolInfo());
 
 	TryLoadSymbols(attach_info);
 	return attach_info;
@@ -490,7 +465,7 @@ void ProfilerGUI::LoadProfileData(const std::wstring &filename)
 	Database *database = new Database();
 	database->loadFromPath(filename, config.Read("MainWinCollapseOS", 1) != 0, false);
 
-	MainWin *frame = new MainWin(wxString::Format("%s - %s", APPNAME, filename), filename, database);
+	MainWin *frame = new MainWin(wxString::Format("%s - %s", APPNAME, filename), filename, database, &m_fileHistory);
 	frame->Show(TRUE);
 	frame->Update();
 	frame->Raise();
@@ -503,7 +478,6 @@ std::wstring ProfilerGUI::ObtainProfileData()
 {
 	while (true)
 	{
-		std::unique_ptr<ThreadPicker> threadpicker(new ThreadPicker);
 		int mode = threadpicker->ShowModal();
 		wxLog::FlushActive();
 
@@ -517,9 +491,8 @@ std::wstring ProfilerGUI::ObtainProfileData()
 
 		case ThreadPicker::ATTACH:
 			{
-				std::unique_ptr<AttachInfo> ai(threadpicker->attach_info);
-				threadpicker->attach_info = NULL;
-				threadpicker.reset();
+				std::unique_ptr<AttachInfo> ai = std::move(threadpicker->attach_info);
+
 				return LaunchProfiler(ai.get());
 			}
 
@@ -542,7 +515,6 @@ std::wstring ProfilerGUI::ObtainProfileData()
 			}
 
 			wxScopeGuard sgTerm = wxMakeGuard(TerminateProcess, info->process_handle, 0); wxUnusedVar(sgTerm);
-			threadpicker.reset();
 			return LaunchProfiler(info.get());
 		}
 	}
@@ -575,6 +547,13 @@ bool ProfilerGUI::OnInit()
 		prefs.useWinePref = config.Read("UseWine", (long)0) != 0;
 		prefs.saveMinidump.SetConfigValue(config.Read("SaveMinidump", -1));
 		prefs.throttle.SetConfigValue(prefs.ValidateThrottle(config.Read("SpeedThrottle", 100)));
+
+		captureWin = new CaptureWin();
+
+		config.SetPath(_T("/Recent"));
+		m_fileHistory.Load(config);
+
+		threadpicker = new ThreadPicker(&m_fileHistory);
 
 		if (!wxApp::OnInit())
 			return false;
@@ -636,28 +615,29 @@ bool ProfilerGUI::Run()
 	// but only by the request of the main thread.
 	// Log messages for other threads will be discarded.
 	// note : logger was already created inside ProcessIdle that was called before Run, need to delete it
-	delete wxLog::SetActiveTarget(new wxLogGui);
+	// delete wxLog::SetActiveTarget(new wxLogGui);
 
 	std::wstring filename;
 
 	if (!cmdline_run.empty())
 	{
-		std::unique_ptr<AttachInfo> info(RunProcess(cmdline_run, L""));
+		std::unique_ptr<AttachInfo> info(RunProcess(cmdline_run, std::wstring{}));
 		wxScopeGuard sgTerm = wxMakeGuard(TerminateProcess, info->process_handle, 0); wxUnusedVar(sgTerm);
 		filename = LaunchProfiler(info.get());
 	}
 	else if (!cmdline_attach.empty())
 	{
 		std::unique_ptr<AttachInfo> info(AttachToProcess(cmdline_attach));
-		if (!cmdline_thread_ids.empty()) {
-			std::vector<HANDLE> profile_threads;
-			for (auto tid_h : info->thread_handles) {
-				DWORD test_tid = GetThreadId(tid_h);
-				if (std::find(cmdline_thread_ids.begin(),cmdline_thread_ids.end(),test_tid) != cmdline_thread_ids.end()) {
-					profile_threads.push_back(tid_h);
-				}
-			}
-			info->thread_handles = profile_threads;
+		if (!cmdline_thread_ids.empty())
+		{
+			auto pred = [&](HANDLE hThread) -> bool {
+				DWORD dwThreadId = GetThreadId(hThread);
+				return std::find(cmdline_thread_ids.begin(), cmdline_thread_ids.end(),
+								 dwThreadId) == cmdline_thread_ids.end();
+			};
+			info->thread_handles.erase(
+				std::remove_if(info->thread_handles.begin(), info->thread_handles.end(), pred),
+				info->thread_handles.end());
 			// Do not attach to any new threads created after this point in time.
 			info->attach_all_threads = false;
 		}
@@ -692,6 +672,9 @@ int ProfilerGUI::OnExit()
 	config.Write("SaveMinidump", prefs.saveMinidump.GetConfigValue());
 	config.Write("SpeedThrottle", prefs.throttle.GetConfigValue());
 
+	config.SetPath(_T("/Recent"));
+	m_fileHistory.Save(config);
+
 	return wxApp::OnExit();
 }
 
@@ -720,32 +703,31 @@ bool ProfilerGUI::OnCmdLineParsed(wxCmdLineParser& parser)
 	}
 
 	if (parser.Found("i", &param))
-		cmdline_load = param.c_str();
+		cmdline_load = param;
 	if (parser.GetParamCount())
 		cmdline_load = parser.GetParam(0);
 	if (parser.Found("o", &param))
-		cmdline_save = param.c_str();
+		cmdline_save = param;
 	if (!parser.Found("d", &cmdline_delay))
 		cmdline_delay = 0;
 	if (!parser.Found("t", &cmdline_timeout))
 		cmdline_timeout = -1;
 	if (parser.Found("r", &param))
-		cmdline_run = param.c_str();
+		cmdline_run = param;
 	if (parser.Found("a", &param))
-		cmdline_attach = param.c_str();
+		cmdline_attach = param;
 	if (parser.Found("thread", &param))
 	{
-		auto tids_str = wxSplit(param,',');
-		for (size_t i=0; i<tids_str.GetCount(); i++)
+		for (const auto & tid_str : wxSplit(param,','))
 		{
 			long tid;
-			if (tids_str[i].ToLong(&tid))
+			if (tid_str.ToLong(&tid))
 			{
 				cmdline_thread_ids.push_back(tid);
 			}
 			else
 			{
-				wxMessageBox(wxString::Format(wxT("Ignoring malformed thread ID in /thread option: %s"), tids_str[i]),
+				wxMessageBox(wxString::Format(wxT("Ignoring malformed thread ID in /thread option: %s"), tid_str),
 							 APPNAME,
 							 wxICON_WARNING);
 			}

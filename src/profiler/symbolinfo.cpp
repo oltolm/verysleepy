@@ -21,19 +21,21 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 http://www.gnu.org/copyleft/gpl.html..
 =====================================================================*/
-#include "symbolinfo.h"
 #include "../wxProfilerGUI/profilergui.h"
 
-#include "../utils/stringutils.h"
+#include "../appinfo.h"
+#include "../utils/dbginterface.h"
+#include "../utils/except.h"
 #include "../utils/osutils.h"
+#include "symbolinfo.h"
+
+#include <cstddef>
+#include <cstdlib>
+#include <string>
 #include <windows.h>
 #include <psapi.h>
-#include "../utils/dbginterface.h"
-#include <iostream>
 #include <algorithm>
 #include <shlwapi.h>
-#include "../utils/except.h"
-#include "../appinfo.h"
 
 SymLogFn *g_symLog = NULL;
 
@@ -53,7 +55,7 @@ BOOL CALLBACK EnumModules(
 	HMODULE hMod;
 	GetModuleHandleEx(GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT, ModuleName, &hMod);
 
-	Module mod((PROFILER_ADDR)BaseOfDll, ModuleName, context->dbgHelp);
+	Module mod{(PROFILER_ADDR)BaseOfDll, ModuleName, context->dbgHelp};
 	context->syminfo->addModule(mod);
 
 	return TRUE;
@@ -97,7 +99,7 @@ void symWineCallback(const char *msg)
 		newline = msg[strlen(msg) - 1] == '\n';
 
 		wchar_t tmp[2048];
-		MultiByteToWideChar(CP_ACP, 0, msg, -1, tmp, sizeof(tmp));
+		MultiByteToWideChar(CP_ACP, 0, msg, -1, tmp, _countof(tmp));
 		g_symLog(tmp);
 	}
 }
@@ -158,23 +160,20 @@ void SymbolInfo::loadSymbolsUsing(DbgHelp* dbgHelp, const std::wstring& sympath)
 			// This is a secondary dbgHelp, so just complement debug
 			// information for modules that have none.
 			
-			for (size_t m=0;m<modules.size();m++)
+			for (auto & mod : modules)
 			{
-				Module &mod = modules[m];
-
-				IMAGEHLP_MODULEW64 info;
+				IMAGEHLP_MODULEW64 info{};
 				info.SizeOfStruct = sizeof(info);
 				if (!mod.dbghelp->SymGetModuleInfoW64(process_handle, mod.base_addr, &info))
 					continue;
 
 				// If we have a module with no symbol information from the previous (MS) dbghelp,
 				// let the current one handle it instead.
-				if (info.SymType == SymNone)
+				if (info.SymType == SymNone || info.NumSyms == 0)
 				{
-					DWORD64 ret = dbgHelp->SymLoadModuleExW(process_handle, NULL,
+					if(dbgHelp->SymLoadModuleExW(process_handle, NULL,
 						info.ImageName, info.ModuleName, info.BaseOfImage, info.ImageSize,
-						NULL, 0);
-					if (ret)
+						NULL, 0))
 						mod.dbghelp = dbgHelp;
 				}
 			}
@@ -229,18 +228,14 @@ void SymbolInfo::loadSymbols(HANDLE process_handle_, bool download)
 		{
 			// Convert the EXE path to its containing folder and append the
 			// resulting folder to the symbol search path.
-			wchar_t *p = wcsrchr(szExePath, '\\');
-
-			if (p != NULL)
-			{
-				*p = '\0';
+			if (PathRemoveFileSpec(szExePath))
 				sympath += std::wstring(L";") + szExePath;
-			}
 		}
 
 		prefs.AdjustSymbolPath(sympath, download);
 	}
 
+	// TODO: introduce option to change the order
 	loadSymbolsUsing(&dbgHelpMs, sympath);
 	loadSymbolsUsing(getGccDbgHelp(), sympath);
 
@@ -298,7 +293,7 @@ Module *SymbolInfo::getModuleForAddr(PROFILER_ADDR addr)
 	if(addr < modules[0].base_addr)
 		return NULL;
 
-	for(unsigned int i=1; i<modules.size(); ++i)
+	for(size_t i=1; i<modules.size(); ++i)
 		if(addr < modules[i].base_addr)
 			return &modules[i-1];
 
@@ -307,13 +302,13 @@ Module *SymbolInfo::getModuleForAddr(PROFILER_ADDR addr)
 	return &modules[modules.size() - 1];
 }
 
-const std::wstring SymbolInfo::getModuleNameForAddr(PROFILER_ADDR addr)
+std::wstring SymbolInfo::getModuleNameForAddr(PROFILER_ADDR addr)
 {
 	Module *mod = getModuleForAddr(addr);
 	if (mod)
 		return mod->name;
 	else
-		return L"";
+		return std::wstring();
 }
 
 void SymbolInfo::addModule(const Module& module)
@@ -331,11 +326,9 @@ void SymbolInfo::sortModules()
 	std::sort(modules.begin(), modules.end(), Sorter());
 }
 
-const std::wstring SymbolInfo::getProcForAddr(PROFILER_ADDR addr,
-											  std::wstring& procfilepath_out, int& proclinenum_out)
+ProcedureInfo SymbolInfo::getProcForAddr(PROFILER_ADDR addr)
 {
-	procfilepath_out = L"";
-	proclinenum_out = 0;
+	ProcedureInfo proc{};
 
 	Module *mod = getModuleForAddr(addr);
 	DbgHelp *dbgHelp = mod ? mod->dbghelp : &dbgHelpMs;
@@ -352,47 +345,40 @@ const std::wstring SymbolInfo::getProcForAddr(PROFILER_ADDR addr,
 
 	if(!result)
 	{
-		wchar_t buf[256];
 #if defined(_WIN64)
 		if(is64BitProcess)
-			swprintf(buf, 256, L"[%016llX]", addr);
+			proc.name = wxString::Format(L"[%016llX]", addr);
 		else
-			swprintf(buf, 256, L"[%08X]", (unsigned __int32)(addr));
+			proc.name = wxString::Format(L"[%08X]", (unsigned __int32)(addr));
 #else
-		swprintf(buf, 256, L"[%08X]", addr);
+		proc.name = wxString::Format(L"[%08X]", addr);
 #endif
-		return buf;
 	}
 
 	//------------------------------------------------------------------------
 	//lookup proc file and line num
 	//------------------------------------------------------------------------
-	getLineForAddr(addr, procfilepath_out, proclinenum_out);
+	auto [procfilepath, proclinenum] = getLineForAddr(addr - displacement);
+	proc.filepath = procfilepath;
+	proc.linenum = proclinenum;
+	proc.name = symbol_info->Name;
 
-	return symbol_info->Name;
+	return proc;
 }
 
-void SymbolInfo::getLineForAddr(PROFILER_ADDR addr, std::wstring& filepath_out, int& linenum_out)
+std::pair<std::wstring, int> SymbolInfo::getLineForAddr(PROFILER_ADDR addr)
 {
 	Module *mod = getModuleForAddr(addr);
 	DbgHelp *dbgHelp = mod ? mod->dbghelp : &dbgHelpMs;
 
-	DWORD displacement;
+	DWORD displacement = 0;
 	IMAGEHLP_LINEW64 lineinfo;
 	ZeroMemory(&lineinfo, sizeof(lineinfo));
 	lineinfo.SizeOfStruct = sizeof(IMAGEHLP_LINEW64);
-	BOOL result = dbgHelp->SymGetLineFromAddrW64(process_handle, (DWORD64)addr, &displacement, &lineinfo);
-
-	if(result)
-	{
-		filepath_out = lineinfo.FileName;
-		linenum_out = lineinfo.LineNumber;
-	}
+	if(dbgHelp->SymGetLineFromAddrW64(process_handle, (DWORD64)addr, &displacement, &lineinfo))
+		return {lineinfo.FileName, lineinfo.LineNumber};
 	else
-	{
-		filepath_out = L"[unknown]";
-		linenum_out = 0;
-	}
+		return {L"[unknown]", 0};
 }
 
 std::wstring SymbolInfo::saveMinidump()

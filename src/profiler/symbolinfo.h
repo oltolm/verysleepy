@@ -24,28 +24,29 @@ http://www.gnu.org/copyleft/gpl.html..
 #pragma once
 
 
-#include <string>
-#include <winsock2.h>
-#include <windows.h>
-#include <vector>
 #include "profiler.h"
+
+#include <string>
+#include <utility>
+#include <vector>
+#include <windows.h>
 
 typedef void SymLogFn(const wchar_t *text);
 
 struct DbgHelp;
 
-class Module
+struct Module
 {
-public:
-	Module(PROFILER_ADDR base_addr_, const std::wstring& name_, DbgHelp *dbghelp_)
-	{
-		base_addr = base_addr_;
-		name = name_;
-		dbghelp = dbghelp_;
-	}
 	PROFILER_ADDR base_addr;
 	std::wstring name;
 	DbgHelp *dbghelp;
+};
+
+struct ProcedureInfo
+{
+	std::wstring name;
+	std::wstring filepath;
+	int linenum;
 };
 
 /*=====================================================================
@@ -63,14 +64,12 @@ public:
 	std::wstring saveMinidump();
 
 	Module *getModuleForAddr(PROFILER_ADDR addr);
-	const std::wstring getModuleNameForAddr(PROFILER_ADDR addr);
-	const std::wstring getProcForAddr(PROFILER_ADDR addr, std::wstring& procfilepath_out, int& proclinenum_out);
-
-	void getLineForAddr(PROFILER_ADDR addr, std::wstring& filepath_out, int& linenum_out);
-
-	HANDLE process_handle;
+	std::wstring getModuleNameForAddr(PROFILER_ADDR addr);
+	ProcedureInfo getProcForAddr(PROFILER_ADDR addr);
 
 private:
+	HANDLE process_handle;
+
 	std::vector<Module> modules;
 	bool is64BitProcess;
 
@@ -80,6 +79,7 @@ private:
 	friend BOOL CALLBACK EnumModules(PCWSTR ModuleName, DWORD64 BaseOfDll, PVOID UserContext);
 	void loadSymbolsUsing(DbgHelp* dbgHelp, const std::wstring& sympath);//throws SymbolInfoExcep
 	DbgHelp* getGccDbgHelp();
+	std::pair<std::wstring, int> getLineForAddr(PROFILER_ADDR addr);
 };
 
 extern SymLogFn *g_symLog;

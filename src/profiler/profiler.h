@@ -25,12 +25,9 @@ http://www.gnu.org/copyleft/gpl.html..
 
 #pragma once
 
-#include <winsock2.h>
-#include <windows.h>
 #include <map>
-#include <iostream>
 #include <string>
-#include <vector>
+#include <windows.h>
 
 //64 bit mode:
 #if defined(_WIN64)
@@ -81,7 +78,7 @@ class ProfilerExcep
 {
 public:
 	ProfilerExcep(const std::wstring& s_) : s(s_) {}
-	~ProfilerExcep(){}
+	~ProfilerExcep() = default;
 
 	const std::wstring& what() const { return s; }
 private:
@@ -105,19 +102,6 @@ public:
 	Profiler(HANDLE target_process, HANDLE target_thread, DWORD target_thread_id,
 		std::map<CallStack, SAMPLE_TYPE>& callstacks);
 
-	// DE: 20090325: Need copy constructor since it is put in a std::vector
-	Profiler(const Profiler& iOther);
-	// DE: 20090325: Need copy assignement since it is put in a std::vector
-	Profiler& operator=(const Profiler& iOther);
-
-	~Profiler();
-
-	// DE: 20090325: Profiler no longer owns callstack and flatcounts since it is shared between multipler profilers
-	// AA: 20210821: Removed flatcounts since their contents can be reconstructed on load by iterating over
-	//               callstack top address samples and aggregating times for equal keys
-	std::map<CallStack, SAMPLE_TYPE> *callstacks;
-	const bool is64BitProcess;
-
 	bool sampleTarget(SAMPLE_TYPE timeSpent, SymbolInfo *syminfo);//throws ProfilerExcep
 	bool targetExited() const;
 
@@ -125,6 +109,12 @@ public:
 
 	HANDLE getTarget(){ return target_thread; }
 private:
+	// DE: 20090325: Profiler no longer owns callstack and flatcounts since it is shared between multipler profilers
+	// AA: 20210821: Removed flatcounts since their contents can be reconstructed on load by iterating over
+	//               callstack top address samples and aggregating times for equal keys
+	std::map<CallStack, SAMPLE_TYPE> *callstacks;
+
+	bool is64BitProcess;
 	HANDLE target_process, target_thread;
 	DWORD target_thread_id;
 };

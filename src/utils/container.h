@@ -23,6 +23,7 @@ http://www.gnu.org/copyleft/gpl.html..
 #pragma once
 
 #include <unordered_map>
+#include <vector>
 
 /// Find an entry with the specified key and return its value,
 /// or, failing that, return a default value.
@@ -41,9 +42,9 @@ static typename MAP::value_type::second_type map_get(const MAP &map, const typen
 template<class MAP>
 static typename MAP::value_type::second_type& map_emplace(MAP &map, const typename MAP::key_type &key, bool *pinserted=NULL)
 {
-	auto pair = map.emplace(std::make_pair(key, typename MAP::value_type::second_type()));
-	if (pinserted) *pinserted = pair.second;
-	return pair.first->second;
+	const auto &[kv, inserted] = map.emplace(key, typename MAP::value_type::second_type());
+	if (pinserted) *pinserted = inserted;
+	return kv->second;
 }
 
 /// Add or find an entry in a string[id] vector / id[string] map pair, and return its ID.
@@ -60,8 +61,6 @@ static ID map_string(std::vector<std::wstring> &list, std::unordered_map<std::ws
 	else // existing entry
 		return id;
 }
-
-#include <unordered_set>
 
 /// Nicer wrapper around set::count.
 template<typename SET>

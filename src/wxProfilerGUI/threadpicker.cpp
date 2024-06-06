@@ -21,15 +21,21 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 http://www.gnu.org/copyleft/gpl.html.
 =====================================================================*/
-#include "threadpicker.h"
+#include "../appinfo.h"
+#include "../profiler/symbolinfo.h"
+#include "../utils/except.h"
 #include "launchdlg.h"
 #include "optionsdlg.h"
-#include "../profiler/symbolinfo.h"
-#include <wx/menu.h>
+#include "threadpicker.h"
+
+#include <memory>
 #include <wx/button.h>
+#include <wx/filehistory.h>
+#include <wx/log.h>
+#include <wx/menu.h>
+#include <wx/progdlg.h>
+#include <wx/sizer.h>
 #include <wx/stattext.h>
-#include "../utils/except.h"
-#include "../appinfo.h"
 
 // IDs for the controls and the menu commands
 enum
@@ -44,6 +50,7 @@ enum
 	ProcWin_TimeCheck,
 	ProcWin_Help_Documentation,
 	ProcWin_Help_Support,
+	ProcWin_Recent,
 
 	// it is important for the id corresponding to the "About" command to have
 	// this standard value as otherwise it won't be handled properly under Mac
@@ -69,6 +76,7 @@ EVT_BUTTON(ProcWin_Download, ThreadPicker::OnDownload)
 EVT_CLOSE(ThreadPicker::OnClose)
 EVT_BUTTON(ProcWin_Exit, ThreadPicker::OnQuit)
 EVT_CHECKBOX(ProcWin_TimeCheck, ThreadPicker::OnTimeCheck)
+EVT_MENU_RANGE(wxID_FILE1, wxID_FILE9, ThreadPicker::OnMRUFile)
 END_EVENT_TABLE()
 
 wxProgressDialog *g_symProgress = NULL;
@@ -82,10 +90,10 @@ void symLogCallback(const wchar_t *text)
 		g_symProgress->Pulse();
 }
 
-ThreadPicker::ThreadPicker()
+ThreadPicker::ThreadPicker(wxFileHistory* fileHistory)
 :	wxModalFrame(NULL, wxID_ANY, APPNAME,
 			 wxDefaultPosition, wxDefaultSize,
-			 wxDEFAULT_FRAME_STYLE), attach_info(NULL)
+			 wxDEFAULT_FRAME_STYLE), attach_info(), m_fileHistory(fileHistory)
 {
 	SetIcon(sleepy_icon);
 
@@ -93,6 +101,16 @@ ThreadPicker::ThreadPicker()
 	menuFile->Append(wxID_OPEN, _T("&Open...\tCtrl-O"), _T("Opens an existing profile"));
 	menuFile->Append(ProcWin_Launch, _T("&Launch...\tCtrl-N"), _T("Launches a new executable to profile"));
 	menuFile->AppendSeparator();
+
+	auto recent = new wxMenu;
+	menuFile->Append(ProcWin_Recent, _T("&Recent files"), recent);
+	m_fileHistory->UseMenu(recent);
+
+	if (m_fileHistory->GetCount() == 0)
+		menuFile->Enable(ProcWin_Recent, false);
+
+	m_fileHistory->AddFilesToMenu(recent);
+
 	menuFile->Append(ProcWin_Exit, _T("E&xit\tAlt-X"), _T("Quit this program"));
 
 	wxMenu *menuTools = new wxMenu;
@@ -141,7 +159,7 @@ ThreadPicker::ThreadPicker()
 
 	// RM: 20110614 Set time for profiler to run for
 	time_value = 100;
-	time_validator = new wxIntegerValidator<int>(&time_value);
+	time_validator.reset(new wxIntegerValidator<int>(&time_value));
 	time_validator->SetMin(0);
 	time_check = new wxCheckBox(panel, ProcWin_TimeCheck, "Profile for set time (s)");
 	time_ctrl = new wxTextCtrl(panel, ProcWin_TimeCtrl, "100", wxDefaultPosition, FromDIP(wxSize(60,20)), 0, *time_validator );
@@ -187,6 +205,8 @@ ThreadPicker::ThreadPicker()
 
 	log = new LogView(panel);
 	bottomsizer->Add(log, 0, wxLEFT|wxRIGHT|wxBOTTOM|wxEXPAND, FromDIP(10));
+	logViewLog = new LogViewLog(log);
+	wxLog::SetActiveTarget(logViewLog);
 
 	topsizer->Add(leftsizer, 1, wxEXPAND | wxLEFT, FromDIP(10));
 	topsizer->AddSpacer(FromDIP(10));
@@ -210,11 +230,21 @@ ThreadPicker::ThreadPicker()
 	g_symLog = symLogCallback;
 }
 
+void ThreadPicker::OnMRUFile(wxCommandEvent& event)
+{
+	open_filename = m_fileHistory->GetHistoryFile(event.GetId() - wxID_FILE1);
+	if (!open_filename.empty())
+		EndModal(OPEN);
+}
+
 void ThreadPicker::OnOpen(wxCommandEvent& WXUNUSED(event))
 {
 	open_filename = ProfilerGUI::PromptOpen(this);
 	if (!open_filename.empty())
+	{
+		m_fileHistory->AddFileToHistory(open_filename);
 		EndModal(OPEN);
+	}
 }
 
 void ThreadPicker::OnAttachProfiler(wxCommandEvent& WXUNUSED(event))
@@ -261,7 +291,7 @@ void ThreadPicker::OnDownload(wxCommandEvent& WXUNUSED(event))
 {
 	g_symProgress = new wxProgressDialog(APPNAME, "Downloading symbols...", 100, this);
 	processlist->reloadSymbols(true);
-	delete g_symProgress;
+	g_symProgress->Destroy();
 	g_symProgress = NULL;
 }
 
@@ -315,10 +345,6 @@ void ThreadPicker::OnTimeCheck(wxCommandEvent& WXUNUSED(event))
 ThreadPicker::~ThreadPicker()
 {
 	g_symLog = NULL;
-	delete log;
-	delete time_validator;
-	if (attach_info)
-		delete attach_info;
 }
 
 /*
@@ -354,7 +380,7 @@ void ThreadPicker::AttachToProcess(bool allThreads)
 {
 	assert(IsModal());
 
-	attach_info = new AttachInfo;
+	attach_info.reset(new AttachInfo);
 	attach_info->attach_all_threads = allThreads;
 
 	const ProcessInfo* processInfo = processlist->getSelectedProcess();
@@ -375,7 +401,7 @@ void ThreadPicker::AttachToProcess(bool allThreads)
 	//------------------------------------------------------------------------
 	attach_info->process_handle = processInfo->getProcessHandle();
 	attach_info->sym_info = processlist->takeSymbolInfo();
-	enforce(attach_info->sym_info, "No symbol info");
+	enforce(attach_info->sym_info.get(), "No symbol info");
 
 	// Check it didn't exit.
 	if (WaitForSingleObject(attach_info->process_handle, 0) == WAIT_OBJECT_0)
@@ -385,19 +411,17 @@ void ThreadPicker::AttachToProcess(bool allThreads)
 
 	// DE: 20090325 attaches to specific a list of threads
 	std::vector<const ThreadInfo*> selectedThreads = threadlist->getSelectedThreads(allThreads);
-	if (selectedThreads.size() == 0)
+	if (selectedThreads.empty())
 	{
 		selectedThreads = threadlist->getSelectedThreads(true);
 	}
 	enforce(selectedThreads.size(), "No thread(s) selected");
 
 	// DE: 20090325 attaches to specific a list of threads
-	for (auto it = selectedThreads.begin(); it != selectedThreads.end(); ++it)
+	for (auto threadInfo : selectedThreads)
 	{
 		try
 		{
-			const ThreadInfo* threadInfo(*it);
-
 			HANDLE threadHandle = threadInfo->getThreadHandle();
 			wenforce(threadHandle, "Attaching to selected thread");
 			attach_info->thread_handles.push_back(threadHandle);

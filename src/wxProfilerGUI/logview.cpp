@@ -22,39 +22,10 @@ http://www.gnu.org/copyleft/gpl.html.
 =====================================================================*/
 
 #include "logview.h"
+
 #include <wx/menu.h>
 #include <wx/log.h>
 #include <windows.h>
-
-//////////////////////////////////////////////////////////////////////////
-// LogViewLog
-//////////////////////////////////////////////////////////////////////////
-
-// We can't use the same class for both wxTextCtrl and wxLog,
-// because wxWidgets will destroy the active log BEFORE it
-// destroys the window. That means we'd be left with a dangling
-// pointer in wxWidgets' window hierarchy that we can't do
-// anything about.
-class LogViewLog : public wxLog
-{
-	LogView *view;
-
-public:
-	LogViewLog(LogView *view)
-		: view(view)
-	{
-	}
-
-	virtual ~LogViewLog()
-	{
-		// Tell the view that we've been destroyed (by wxWidgets, probably).
-		view->log = NULL;
-		// If we are destroyed by wxWidgets, we don't need to worry about
-		// setting the old log target back - wxWidgets does that.
-	}
-
-	void DoLogRecord(wxLogLevel level, const wxString& msg, const wxLogRecordInfo& info);
-};
 
 // Note: we override DoLogRecord instead of DoLogText to avoid the default formatting,
 // which includes timestamps. Since the debug engine sends output in line fragments at a time,
@@ -67,10 +38,9 @@ void LogViewLog::DoLogRecord(wxLogLevel WXUNUSED(level), const wxString& msg, co
 	// dbghelp likes to add ASCII backspaces in. (sigh)
 	// convert them out into newlines.
 	int backspaceat = -1;
-	size_t len = str.length();
-	for (size_t n=0;n<len;n++)
+	for (size_t n=0;n<str.length();n++)
 	{
-		if (str[n] == 8)
+		if (str[n] == '\b')
 		{
 			if (backspaceat == -1)
 				backspaceat = (int)n;
@@ -131,30 +101,19 @@ END_EVENT_TABLE()
 LogView::LogView(wxWindow *parent)
 :	wxTextCtrl(parent, 0, "", wxDefaultPosition, parent->FromDIP(wxSize(100,100)), wxTE_MULTILINE|wxTE_READONLY)
 {
-	log = new LogViewLog(this);
-	previous_log = wxLog::SetActiveTarget(log);
-}
-
-LogView::~LogView()
-{
-	if (log)
-	{
-		if (log == wxLog::GetActiveTarget())
-			wxLog::SetActiveTarget(previous_log);
-		delete log;
-	}
+	// log = new LogViewLog(this);
+	// previous_log = wxLog::SetActiveTarget(log);
+	menu = new wxMenu;
+	menu->Append(wxID_COPY, _("&Copy"));
+	menu->Append(wxID_SELECTALL, _("Select &All"));
+	menu->Append(LogView_Clear, _("Clear &Log"));
 }
 
 void LogView::OnContextMenu(wxContextMenuEvent& WXUNUSED(event))
 {
-	wxMenu *menu = new wxMenu;
-	menu->Append(wxID_COPY, _("&Copy"));
-	menu->Append(wxID_SELECTALL, _("Select &All"));
-	menu->Append(LogView_Clear, _("Clear &Log"));
-	menu->Enable(LogView_Clear, !this->GetValue().empty());
+	menu->Enable(LogView_Clear, !GetValue().empty());
 
 	PopupMenu(menu);
-	delete menu;
 }
 
 void LogView::OnCopy(wxCommandEvent& WXUNUSED(event))

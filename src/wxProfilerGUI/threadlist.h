@@ -25,10 +25,11 @@ http://www.gnu.org/copyleft/gpl.html.
 
 #include "profilergui.h"
 #include "../profiler/threadinfo.h"
-#include "../profiler/processinfo.h"
-#include "../utils/sortlist.h"
 
-#include <set>
+#include <wx/listctrl.h>
+#include <wx/timer.h>
+
+class ProcessInfo;
 class SymbolInfo;
 
 /*=====================================================================
@@ -36,7 +37,7 @@ ThreadsList
 -----------
 
 =====================================================================*/
-class ThreadList : public wxSortedListCtrl
+class ThreadList : public wxListView
 {
 public:
 	/*=====================================================================
@@ -47,27 +48,19 @@ public:
 	ThreadList(wxWindow *parent, const wxPoint& pos,
 			const wxSize& size, wxButton *ok_button, wxButton *all_button);
 
-	virtual ~ThreadList();
+	virtual ~ThreadList() = default;
 
 	void OnSelected(wxListEvent& event);
-	void OnDeSelected(wxListEvent& event);
+	void OnDeselected(wxListEvent& event);
 	void OnTimer(wxTimerEvent& event);
 	void OnSort(wxListEvent& event);
 
 	void updateThreads(const ProcessInfo* processInfo, SymbolInfo *symInfo);
-	void updateTimes();
-	void updateSorting();
-	void sortByLocation();
-	void sortByCpuUsage();
-	void sortByTotalCpuTime();
-	void sortByID();
-	void sortByName();
 
 	std::vector<const ThreadInfo*> getSelectedThreads(bool all=false);
-private:
-	DECLARE_EVENT_TABLE()
+	wxString  OnGetItemText (long item, long column) const override;
 
-	enum {
+	enum ColumnType {
 		COL_LOCATION,
 		COL_CPUUSAGE,
 		COL_TOTALCPU,
@@ -76,12 +69,10 @@ private:
 		NUM_COLUMNS
 	};
 
+private:
 	std::vector<ThreadInfo> threads;
-	std::set<int> selected_threads;
 	wxTimer timer;
 	wxLongLong lastTime;
-	int sort_column;
-	SortType sort_dir;
 	HANDLE process_handle;
 	SymbolInfo *syminfo;
 	wxButton *ok_button;
@@ -90,6 +81,9 @@ private:
 	void fillList();
 	int getNumDisplayedThreads();
 	std::wstring getLocation(HANDLE thread_handle, DWORD thread_id);
+	void updateTimes();
+
+	DECLARE_EVENT_TABLE()
 };
 
 

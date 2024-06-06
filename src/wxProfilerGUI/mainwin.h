@@ -23,15 +23,23 @@ http://www.gnu.org/copyleft/gpl.html.
 =====================================================================*/
 #pragma once
 
-#include "profilergui.h"
-#include "proclist.h"
-#include "sourceview.h"
 #include "CallstackView.h"
 #include "logview.h"
+#include "proclist.h"
+#include "sourceview.h"
 #include "threadsview.h"
 
-#include <wx/propgrid/propgrid.h>
 #include <deque>
+#include <memory>
+#include <unordered_set>
+#include <wx/frame.h>
+
+class wxAuiManager;
+class wxAuiNotebook;
+class wxFileHistory;
+class wxGauge;
+class wxPropertyGrid;
+class wxPropertyGridEvent;
 
 /// Cache per-symbol view settings so we don't
 /// have to compute them on every refresh.
@@ -53,7 +61,7 @@ public:
 	-------
 
 	=====================================================================*/
-	MainWin(const wxString& title, const std::wstring& profilepath, Database *database);
+	MainWin(const wxString& title, const std::wstring& profilepath, Database *database, wxFileHistory* fileHistory);
 
 	virtual ~MainWin();
 
@@ -85,7 +93,7 @@ public:
 	/// Called after loading a database
 	/// (after construction, and in OnOpen).
 	/// Initialize anything database-specific here.
-	void reset();
+	void reset(bool refresh=true);
 
 	/// Refresh proc lists.
 	/// Preserves selection.
@@ -97,8 +105,6 @@ public:
 	/// database loading, such as collapsing OS calls.
 	/// Does not refresh().
 	void reload(bool loadMinidump=false);
-
-	void clear();
 
 	/// Switch selection to a given symbol.
 	/// Does not repopulate the secondary views.
@@ -128,10 +134,6 @@ public:
 	void updateProgress(int pos);
 
 private:
-	// any class wishing to process wxWindows events must use this macro
-	DECLARE_EVENT_TABLE()
-
-	wxPanel* panel;
 	ProcList* proclist;
 	ProcList* callers;
 	ProcList* callees;
@@ -139,18 +141,17 @@ private:
 	CallstackView* callStack;
 	SourceView* sourceview;
 	LogView* log;
-	Database *database;
+	LogViewLog* logViewLog;
+	std::unique_ptr<Database> database;
 	std::wstring profilepath;
 
 	// Used by setSourcePos
 	std::wstring currentfile;
 	int currentline;
 
-	wxAuiNotebook	*modes;
-
-	wxAuiManager *aui;
-	wxAuiManager *auiTab1;
-	wxAuiManager *auiFilter;
+	wxAuiManager* aui;
+	wxAuiManager* auiTab1;
+	wxAuiManager* auiFilter;
 	wxString contentString;
 
 	wxAuiNotebook *callViews;
@@ -167,7 +168,7 @@ private:
 	std::deque<const Database::AddrInfo*> history;
 	size_t historyPos;
 
-	wxGauge *gauge;
+	wxGauge* gauge;
 
 	void buildFilterAutocomplete();
 
@@ -183,6 +184,15 @@ private:
 	void showSource(const Database::AddrInfo *addrinfo);
 
 	void updateStatusBar();
+
+	void clear();
+
+	void open(const wxString& filename);
+	wxFileHistory* m_fileHistory;
+	void OnMRUFile(wxCommandEvent& event);
+
+	// any class wishing to process wxWindows events must use this macro
+	DECLARE_EVENT_TABLE()
 };
 
 extern MainWin *theMainWin;

@@ -29,6 +29,7 @@ http://www.gnu.org/copyleft/gpl.html..
 #include "profiler.h"
 #include "symbolinfo.h"
 
+#include <memory>
 // DE: 20090325 Profiler thread now has a vector of threads to profile
 #include <vector>
 
@@ -56,13 +57,13 @@ public:
 	=====================================================================*/
 	// DE: 20090325 Profiler thread now has a vector of threads to profile
 	// RM: 20130614 Profiler time can now be limited (-1 = until cancelled)
-	ProfilerThread(HANDLE target_process, const std::vector<HANDLE>& target_threads, SymbolInfo *sym_info, Debugger *debugger);
+	ProfilerThread(HANDLE target_process, const std::vector<HANDLE>& target_threads, SymbolInfo *sym_info, std::unique_ptr<Debugger> debugger);
 
-	virtual ~ProfilerThread();
+	virtual ~ProfilerThread() = default;
 
 
 	//call this to start profiling.
-	virtual void run();
+	void run() override;
 
 	int getNumThreadsRunning() const { return numThreadsRunning; }
 	bool getDone() const { return done; }
@@ -76,8 +77,8 @@ public:
 	void cancel() { cancelled = true; }
 	void commitSuicide() { commit_suicide = true; }
 
-	void sample(const SAMPLE_TYPE timeSpent);//for internal use.
 private:
+	void sample(const SAMPLE_TYPE timeSpent);
 	//std::wstring demangleProcName(const std::wstring& mangled_name);
 	void error(const std::wstring& what);
 
@@ -94,7 +95,7 @@ private:
 
 	// DE: 20090325 one Profiler instance per thread to profile
 	std::vector<Profiler> profilers;
-	Debugger *debugger;
+	std::unique_ptr<Debugger> debugger;
 	SAMPLE_TYPE duration;
 	//int numsamples;
 	const wchar_t* status;
@@ -110,6 +111,4 @@ private:
 	std::wstring filename;
 	std::wstring minidump;
 	SymbolInfo *sym_info;
-
-	DWORD startTick;
 };

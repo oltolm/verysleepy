@@ -45,7 +45,7 @@ public:
 	=====================================================================*/
 	ThreadInfo(DWORD id, HANDLE thread_handle);
 
-	~ThreadInfo();
+	~ThreadInfo() = default;
 
 	DWORD getID() const { return id; }
 	HANDLE getThreadHandle() const { return thread_handle; }
@@ -56,12 +56,12 @@ public:
 	const std::wstring& getName() const { return name; }
 	bool recalcUsage(int sampleTimeDiff);
 
-	FILETIME prevKernelTime, prevUserTime;
 	// DE: 20090325 Threads now have CPU usage
 	int cpuUsage;
 	__int64 totalCpuTimeMs;
 
 private:
+	FILETIME prevKernelTime, prevUserTime;
 	std::wstring location;
 	std::wstring name;
 	DWORD id;

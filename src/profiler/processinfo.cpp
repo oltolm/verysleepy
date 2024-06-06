@@ -26,8 +26,10 @@ http://www.gnu.org/copyleft/gpl.html..
 
 #include "../utils/osutils.h"
 #include "../utils/except.h"
-#include <windows.h>
+
+#include <cstddef>
 #include <tlhelp32.h>
+#include <windows.h>
 
 ProcessInfo::ProcessInfo(DWORD id_, const std::wstring& name_, HANDLE process_handle_)
 :	name(name_),
@@ -42,12 +44,58 @@ ProcessInfo::ProcessInfo(DWORD id_, const std::wstring& name_, HANDLE process_ha
 #endif
 }
 
-ProcessInfo::~ProcessInfo()
+static __int64 difference(FILETIME before, FILETIME after)
 {
+	__int64 i0 = ((__int64)(before.dwHighDateTime) << 32) + before.dwLowDateTime;
+	__int64 i1 = ((__int64)( after.dwHighDateTime) << 32) +  after.dwLowDateTime;
+	return i1 - i0;
 }
 
-void ProcessInfo::enumProcesses(std::vector<ProcessInfo>& processes_out)
+static __int64 total(FILETIME time)
 {
+	return ((__int64)(time.dwHighDateTime) << 32) + time.dwLowDateTime;
+}
+
+bool ProcessInfo::recalcUsage(int sampleTimeDiff)
+{
+	cpuUsage = -1;
+	totalCpuTimeMs = -1;
+
+	HANDLE process_handle = getProcessHandle();
+	if (process_handle == NULL)
+		return false;
+
+	FILETIME CreationTime, ExitTime, KernelTime, UserTime;
+
+	if(!GetProcessTimes(
+		process_handle,
+		&CreationTime,
+		&ExitTime,
+		&KernelTime,
+		&UserTime
+	))
+		return false;
+
+	__int64 coreCount = GetCoresForProcess(process_handle);
+
+	__int64 kernel_diff = difference(prevKernelTime, KernelTime);
+	__int64 user_diff = difference(prevUserTime, UserTime);
+	prevKernelTime = KernelTime;
+	prevUserTime = UserTime;
+
+	if (sampleTimeDiff > 0) {
+		__int64 total_diff = ((kernel_diff + user_diff) / 10'000) * 100;
+		cpuUsage = (total_diff / sampleTimeDiff) / coreCount;
+	}
+
+	totalCpuTimeMs = (total(KernelTime) + total(UserTime)) / 10'000;
+	
+	return true;
+}
+
+std::vector<ProcessInfo> ProcessInfo::enumProcesses()
+{
+	std::vector<ProcessInfo> processes;
 	HANDLE snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS | TH32CS_SNAPTHREAD, 0);
 
 	PROCESSENTRY32 processinfo = {0};
@@ -83,7 +131,7 @@ void ProcessInfo::enumProcesses(std::vector<ProcessInfo>& processes_out)
 			}
 
 			const std::wstring processname = processinfo.szExeFile;
-			processes_out.push_back(ProcessInfo(process_id, processname, process_handle));
+			processes.emplace_back(process_id, processname, process_handle);
 
 			processinfo.dwSize = sizeof(PROCESSENTRY32);
 		}
@@ -102,14 +150,14 @@ void ProcessInfo::enumProcesses(std::vector<ProcessInfo>& processes_out)
 		{
 			const DWORD owner_process_id = threadinfo.th32OwnerProcessID;
 
-			for(unsigned int i=0; i<processes_out.size(); ++i)
+			for(auto & process : processes)
 			{
-				if(processes_out[i].getID() == owner_process_id)
+				if(process.getID() == owner_process_id)
 				{
 					DWORD threadID = threadinfo.th32ThreadID;
 					HANDLE threadHandle = OpenThread( THREAD_ALL_ACCESS, FALSE, threadID );
 
-					processes_out[i].threads.push_back(ThreadInfo(threadID, threadHandle));
+					process.threads.emplace_back(threadID, threadHandle);
 					break;
 				}
 			}
@@ -120,17 +168,16 @@ void ProcessInfo::enumProcesses(std::vector<ProcessInfo>& processes_out)
 	}
 
 	CloseHandle(snapshot);
+	return processes;
 }
 
 ProcessInfo ProcessInfo::FindProcessById(DWORD process_id)
 {
-	std::vector<ProcessInfo> allProcesses;
-	enumProcesses(allProcesses);
-	for (size_t i=0; i < allProcesses.size(); i++)
+	std::vector<ProcessInfo> processes = enumProcesses();
+	for (const auto& process : processes)
 	{
-		auto process = allProcesses[i];
-		if(process.getID() == process_id)
-			return process;
+			if(process.getID() == process_id)
+				return process;
 	}
-	throw SleepyException("Could not found process with specified id: " + std::to_string((unsigned long long) process_id));
+	throw SleepyException("Could not find process with specified id: " + std::to_string(process_id));
 }

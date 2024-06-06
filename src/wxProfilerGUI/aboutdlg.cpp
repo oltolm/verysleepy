@@ -22,13 +22,16 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 http://www.gnu.org/copyleft/gpl.html.
 =====================================================================*/
 
-#include "aboutdlg.h"
-#include <wx/aboutdlg.h>
-#include <wx/statbmp.h>
-#include <wx/stattext.h>
-#include <wx/statline.h>
 #include "../appinfo.h"
+#include "aboutdlg.h"
 #include "version.h"
+
+#include <wx/aboutdlg.h>
+#include <wx/hyperlink.h>
+#include <wx/sizer.h>
+#include <wx/statbmp.h>
+#include <wx/statline.h>
+#include <wx/stattext.h>
 
 AboutDlg::AboutDlg()
 {

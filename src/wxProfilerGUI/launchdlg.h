@@ -22,7 +22,9 @@ http://www.gnu.org/copyleft/gpl.html.
 =====================================================================*/
 #pragma once
 
-#include "profilergui.h"
+#include <wx/dialog.h>
+
+class wxTextCtrl;
 
 #define ID_CMD_CHOOSE 1
 #define ID_CWD_CHOOSE 2
@@ -37,12 +39,11 @@ public:
 	wxString GetCmdValue() const { return m_cmdvalue; }
 	wxString GetCwdValue() const { return m_cwdvalue; }
 
-protected:
+private:
 	wxTextCtrl *m_cmdctl;
 	wxString    m_cmdvalue;
 	wxTextCtrl *m_cwdctl;
 	wxString    m_cwdvalue;
-	long        m_dialogStyle;
 
 	void OnOK(wxCommandEvent& event);
 	void OnChooseCmd(wxCommandEvent& event);

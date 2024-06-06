@@ -23,35 +23,37 @@ http://www.gnu.org/copyleft/gpl.html.
 =====================================================================*/
 #pragma once
 
-#include "profilergui.h"
+#include "CallstackView.h"
 #include "database.h"
-#include "../utils/sortlist.h"
+#include <wx/listctrl.h>
 
 /*=====================================================================
 ProcList
 --------
 
 =====================================================================*/
-class ProcList : public wxSortedListCtrl
+class ProcList : public wxListView, public AddressList
 {
 public:
 	ProcList(wxWindow *parent, bool isroot, Database *database);
 
-	virtual ~ProcList();
+	virtual ~ProcList() = default;
 
 	void OnSelected(wxListEvent& event);
 	void OnActivated(wxListEvent& event);
 	void OnSort(wxListEvent& event);
 	void OnContextMenu(wxContextMenuEvent& event);
 
-	/// Recreates the GUI list from the given one. Preserves selection.
-	void showList(const Database::List &list);
+	wxString OnGetItemText(long item, long column) const override;
+	wxItemAttr *OnGetItemAttr(long item) const override;
 
-	void focusSymbol(const Database::Symbol *symbol);
+	/// Recreates the GUI list from the given one. Preserves selection.
+	void showList(Database::List list);
+
+	void focusSymbol(const Database::Symbol *symbol, bool select = false);
 	const Database::Symbol *getFocusedSymbol();
 
-private:
-	Database::List list;
+	Database::Address getAddress(int item) const override;
 
 	enum ColumnType
 	{
@@ -69,29 +71,28 @@ private:
 		MAX_COLUMNS
 	};
 
+private:
+	friend struct ProcessInfoPred;
+	Database::List list;
+	const Database::Symbol *m_selected = nullptr;
+
 	struct Column
 	{
 		wxString name;
-		int listctrl_column;
-		SortType default_sort;
+		int columnPosition;
+		bool ascending;
 	};
-
-	DECLARE_EVENT_TABLE()
 
 	bool isroot; // Are we the main proc list?
 	bool updating; // Is a selection update in progress? (ignore selection events)
 
 	Database* database;
-	int sort_column;
-	SortType sort_dir;
 
 	Column columns[MAX_COLUMNS];
-	void setupColumn(ColumnType id, int width, SortType defsort, const wxString &name);
-	void setColumnValue(int row, ColumnType id, const wxString &value);
-
-	/// Sorts the in-memory list. Does not affect GUI.
-	void sortList();
+	void setupColumn(ColumnType id, int width, bool ascending, const wxString &name);
 
 	/// Displays our in-memory list. Preserves selection.
 	void displayList();
+
+	DECLARE_EVENT_TABLE()
 };

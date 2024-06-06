@@ -25,7 +25,10 @@ http://www.gnu.org/copyleft/gpl.html.
 
 #include "profilergui.h"
 #include "../profiler/processinfo.h"
-#include "../utils/sortlist.h"
+
+#include <memory>
+#include <wx/listctrl.h>
+#include <wx/timer.h>
 
 // DE: 20090325 ProcessList knows about threadlist and updates it based on process selection
 class ThreadList;
@@ -36,7 +39,7 @@ ProcessList
 -----------
 
 =====================================================================*/
-class ProcessList : public wxSortedListCtrl
+class ProcessList : public wxListView
 {
 public:
 	/*=====================================================================
@@ -49,31 +52,19 @@ public:
 			const wxSize& size,
 			ThreadList* threadList);
 
-	virtual ~ProcessList();
+	virtual ~ProcessList() = default;
 
 	void OnSelected(wxListEvent& event);
 	void OnTimer(wxTimerEvent& event);
 	void OnSort(wxListEvent& event);
 
 	void updateProcesses();
-	void updateTimes();
-	void updateThreadList();
-	void updateSorting();
-	void sortByName();
-	void sortByCpuUsage();
-	void sortByTotalCpuTime();
-	void sortByPID();
-#ifdef _WIN64
-	void sortByType();
-#endif
 	void reloadSymbols(bool download);
 
 	const ProcessInfo* getSelectedProcess();
-	SymbolInfo* takeSymbolInfo();
-private:
-	DECLARE_EVENT_TABLE()
+	std::unique_ptr<SymbolInfo> takeSymbolInfo();
 
-	enum {
+	enum ColumnType {
 		COL_NAME,
 #ifdef _WIN64
 		COL_TYPE,
@@ -83,22 +74,23 @@ private:
 		COL_PID,
 		NUM_COLUMNS
 	};
+	wxString  OnGetItemText (long item, long column) const override;
 
+private:
 	std::vector<ProcessInfo> processes;
 	// DE: 20090325 ProcessList knows about threadlist and updates it based on process selection
 	ThreadList* threadList;
-	SymbolInfo *syminfo;
+	std::unique_ptr<SymbolInfo> syminfo;
 
-	int selected_process;
 	wxTimer timer;
 	wxLongLong lastTime;
-	int sort_column;
-	SortType sort_dir;
-	// DE: 20090325 Update thread list on process selection change, but do it on idle
-	bool selectionChanged;
 	bool firstUpdate;
+	bool m_updating = false;
 
-	void fillList();
+	void updateThreadList();
+	void updateTimes();
+
+	DECLARE_EVENT_TABLE()
 };
 
 

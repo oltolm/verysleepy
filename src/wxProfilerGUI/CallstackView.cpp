@@ -21,14 +21,35 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 http://www.gnu.org/copyleft/gpl.html.
 =====================================================================*/
 
-#include "CallstackView.h"
-#include <algorithm>
-#include <wx/aui/auibar.h>
-#include <wx/filedlg.h>
-#include <wx/dcclient.h>
-#include "contextmenu.h"
-#include "mainwin.h"
+#include "../utils/container.h"
 #include "../utils/stringutils.h"
+#include "CallstackView.h"
+#include "contextmenu.h"
+#include "database.h"
+#include "mainwin.h"
+#include "profilergui.h"
+
+#include <algorithm>
+#include <unordered_map>
+#include <wx/aui/auibar.h>
+#include <wx/dcclient.h>
+#include <wx/filedlg.h>
+#include <wx/itemattr.h>
+#include <wx/listctrl.h>
+
+enum ListCtrl {
+	LIST_CTRL = 1000
+};
+
+enum ColumnType
+{
+	COL_NAME,
+	COL_MODULE,
+	COL_SOURCEFILE,
+	COL_SOURCELINE,
+	COL_ADDRESS,
+	MAX_COLUMNS
+};
 
 class wxStaticTextTransparent: public wxControl
 {
@@ -54,7 +75,7 @@ public:
 
 	void SetLabel(const wxString& label_)
 	{
-		this->label = label_;
+		label = label_;
 	}
 
 	void OnEraseBackground(wxEraseEvent& WXUNUSED(event))
@@ -76,17 +97,108 @@ EVT_LIST_ITEM_SELECTED(LIST_CTRL, CallstackView::OnSelected)
 EVT_CONTEXT_MENU(CallstackView::OnContextMenu)
 END_EVENT_TABLE()
 
-CallstackView::CallstackView(wxWindow *parent,Database *_database)
-:	wxWindow(parent,wxID_ANY), database(_database), callstackActive(0), currSymbol(NULL), itemSelected(~0u)
+class CallstackViewProcList : public wxListView, public AddressList
 {
-	listCtrl = new wxListCtrl(this,LIST_CTRL,wxDefaultPosition,wxDefaultSize,wxLC_REPORT);
-	setupColumn(COL_NAME,			170,	_T("Name"));
-	setupColumn(COL_MODULE,			70,		_T("Module"));
-	setupColumn(COL_SOURCEFILE,		270,	_T("Source File"));
-	setupColumn(COL_SOURCELINE,		40,		_T("Source Line"));
-	setupColumn(COL_ADDRESS,		100,	_T("Address"));
+	void setupColumn(ColumnType id, int width, const wxString& name);
 
-	toolBar = new wxAuiToolBar(this,-1);
+public:
+	CallstackViewProcList(wxWindow *parent)
+		: wxListView(parent, LIST_CTRL, wxDefaultPosition, wxDefaultSize,
+					 wxLC_REPORT | wxLC_VIRTUAL)
+	{
+		setupColumn(COL_NAME, 170, _T("Name"));
+		setupColumn(COL_MODULE, 70, _T("Module"));
+		setupColumn(COL_SOURCEFILE, 270, _T("Source File"));
+		setupColumn(COL_SOURCELINE, 40, _T("Source Line"));
+		setupColumn(COL_ADDRESS, 100, _T("Address"));
+	}
+
+	wxString OnGetItemText(long item, long column) const override;
+	wxItemAttr *OnGetItemAttr(long item) const override;
+
+	Database::Address getAddress(int item) const override;
+};
+
+void CallstackViewProcList::setupColumn(ColumnType index, int width, const wxString& name)
+{
+	wxListItem itemCol;
+	itemCol.SetText(name);
+	if (width >= 0)
+		itemCol.SetWidth(FromDIP(width));
+	InsertColumn(index, itemCol);
+}
+
+
+Database::Address CallstackViewProcList::getAddress(int item) const
+{
+	auto parent = dynamic_cast<CallstackView *>(GetParent());
+	const Database::CallStack *now = parent->callstacks[parent->callstackActive];
+	return now->addresses.at(item);
+}
+
+wxString CallstackViewProcList::OnGetItemText(long item, long column) const
+{
+	auto parent = dynamic_cast<CallstackView *>(GetParent());
+
+	const Database::CallStack *now = parent->callstacks[parent->callstackActive];
+	const Database::Symbol *snow = now->symbols.at(item);
+	Database::Address addr = now->addresses.at(item);
+	const Database::AddrInfo *addrinfo = parent->database->getAddrInfo(addr);
+
+	switch (column)
+	{
+	case COL_NAME:
+		return snow->procname;
+	case COL_MODULE:
+		return parent->database->getModuleName(snow->module);
+	case COL_SOURCEFILE:
+		return parent->database->getFileName(snow->sourcefile);
+	case COL_SOURCELINE:
+		return wxString::Format("%u", addrinfo->sourceline);
+	case COL_ADDRESS:
+		return wxString::Format("%#llx", addr);
+	}
+
+	return "";
+}
+
+wxItemAttr *CallstackViewProcList::OnGetItemAttr(long item) const
+{
+	static wxItemAttr *itemAttr = new wxItemAttr;
+	*itemAttr = {};
+
+	auto parent = dynamic_cast<CallstackView *>(GetParent());
+
+	if (parent->callstacks.empty())
+		return itemAttr;
+
+	const Database::CallStack *now = parent->callstacks[parent->callstackActive];
+
+	const Database::Symbol *snow = now->symbols.at(item);
+
+	const ViewState *viewstate = theMainWin->getViewState();
+
+	if (snow->isCollapseFunction || snow->isCollapseModule)
+		itemAttr->SetTextColour(wxColor(0,128,0));
+	else
+		itemAttr->SetTextColour(wxColor(0,0,0));
+
+	if (set_get(viewstate->highlighted, snow->address))
+		itemAttr->SetBackgroundColour(wxColor(255,255,0));
+	else
+		itemAttr->SetBackgroundColour(wxColor(255,255,255));
+
+	wxFont font = GetFont();
+	font.SetWeight(snow == parent->currSymbol ? wxFONTWEIGHT_BOLD : wxFONTWEIGHT_NORMAL);
+	itemAttr->SetFont(font);
+
+	return itemAttr;
+}
+
+CallstackView::CallstackView(wxWindow *parent,Database *_database)
+:	wxWindow(parent,wxID_ANY), listCtrl(new CallstackViewProcList(this)), database(_database), callstackActive(0), currSymbol(NULL)
+{
+	toolBar = new wxAuiToolBar(this);
 	toolBar->AddTool(TOOL_PREV,"-",LoadPngResource(L"button_prev", this),_T("Previous"));
 	toolBar->AddTool(TOOL_NEXT,"+",LoadPngResource(L"button_next", this),_T("Next"));
 	toolBar->AddTool(TOOL_EXPORT_CSV,"CSV",LoadPngResource(L"button_exportcsv", this),_T("Export as CSV"));
@@ -104,31 +216,19 @@ CallstackView::CallstackView(wxWindow *parent,Database *_database)
 
 void CallstackView::OnSelected(wxListEvent& event)
 {
-	itemSelected = event.m_itemIndex;
-	if (callstackActive < callstacks.size() && (size_t)itemSelected < callstacks[callstackActive]->symbols.size())
-	{
-		const Database::AddrInfo *addrinfo = database->getAddrInfo(callstacks[callstackActive]->addresses[itemSelected]);
-		theMainWin->focusSymbol(addrinfo);
-	}
-	itemSelected = ~0u;
+	const Database::CallStack *now = callstacks[callstackActive];
+
+	auto item = event.GetIndex();
+
+	Database::Address addr = now->addresses.at(item);
+	const Database::AddrInfo *addrinfo = database->getAddrInfo(addr);
+
+	theMainWin->focusSymbol(addrinfo);
 }
 
 void CallstackView::OnSize(wxSizeEvent& WXUNUSED(event))
 {
 	Layout();
-}
-
-void CallstackView::setupColumn(ColumnType index, int width, const wxString &name)
-{
-	wxListItem itemCol;
-	itemCol.SetText(name);
-	if (width >= 0)
-		itemCol.SetWidth(FromDIP(width));
-	listCtrl->InsertColumn(index, itemCol);
-}
-
-CallstackView::~CallstackView(void)
-{
 }
 
 void CallstackView::showCallStack(const Database::Symbol *symbol)
@@ -140,33 +240,18 @@ void CallstackView::showCallStack(const Database::Symbol *symbol)
 
 	currSymbol = symbol;
 
-	const Database::CallStack *pCallStackSelected;
-	if(callstackActive < callstacks.size()) {
-		pCallStackSelected = callstacks[callstackActive];
-	} else {
-		pCallStackSelected = NULL;
-	}
-
 	callstacks = database->getCallstacksContaining(symbol);
-	std::vector<std::pair<const Database::CallStack *, double>> callstackCosts(callstacks.size());
-	for (size_t i = 0; i < callstackCosts.size(); ++i)
-	{
-		callstackCosts[i].first = callstacks[i];
-		callstackCosts[i].second = database->getFilteredSampleCount(callstacks[i]->samples);
-	}
+	listCtrl->SetItemCount(0);
+	std::unordered_map<const Database::CallStack*, double> callstackMap;
+	for (auto callstack : callstacks)
+		callstackMap.emplace(callstack, database->getFilteredSampleCount(callstack->samples));
 
-	std::sort(callstackCosts.begin(), callstackCosts.end(), [this](std::pair<const Database::CallStack *, double> const &a, std::pair<const Database::CallStack *, double> const &b) {
-		return a.second > b.second;
+	std::sort(callstacks.begin(), callstacks.end(), [&](const auto a, const auto b) {
+		return callstackMap[a] > callstackMap[b];
 	});
 
 	callstackActive = 0;
 
-	for(size_t i=0;i<callstacks.size();i++)  {
-		callstacks[i] = callstackCosts[i].first;
-		if(callstacks[i] == pCallStackSelected) {
-			callstackActive = i;
-		}
-	}
 	updateList();
 }
 
@@ -176,14 +261,13 @@ void CallstackView::reset()
 	callstackActive = 0;
 	callstackStats.clear();
 	currSymbol = NULL;
-	itemSelected = ~0u;
-	listCtrl->DeleteAllItems();
+	listCtrl->SetItemCount(0);
 }
 
 void CallstackView::updateTools()
 {
 	toolBar->EnableTool(TOOL_PREV,callstackActive != 0);
-	toolBar->EnableTool(TOOL_NEXT,int(callstackActive) < int(callstacks.size()-1));
+	toolBar->EnableTool(TOOL_NEXT,!callstacks.empty() && callstackActive < callstacks.size()-1);
 	toolBar->EnableTool(TOOL_EXPORT_CSV,!callstacks.empty());
 	toolRange->SetLabel(callstackStats);
 	toolBar->Realize();
@@ -199,9 +283,9 @@ void CallstackView::updateList()
 		double totalcount = database->getMainList().totalcount;
 		double nowCount = database->getFilteredSampleCount(now->samples);
 		callstackStats = wxString::Format("Call stack %d of %d | Accounted for %0.2fs (%0.2f%%)",
-			(int)(callstackActive+1),(int)callstacks.size(),nowCount,nowCount*100/totalcount);
+			(int)callstackActive+1,(int)callstacks.size(),nowCount,nowCount*100/totalcount);
 	} else {
-		callstackStats = wxString("");
+		callstackStats = "";
 	}
 
 	updateTools();
@@ -209,51 +293,8 @@ void CallstackView::updateList()
 	if(!now)
 		return;
 
-	const ViewState *viewstate = theMainWin->getViewState();
-
-	for (size_t i = 0; i < now->symbols.size(); i++)
-	{
-		const Database::Symbol *snow = now->symbols[i];
-		Database::Address addr = now->addresses[i];
-		const Database::AddrInfo *addrinfo = database->getAddrInfo(addr);
-
-		if (i == (size_t)listCtrl->GetItemCount())
-			listCtrl->InsertItem(i,snow->procname.c_str());
-		else
-			listCtrl->SetItem(i,COL_NAME,snow->procname.c_str());
-
-		if (snow->isCollapseFunction || snow->isCollapseModule)
-			listCtrl->SetItemTextColour(i,wxColor(0,128,0));
-		else
-			listCtrl->SetItemTextColour(i,wxColor(0,0,0));
-
-		if (set_get(viewstate->highlighted, snow->address))
-			listCtrl->SetItemBackgroundColour(i, wxColor(255,255,0));
-		else
-			listCtrl->SetItemBackgroundColour(i, wxColor(255,255,255));
-
-		listCtrl->SetItem(i, COL_MODULE    , database->getModuleName(snow->module));
-		listCtrl->SetItem(i, COL_SOURCEFILE, database->getFileName  (snow->sourcefile));
-		listCtrl->SetItem(i, COL_SOURCELINE, wxString::Format("%d", addrinfo->sourceline));
-		listCtrl->SetItem(i, COL_ADDRESS   , wxString::Format("%#llx", addr));
-
-		wxFont font = listCtrl->GetFont();
-		if(snow == currSymbol)
-			font.SetWeight(wxFONTWEIGHT_BOLD);
-		else
-			font.SetWeight(wxFONTWEIGHT_NORMAL);
-
-		listCtrl->SetItemFont(i, font);
-		if(i == itemSelected) {
-			listCtrl->SetItemState(i,wxLIST_STATE_FOCUSED|wxLIST_STATE_SELECTED, wxLIST_STATE_FOCUSED|wxLIST_STATE_SELECTED);
-		} else {
-			listCtrl->SetItemState(i, 0, wxLIST_STATE_FOCUSED|wxLIST_STATE_SELECTED);
-		}
-		listCtrl->SetItemPtrData(i, (wxUIntPtr)addrinfo);
-	}
-
-	while (listCtrl->GetItemCount() > int(now->symbols.size()))
-		listCtrl->DeleteItem(listCtrl->GetItemCount()-1);
+	listCtrl->SetItemCount(now->symbols.size());
+	listCtrl->Refresh();
 }
 
 void CallstackView::exportCSV(wxFileOutputStream &file)

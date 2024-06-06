@@ -22,24 +22,31 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 http://www.gnu.org/copyleft/gpl.html.
 =====================================================================*/
-#include "database.h"
-
-#include "../utils/stringutils.h"
-#include "sourceview.h"
-#include <wx/mstream.h>
-#include <fstream>
-#include <set>
-#include "mainwin.h"
-#include "../profiler/symbolinfo.h"
-#include <algorithm>
 #include "../appinfo.h"
+#include "../utils/container.h"
 #include "../utils/except.h"
+#include "../utils/stringutils.h"
+#include "database.h"
 #include "latesymbolinfo.h"
+#include "mainwin.h"
+#include "sourceview.h"
+
+#include <algorithm>
+#include <memory>
+#include <set>
+#include <string>
+#include <utility>
+#include <wx/log.h>
+#include <wx/mstream.h>
+#include <wx/progdlg.h>
+#include <wx/txtstrm.h>
+#include <wx/wfstream.h>
+#include <wx/zipstrm.h>
 
 Database *theDatabase;
 
-StringSet osModules(L"osmodules.txt",false);
-StringSet osFunctions(L"osfunctions.txt",true);
+StringSet<false> osModules(L"osmodules.txt");
+StringSet<true> osFunctions(L"osfunctions.txt");
 
 bool IsOsFunction(wxString proc)
 {
@@ -76,28 +83,20 @@ void RemoveOsModule(wxString mod)
 }
 
 Database::Database()
+: late_sym_info(new LateSymbolInfo())
 {
 	assert(!theDatabase);
 	theDatabase = this;
-	late_sym_info = new LateSymbolInfo();
 }
 
-Database::~Database()
-{
-	clear();
-	delete late_sym_info;
-}
+Database::~Database() = default;
 
 void Database::clear()
 {
-	for (auto i = symbols.begin(); i != symbols.end(); ++i)
-		if (*i)
-			delete *i;
-
 	symbols.clear();
 	files.clear();
 	filemap.clear();
-	addrinfo.clear();
+	addressInfos.clear();
 	callstacks.clear();
 	mainList.items.clear();
 	mainList.totalcount = 0;
@@ -132,7 +131,7 @@ void Database::loadFromPath(const std::wstring& _profilepath, bool collapseOSCal
 			{
 				versionFound = true;
 				wxString ver = name.Mid(8, name.Length()-(8+9));
-				enforce(ver == FORMAT_VERSION, wxString::Format("Cannot load capture file: %s", name.c_str()).c_str());
+				enforce(ver == FORMAT_VERSION, wxString::Format("Cannot load capture file: %s", name).c_str());
 			}
 		}
 
@@ -180,12 +179,11 @@ void Database::loadFromPath(const std::wstring& _profilepath, bool collapseOSCal
 
 	// Warn the user about extra entries.
 	std::set<wxString> standard_entries { "Symbols.txt", "Callstacks.txt", "Threads.txt", "Stats.txt", "minidump.dmp" };
-	for ( auto item : entries ) {
-		auto& name = item.first;
+	for ( const auto &[name, entry] : entries ) {
 		if ( standard_entries.find(name) != standard_entries.end() ) continue;
 		else if (name.Left(8) == "Version ") continue;
 
-		wxLogWarning("Other fluff found in capture file (%s)\n", name.c_str());
+		wxLogWarning("Other fluff found in capture file (%s)\n", name);
 	}
 
 	setRoot(NULL);
@@ -204,7 +202,7 @@ void Database::loadSymbols(wxInputStream &file)
 		kMaxProgress+1, theMainWin,
 		wxPD_APP_MODAL|wxPD_AUTO_HIDE);
 
-	std::unordered_map<std::wstring, const Symbol*> locsymbols;
+	std::unordered_map<std::wstring, Symbol*> locsymbols;
 
 	bool warnedDupAddress = false;
 	while (!file.Eof())
@@ -213,18 +211,16 @@ void Database::loadSymbols(wxInputStream &file)
 		if (line.IsEmpty())
 			break;
 
-		std::wistringstream stream(line.wc_str());
+		std::wistringstream stream(line);
 
 		Address addr;
-		stream >> std::hex >> addr;
-
-		std::wstring sourcefilename, modulename, procname;
+		stream >> std::hex >> addr >> std::dec;
 
 		bool inserted;
-		AddrInfo &info = map_emplace(addrinfo, addr, &inserted);
-		::readQuote(stream, modulename);
-		::readQuote(stream, procname);
-		::readQuote(stream, sourcefilename);
+		AddrInfo &info = map_emplace(addressInfos, addr, &inserted);
+		std::wstring modulename = ::readQuote(stream);
+		std::wstring procname = ::readQuote(stream);
+		std::wstring sourcefilename = ::readQuote(stream);
 		stream >> info.sourceline;
 		if (!inserted)
 		{
@@ -248,19 +244,17 @@ void Database::loadSymbols(wxInputStream &file)
 		std::wstring loc = locstream.str();
 
 		// Create a new symbol entry, or lookup the existing one, based on the key
-		const Symbol *&sym = map_emplace(locsymbols, loc, &inserted);
+		Symbol *&sym = map_emplace(locsymbols, loc, &inserted);
 		if (inserted) // new symbol, judging by its location?
 		{
-			Symbol *newsym = new Symbol;
-			newsym->id                 = symbols.size();
-			newsym->address            = addr;
-			newsym->procname           = procname;
-			newsym->sourcefile         = fileid;
-			newsym->module             = moduleid;
-			newsym->isCollapseFunction = osFunctions.Contains(procname  .c_str());
-			newsym->isCollapseModule   = osModules  .Contains(modulename.c_str());
-			symbols.push_back(newsym);
-			sym = newsym;
+			sym = symbols.emplace_back(new Symbol()).get();
+			sym->id                 = symbols.size() - 1;
+			sym->address            = addr;
+			sym->procname           = procname;
+			sym->sourcefile         = fileid;
+			sym->module             = moduleid;
+			sym->isCollapseFunction = osFunctions.Contains(procname  .c_str());
+			sym->isCollapseModule   = osModules  .Contains(modulename.c_str());
 		}
 
 		info.symbol = sym;
@@ -276,8 +270,8 @@ void Database::loadSymbols(wxInputStream &file)
 
 static void addSamplesInfo(std::map<Database::ThreadID, double> &dst, std::map<Database::ThreadID, double> const &src)
 {
-	for (auto &s : src)
-		dst[s.first] += s.second;
+	for (const auto &[tid, cost] : src)
+		dst[tid] += cost;
 }
 
 static void addSamplesInfo(std::map<Database::ThreadID, double> &dst, std::map<Database::ThreadID, double> const &src, std::vector<Database::ThreadID> const &filterThreads)
@@ -300,8 +294,8 @@ static double getSampleCount(std::map<Database::ThreadID, double> const &samples
 	double count = 0;
 	if (filterThreads.empty())
 	{
-		for (auto &sample : samples)
-			count += sample.second;
+		for (const auto& [tid, sample] : samples)
+			count += sample;
 	}
 	else
 	{
@@ -332,7 +326,7 @@ void Database::loadCallstacks(wxInputStream &file,bool collapseKernelCalls)
 		if (lineAddr.IsEmpty() || lineSamples.IsEmpty())
 			break;
 
-		std::wistringstream streamAddr(lineAddr.wc_str());
+		std::wistringstream streamAddr(lineAddr);
 
 		CallStack callstack;
 		AddrInfo *topAddrInfo = NULL;
@@ -348,17 +342,17 @@ void Database::loadCallstacks(wxInputStream &file,bool collapseKernelCalls)
 			if (depth == 0)
 			{
 				// AA: 20210821: Reconstruct data that used to be in IPCounts.txt
-				topAddrInfo = &addrinfo.at(addr);
+				topAddrInfo = &addressInfos.at(addr);
 			}
 
-			if (collapseKernelCalls && addrinfo.at(addr).symbol->isCollapseFunction)
+			if (collapseKernelCalls && addressInfos.at(addr).symbol->isCollapseFunction)
 				callstack.addresses.clear();
 
 			callstack.addresses.push_back(addr);
 			++depth;
 		}
 
-		std::wistringstream streamSamples(lineSamples.wc_str());
+		std::wistringstream streamSamples(lineSamples);
 		while (true)
 		{
 			ThreadID tid;
@@ -369,7 +363,7 @@ void Database::loadCallstacks(wxInputStream &file,bool collapseKernelCalls)
 			if (!(streamSamples >> count))
 				break;
 
-			callstack.samples.insert(std::make_pair(tid, count));
+			callstack.samples.emplace(tid, count);
 		}
 
 		if (topAddrInfo)
@@ -379,11 +373,11 @@ void Database::loadCallstacks(wxInputStream &file,bool collapseKernelCalls)
 
 		if (collapseKernelCalls)
 		{
-			if (callstack.addresses.size() >= 2 && addrinfo.at(callstack.addresses[0]).symbol->isCollapseModule)
+			if (callstack.addresses.size() >= 2 && addressInfos.at(callstack.addresses[0]).symbol->isCollapseModule)
 			{
 				do
 				{
-					if (!addrinfo.at(callstack.addresses[1]).symbol->isCollapseModule)
+					if (!addressInfos.at(callstack.addresses[1]).symbol->isCollapseModule)
 						break;
 					callstack.addresses.erase(callstack.addresses.begin());
 				}
@@ -393,7 +387,7 @@ void Database::loadCallstacks(wxInputStream &file,bool collapseKernelCalls)
 
 		callstack.symbols.resize(callstack.addresses.size());
 		for (size_t i=0; i<callstack.addresses.size(); i++)
-			callstack.symbols[i] = addrinfo.at(callstack.addresses[i]).symbol;
+			callstack.symbols[i] = addressInfos.at(callstack.addresses[i]).symbol;
 
 		callstacks.emplace_back(std::move(callstack));
 
@@ -404,7 +398,7 @@ void Database::loadCallstacks(wxInputStream &file,bool collapseKernelCalls)
 
 	struct Pred
 	{
-		bool operator () (const CallStack &a, const CallStack &b)
+		bool operator () (const CallStack &a, const CallStack &b) const
 		{
 			long l = a.addresses.size() - b.addresses.size();
 			return l ? l<0 : a.addresses < b.addresses;
@@ -420,21 +414,17 @@ void Database::loadCallstacks(wxInputStream &file,bool collapseKernelCalls)
 
 		progressdlg.Update(0, "Filtering...");
 
-		std::vector<CallStack> filtered;
-		const auto total = callstacks.size();
-		for (size_t i = 0; i < total; ++i)
-		{
+		int i = 0;
+		const size_t total = callstacks.size();
+		auto end = std::unique(callstacks.begin(), callstacks.end(), [&](CallStack& a, CallStack& b) {
 			if (i % 256 == 0)
 				progressdlg.Update(kMaxProgress * i / total);
-
-			auto& item = callstacks[i];
-			if (!filtered.empty() && filtered.back().addresses == item.addresses)
-				addSamplesInfo(filtered.back().samples, item.samples);
-			else
-				filtered.emplace_back(std::move(item));
-		}
-
-		std::swap(filtered, callstacks);
+			i++;
+			if (a.addresses == b.addresses)
+				addSamplesInfo(a.samples, b.samples);
+			return a.addresses == b.addresses;
+		});
+		callstacks.erase(end, callstacks.end());
 	}
 }
 
@@ -454,7 +444,7 @@ void Database::loadThreads(wxInputStream &file)
 		if (lineTid.IsEmpty() || lineName.IsEmpty())
 			break;
 
-		std::wistringstream streamTid(lineTid.wc_str());
+		std::wistringstream streamTid(lineTid);
 
 		ThreadID tid;
 		streamTid >> tid;
@@ -479,7 +469,7 @@ void Database::loadStats(wxInputStream &file)
 		if (line.IsEmpty())
 			break;
 
-		stats.push_back(line.wc_str());
+		stats.push_back(line);
 	}
 }
 
@@ -493,7 +483,7 @@ bool Database::includeCallstack(const CallStack &callstack) const
 {
 	if (currentRoot && std::find(callstack.symbols.begin(), callstack.symbols.end(), currentRoot) == callstack.symbols.end())
 		return false;
-	if (filterThreads.size())
+	if (!filterThreads.empty())
 	{
 		double count = getFilteredSampleCount(callstack.samples);
 		if (count == 0)
@@ -507,7 +497,7 @@ void Database::scanMainList()
 	std::vector<double> exclusive(symbols.size()), inclusive(symbols.size());
 
 	wxProgressDialog progressdlg(APPNAME, "Scanning profile database...",
-		(int)callstacks.size(), theMainWin,
+		callstacks.size(), theMainWin,
 		wxPD_APP_MODAL|wxPD_AUTO_HIDE);
 
 	mainList.items.clear();
@@ -517,19 +507,18 @@ void Database::scanMainList()
 	Symbol::ID currentRootID = currentRoot ? currentRoot->id : -1;
 
 	int progress = 0;
-	for (auto it = callstacks.begin(); it != callstacks.end(); ++it)
+	for (const auto & callstack : callstacks)
 	{
-		const auto& i = *it;
 		// Only use call stacks that include the current root
-		if (!includeCallstack(i))
+		if (!includeCallstack(callstack))
 			continue;
 
-		double iSampleCount = getFilteredSampleCount(i.samples);
-		exclusive[i.symbols[0]->id] += iSampleCount;
+		double iSampleCount = getFilteredSampleCount(callstack.samples);
+		exclusive[callstack.symbols[0]->id] += iSampleCount;
 		std::vector<bool> seen(symbols.size());
-		for (size_t n = 0; n < i.symbols.size(); ++n)
+		for (const auto & symbol : callstack.symbols)
 		{
-			Symbol::ID id = i.symbols[n]->id;
+			Symbol::ID id = symbol->id;
 
 			// we filter out duplicates, to avoid getting funny numbers when
 			// using recursive functions.
@@ -547,33 +536,25 @@ void Database::scanMainList()
 
 	for (Symbol::ID id = 0; id < symbols.size(); ++id)
 	{
-		Item item;
-		item.symbol = symbols[id];
+		Item& item = mainList.items.emplace_back();
+		item.symbol = symbols[id].get();
 		item.address = item.symbol->address;
-		item.exclusive = exclusive[id];
 		item.inclusive = inclusive[id];
-		mainList.items.push_back(item);
+		item.exclusive = exclusive[id];
 	}
 }
 
 std::vector<const Database::CallStack*> Database::getCallstacksContaining(const Database::Symbol *symbol) const
 {
 	std::vector<const CallStack *> ret;
-	for (auto it = callstacks.begin(); it != callstacks.end(); ++it)
+	for (const auto & callstack : callstacks)
 	{
-		const auto& i = *it;
 		// Only use call stacks that include the current root
-		if (!includeCallstack(i)) continue;
+		if (!includeCallstack(callstack)) continue;
 
 		// Only include callstacks that have our symbol in.
-		for (size_t n=0;n<i.symbols.size();n++)
-		{
-			if (i.symbols[n] == symbol)
-			{
-				ret.push_back(&i);
-				break;
-			}
-		}
+		if (std::find(callstack.symbols.begin(), callstack.symbols.end(), symbol) != callstack.symbols.end())
+			ret.push_back(&callstack);
 	}
 	return ret;
 }
@@ -582,22 +563,21 @@ Database::List Database::getCallers(const Database::Symbol *symbol) const
 {
 	List list;
 	std::map<Address, double> counts;
-	for (auto it = callstacks.begin(); it != callstacks.end(); ++it)
+	for (const auto & callstack : callstacks)
 	{
-		const auto& i = *it;
-		// Only use call stacks that include the current root
-		if (!includeCallstack(i)) continue;
+			// Only use call stacks that include the current root
+		if (!includeCallstack(callstack)) continue;
 
 		// Only include callstacks that have our symbol in.
-		for (size_t n=0;n<i.symbols.size()-1;n++)
+		for (size_t n=0;n<callstack.symbols.size()-1;n++)
 		{
-			const Symbol *s = i.symbols[n];
+			const Symbol *s = callstack.symbols[n];
 			if (s == currentRoot) break;       // Stop handling the call stack if we encounter the root
 			if (s == symbol)
 			{
-				Address caller = i.addresses[n+1];
+				Address caller = callstack.addresses[n+1];
 
-				double iSampleCount = getFilteredSampleCount(i.samples);
+				double iSampleCount = getFilteredSampleCount(callstack.samples);
 				counts[caller] += iSampleCount;
 				list.totalcount += iSampleCount;
 				break; // Stop walking the stack to avoid getting funny numbers for recursive functions
@@ -605,14 +585,13 @@ Database::List Database::getCallers(const Database::Symbol *symbol) const
 		}
 	}
 
-	for (auto i = counts.begin(); i != counts.end(); ++i)
+	for (const auto &[address, cost] : counts)
 	{
-		Item item;
-		item.address = i->first;
-		item.symbol = addrinfo.at(item.address).symbol;
-		item.inclusive = i->second;
-		item.exclusive = i->second;
-		list.items.push_back(item);
+		Item& item = list.items.emplace_back();
+		item.symbol = addressInfos.at(address).symbol;
+		item.address = address;
+		item.inclusive = cost;
+		item.exclusive = cost;
 	}
 
 	return list;
@@ -622,35 +601,34 @@ Database::List Database::getCallees(const Database::Symbol *symbol) const
 {
 	List list;
 	std::map<const Symbol *, double> counts;
-	for (auto i = callstacks.begin(); i != callstacks.end(); ++i)
+	for (const auto & callstack : callstacks)
 	{
 		// Only use call stacks that include the current root
-		if (!includeCallstack(*i)) continue;
+		if (!includeCallstack(callstack)) continue;
 
-		double callstackCost = getFilteredSampleCount(i->samples);
+		double callstackCost = getFilteredSampleCount(callstack.samples);
 
 		// Only include callstacks that have our symbol in.
-		for (size_t n=1;n<i->symbols.size();n++)
+		for (size_t n=1;n<callstack.symbols.size();n++)
 		{
-			if (i->symbols[n] == symbol)
+			if (callstack.symbols[n] == symbol)
 			{
-				const Symbol *callee = i->symbols[n-1];
+				const Symbol *callee = callstack.symbols[n-1];
 				counts[callee] += callstackCost;
 				list.totalcount += callstackCost;
 				break; // Stop walking the stack to avoid getting funny numbers for recursive functions
 			}
-			if (i->symbols[n] == currentRoot) break;       // Stop handling the call stack if we encounter the root
+			if (callstack.symbols[n] == currentRoot) break;       // Stop handling the call stack if we encounter the root
 		}
 	}
 
-	for (auto i = counts.begin(); i != counts.end(); ++i)
+	for (const auto & [symbol, cost] : counts)
 	{
-		Item item;
-		item.symbol = i->first;
+		Item& item = list.items.emplace_back();
+		item.symbol = symbol;
 		item.address = item.symbol->address;
-		item.inclusive = i->second;
-		item.exclusive = i->second;
-		list.items.push_back(item);
+		item.inclusive = cost;
+		item.exclusive = cost;
 	}
 
 	return list;
@@ -661,22 +639,22 @@ Database::SymbolSamples Database::getSymbolSamples(const Symbol *symbol) const
 	SymbolSamples samples;
 	samples.symbol = symbol;
 
-	for (auto i = callstacks.begin(); i != callstacks.end(); ++i)
+	for (const auto & callstack : callstacks)
 	{
 		// Only use call stacks that include the current root
-		if (!includeCallstack(*i)) continue;
+		if (!includeCallstack(callstack)) continue;
 
 		// Only include callstacks that have our symbol in.
-		for (size_t n = 0; n < i->symbols.size(); n++)
+		for (size_t n = 0; n < callstack.symbols.size(); n++)
 		{
-			if (i->symbols[n] == symbol)
+			if (callstack.symbols[n] == symbol)
 			{
 				if (n == 0)
-					addSamplesInfo(samples.exclusive, i->samples, filterThreads);
-				addSamplesInfo(samples.inclusive, i->samples, filterThreads);
+					addSamplesInfo(samples.exclusive, callstack.samples, filterThreads);
+				addSamplesInfo(samples.inclusive, callstack.samples, filterThreads);
 				break; // Stop walking the stack to avoid getting funny numbers for recursive functions
 			}
-			if (i->symbols[n] == currentRoot) break;       // Stop handling the call stack if we encounter the root
+			if (callstack.symbols[n] == currentRoot) break;       // Stop handling the call stack if we encounter the root
 		}
 	}
 
@@ -705,17 +683,17 @@ void Database::loadMinidump(wxInputStream &file)
 	}
 }
 
-std::vector<double> Database::getLineCounts(FileID sourcefile)
+std::vector<double> Database::getLineCounts(FileID sourcefile) const
 {
 	std::vector<double> linecounts;
 
-	for (auto &pair : addrinfo)
-		if (pair.second.symbol->sourcefile == sourcefile)
+	for (const auto &[address, addressInfo] : addressInfos)
+		if (addressInfo.symbol->sourcefile == sourcefile)
 		{
-			unsigned sourceline = pair.second.sourceline;
-			if (linecounts.size() <= size_t(sourceline))
-				linecounts.resize(size_t(sourceline)+1);
-			double count = getSampleCount(pair.second.samples, filterThreads);
+			unsigned sourceline = addressInfo.sourceline;
+			if (linecounts.size() <= sourceline)
+				linecounts.resize(sourceline+1);
+			double count = getSampleCount(addressInfo.samples, filterThreads);
 			linecounts[sourceline] += count;
 		}
 
@@ -727,9 +705,9 @@ double Database::getFilteredSampleCount(std::map<ThreadID, double> const &sample
 	return getSampleCount(samples, filterThreads);
 }
 
-void Database::setFilterThreads(std::vector<ThreadID> const &threads)
+void Database::setFilterThreads(std::vector<ThreadID> threads)
 {
-	filterThreads = threads;
+	filterThreads = std::move(threads);
 	std::sort(filterThreads.begin(), filterThreads.end());
 	scanMainList();
 }

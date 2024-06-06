@@ -21,20 +21,29 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 http://www.gnu.org/copyleft/gpl.html.
 =====================================================================*/
-#include "mainwin.h"
-#include "database.h"
 
+#include "../appinfo.h"
+#include "../utils/container.h"
+#include "../utils/except.h"
 #include "../utils/stringutils.h"
 #include "CallstackView.h"
+#include "database.h"
+#include "mainwin.h"
+#include "profilergui.h"
+
 #include <shellapi.h>
+#include <windows.h>
 #include <wx/aui/auibook.h>
+#include <wx/aui/framemanager.h>
+#include <wx/file.h>
+#include <wx/filedlg.h>
+#include <wx/filehistory.h>
+#include <wx/gauge.h>
 #include <wx/hashset.h>
 #include <wx/menu.h>
-#include <wx/filedlg.h>
-#include <wx/gauge.h>
-#include <set>
-#include "../utils/except.h"
-#include "../appinfo.h"
+#include <wx/progdlg.h>
+#include <wx/propgrid/propgrid.h>
+#include <wx/string.h>
 
 MainWin *theMainWin;
 
@@ -58,6 +67,7 @@ enum
 	MainWin_ResetFilters,
 	MainWin_Help_Documentation,
 	MainWin_Help_Support,
+	MainWin_Recent,
 
 	// it is important for the id corresponding to the "About" command to have
 	// this standard value as otherwise it won't be handled properly under Mac
@@ -66,9 +76,15 @@ enum
 };
 
 MainWin::MainWin(const wxString& title,
-				 const std::wstring& profilepath,
-				 Database *database)
-				 :	wxFrame()
+				const std::wstring& profilepath,
+				Database *database,
+				wxFileHistory* fileHistory)
+				: wxFrame()
+				, proclist(NULL)
+				, sourceview(NULL)
+				, database(database)
+				, profilepath(profilepath)
+				, m_fileHistory(fileHistory)
 {
 	assert(!theMainWin);
 	theMainWin = this;
@@ -83,18 +99,12 @@ MainWin::MainWin(const wxString& title,
 
 	if (config.Read("MainWinMaximized", 0L))
 		style |= wxMAXIMIZE;
-	pos.x = config.Read("MainWinX", (long)pos.x);
-	pos.y = config.Read("MainWinY", (long)pos.x);
-	size.x = config.Read("MainWinW", (long)size.x);
-	size.y = config.Read("MainWinH", (long)size.y);
+	pos.x = config.Read("MainWinX", pos.x);
+	pos.y = config.Read("MainWinY", pos.x);
+	size.x = config.Read("MainWinW", size.x);
+	size.y = config.Read("MainWinH", size.y);
 
 	Create(NULL, -1, title, pos, size, style);
-
-	panel = NULL;
-	proclist = NULL;
-	sourceview = NULL;
-	this->profilepath = profilepath;
-	this->database = database;
 
 	// set the frame icon
 	SetIcon(sleepy_icon);
@@ -110,6 +120,19 @@ MainWin::MainWin(const wxString& title,
 	menuFile->AppendSeparator();
 	menuFile->Append(MainWin_LoadMinidumpSymbols,_T("Load symbols from &minidump"), _T("Loads symbols for modules recorded in the minidump included with this capture."))
 		->Enable(database->has_minidump);
+
+	if (!profilepath.empty() && !wxString(profilepath).ends_with(L".tmp"))
+		m_fileHistory->AddFileToHistory(profilepath);
+
+	auto recent = new wxMenu;
+	menuFile->Append(MainWin_Recent, _T("&Recent files"), recent);
+	m_fileHistory->UseMenu(recent);
+
+	if (m_fileHistory->GetCount() == 0)
+		menuFile->Enable(MainWin_Recent, false);
+
+	m_fileHistory->AddFilesToMenu(recent);
+
 	menuFile->AppendSeparator();
 	menuFile->Append(MainWin_Quit, _T("E&xit\tAlt-X"), _T("Quit this program"));
 
@@ -141,15 +164,21 @@ MainWin::MainWin(const wxString& title,
 	SetMenuBar(menuBar);
 #endif // wxUSE_MENUS
 
-	CreateStatusBar(2);
-	gauge = NULL;
+	auto statusBar = CreateStatusBar(2);
+	wxRect gaugeRect;
+	statusBar->GetFieldRect(1, gaugeRect);
+	int margin = FromDIP(2);
+	gauge = new wxGauge(statusBar, wxID_ANY, 0xFFFF,
+						wxPoint(gaugeRect.x + margin, gaugeRect.y + margin),
+						wxSize(gaugeRect.width - 2 * margin, gaugeRect.height - 2 * margin),
+						wxGA_HORIZONTAL | wxGA_SMOOTH);
 
 	// Construct the docking panes
 	wxSize clientSize = GetClientSize();
 
 	aui = new wxAuiManager(this,wxAUI_MGR_RECTANGLE_HINT);
 
-	wxWindow *splitWindow = new wxWindow(this,-1);
+	wxWindow *splitWindow = new wxWindow(this,wxID_ANY);
 
 	sourceview = new SourceView(this ,this);
 
@@ -178,7 +207,7 @@ MainWin::MainWin(const wxString& title,
 		.BestSize(clientSize.GetWidth() * 2/3, clientSize.GetHeight() * 1/3)
 		);
 
-	wxWindow *splitFilters = new wxWindow(this, -1);
+	wxWindow *splitFilters = new wxWindow(this, wxID_ANY);
 
 	// Set up the filters (search) view
 	filters = new wxPropertyGrid(splitFilters, MainWin_Filters);
@@ -196,6 +225,8 @@ MainWin::MainWin(const wxString& title,
 	log = new LogView(sourceAndLog);
 	//wxTextCtrl *log = new wxTextCtrl(this, 0, "", wxDefaultPosition, wxSize(100,100), wxTE_MULTILINE|wxTE_READONLY);
 	sourceAndLog->AddPage(log,wxT("Log"));
+	logViewLog = new LogViewLog(log);
+	wxLog::SetActiveTarget(logViewLog);
 
 	callViews = new wxAuiNotebook(this,wxID_ANY,wxDefaultPosition,wxDefaultSize,wxAUI_NB_TOP|wxAUI_NB_TAB_SPLIT|wxAUI_NB_TAB_MOVE|wxAUI_NB_SCROLL_BUTTONS|wxNO_BORDER|wxNO_BORDER);
 
@@ -286,7 +317,7 @@ MainWin::MainWin(const wxString& title,
 
 WX_DECLARE_HASH_SET(wxString, wxStringHash, wxStringEqual, wxStringHashSet);
 
-static void addSplitValues(wxStringHashSet& dest, const std::wstring& str, wchar_t sep)
+[[maybe_unused]] static void addSplitValues(wxStringHashSet& dest, const std::wstring& str, wchar_t sep)
 {
 	std::wistringstream ss(str);
 	std::wstring item;
@@ -294,15 +325,20 @@ static void addSplitValues(wxStringHashSet& dest, const std::wstring& str, wchar
 		dest.insert(item);
 }
 
-static wxArrayString arrayFromSet( const wxStringHashSet& set )
+static wxArrayString arrayFromSet( const wxStringHashSet& set, wxGauge *gauge )
 {
 	wxArrayString dest;
 	dest.reserve(set.size());
 
-	for (auto iter = set.begin(); iter != set.end(); ++iter)
+	int n = gauge->GetValue();
+	for (const auto & iter : set)
 	{
-		if( *iter != "" )
-			dest.Add(*iter);
+		if( !iter.empty() )
+		{
+			dest.Add(iter);
+			if (n % 10 == 0)
+				gauge->SetValue(++n);
+		}
 	}
 
 	return dest;
@@ -314,33 +350,51 @@ void MainWin::buildFilterAutocomplete()
 	wxStringHashSet moduleAutocomplete;
 	wxStringHashSet sourcefileAutocomplete;
 
-	setProgress(L"Collecting autocomplete data...", database->getSymbolCount());
+	setProgress(L"Collecting autocomplete data...", database->getSymbolCount() + database->getFileCount() + database->getModuleCount());
+
+	std::wistringstream ss;
+	std::wstring item;
+	int n = 0;
 
 	for (Database::Symbol::ID id = 0; id < database->getSymbolCount(); id++)
 	{
 		const Database::Symbol *symbol = database->getSymbol(id);
 		procnameAutocomplete.insert(symbol->procname);
 
-		addSplitValues(procnameAutocomplete, symbol->procname, ':');
+		ss.str(symbol->procname);
+		while (std::getline(ss, item, L':'))
+			procnameAutocomplete.insert(item);
 
-		updateProgress(id);
+		if (n % 10 == 0)
+			updateProgress(++n);
 	}
 
 	for (Database::FileID id = 0; id < database->getFileCount(); id++)
 	{
 		const std::wstring &filename = database->getFileName(id);
 		sourcefileAutocomplete.insert(filename);
-		addSplitValues(sourcefileAutocomplete, filename, '\\');
+
+		ss.str(filename);
+		while (std::getline(ss, item, L'\\'))
+			sourcefileAutocomplete.insert(item);
+
+		if (n % 10 == 0)
+			updateProgress(++n);
 	}
 
 	for (Database::ModuleID id = 0; id < database->getModuleCount(); id++)
+	{
 		moduleAutocomplete.insert(database->getModuleName(id));
 
-	setProgress(L"Applying autocomplete data...");
+		if (n % 10 == 0)
+			updateProgress(++n);
+	}
 
-	filters->SetPropertyAttribute("procname"  , "AutoComplete", arrayFromSet(procnameAutocomplete));
-	filters->SetPropertyAttribute("module"    , "AutoComplete", arrayFromSet(moduleAutocomplete));
-	filters->SetPropertyAttribute("sourcefile", "AutoComplete", arrayFromSet(sourcefileAutocomplete));
+	setProgress(L"Applying autocomplete data...", procnameAutocomplete.size() + moduleAutocomplete.size() + sourcefileAutocomplete.size());
+
+	filters->SetPropertyAttribute("procname"  , wxPG_ATTR_AUTOCOMPLETE, arrayFromSet(procnameAutocomplete, gauge));
+	filters->SetPropertyAttribute("module"    , wxPG_ATTR_AUTOCOMPLETE, arrayFromSet(moduleAutocomplete, gauge));
+	filters->SetPropertyAttribute("sourcefile", wxPG_ATTR_AUTOCOMPLETE, arrayFromSet(sourcefileAutocomplete, gauge));
 
 	setProgress(NULL);
 }
@@ -350,10 +404,6 @@ MainWin::~MainWin()
 	auiFilter->UnInit();
 	auiTab1->UnInit();
 	aui->UnInit();
-	delete database;
-	delete auiFilter;
-	delete auiTab1;
-	delete aui;
 }
 
 
@@ -382,7 +432,15 @@ EVT_MENU(MainWin_Help_Documentation, MainWin::OnDocumentation)
 EVT_MENU(MainWin_Help_Support, MainWin::OnSupport)
 EVT_MENU(MainWin_Help_About, MainWin::OnAbout)
 EVT_PG_CHANGED(MainWin_Filters, MainWin::OnFiltersChanged)
+EVT_MENU_RANGE(wxID_FILE1, wxID_FILE9, MainWin::OnMRUFile)
 END_EVENT_TABLE()
+
+void MainWin::OnMRUFile(wxCommandEvent& event)
+{
+	wxString filename(m_fileHistory->GetHistoryFile(event.GetId() - wxID_FILE1));
+	if (!filename.empty())
+		open(filename);
+}
 
 void MainWin::OnClose(wxCloseEvent& WXUNUSED(event))
 {
@@ -401,7 +459,7 @@ void MainWin::OnClose(wxCloseEvent& WXUNUSED(event))
 	config.Write("MainWinFilterLayout", auiFilter->SavePerspective());
 	config.Write("MainWinContent",contentString);
 	config.Write("MainWinCollapseOS",collapseOSCalls->IsChecked());
-
+	
 	wxExit();
 }
 
@@ -425,11 +483,21 @@ void MainWin::OnOpen(wxCommandEvent& WXUNUSED(event))
 	if (filename.empty())
 		return;
 
+	m_fileHistory->AddFileToHistory(filename);
+	GetMenuBar()->FindItem(MainWin_Recent)->Enable();
+
+	open(filename);
+}
+
+void MainWin::open(const wxString& filename)
+{
+	reset(false);
+
 	try
 	{
-		database->loadFromPath(filename.wc_str(), collapseOSCalls->IsChecked(), false);
+		database->loadFromPath(filename, collapseOSCalls->IsChecked(), false);
 
-		SetTitle(wxString::Format("%s - %s", APPNAME, filename.c_str()));
+		SetTitle(wxString::Format("%s - %s", APPNAME, filename));
 	}
 	catch (SleepyException &e)
 	{
@@ -509,7 +577,7 @@ void MainWin::OnExportAsCallgrind(wxCommandEvent& WXUNUSED(event))
 			{
 				const Database::Symbol *symbol = database->getSymbol(n);
 				bool isSkipped = (skipCollapse && (symbol->isCollapseFunction || symbol->isCollapseModule))
-				              || (skipFilter   && set_get(viewstate.filtered, symbol->address));
+							  || (skipFilter   && set_get(viewstate.filtered, symbol->address));
 				if (isSkipped) skippedSymbols.insert(symbol);
 			}
 		const bool skipAny = !skippedSymbols.empty();
@@ -522,11 +590,11 @@ void MainWin::OnExportAsCallgrind(wxCommandEvent& WXUNUSED(event))
 		txt << "events: t ps\n";
 
 		double statsDuration = 1.f;
-		for (size_t n=0;n<database->stats.size();n++)
+		for (const auto & n : database->stats)
 		{
-			if (database->stats[n].find(_T("Filename: ")) == 0) txt << "cmd: "  << (database->stats[n].c_str() + 8+2) << "\n";
-			if (database->stats[n].find(_T("Date: "    )) == 0) txt << "desc: " << (database->stats[n].c_str() + 4+2) << "\n";
-			if (database->stats[n].find(_T("Duration: ")) == 0) std::wistringstream(database->stats[n].c_str() + 8+2) >> statsDuration;
+			if (n.find(_T("Filename: ")) == 0) txt << "cmd: "  << n.substr(8+2) << "\n";
+			if (n.find(_T("Date: "    )) == 0) txt << "desc: " << n.substr(4+2) << "\n";
+			if (n.find(_T("Duration: ")) == 0) std::wistringstream(n.substr(8+2)) >> statsDuration;
 		}
 
 		typedef std::pair<unsigned, const Database::Symbol*> LineChildPair;
@@ -580,7 +648,7 @@ void MainWin::OnExportAsCallgrind(wxCommandEvent& WXUNUSED(event))
 				static __forceinline std::wstring ConvertFilename(std::wstring str)
 				{
 					// Convert \ path separators to / for QCachegrind
-					for (auto i = str.find('\\'); i != std::wstring::npos; i = str.find('\\', i + 1)) str[i] = '/';
+					for (auto i = str.find('\\'); i != std::wstring::npos; i = str.find('\\', i + 1)) str[i] = L'/';
 					return str;
 				}
 				static __forceinline void WriteName(wxTextOutputStream& txt, std::map<std::wstring, size_t>& map, const char* key, const std::wstring& str, bool isFilename = false)
@@ -603,9 +671,9 @@ void MainWin::OnExportAsCallgrind(wxCommandEvent& WXUNUSED(event))
 				static __forceinline void WriteEvents(wxTextOutputStream& txt, unsigned sourceline, double count, double statsDuration)
 				{
 					txt << sourceline << " "; // Source code line number
-					txt.Write64(count*1000000.0+0.499999999); // Microseconds Spent Total
+					txt.Write64(count*1'000'000.0+0.499999999); // Microseconds Spent Total
 					txt << " ";
-					txt.Write64(count*1000000.0/statsDuration+0.499999999); // Microseconds Spent Per Second
+					txt.Write64(count*1'000'000.0/statsDuration+0.499999999); // Microseconds Spent Per Second
 					txt << "\n";
 				}
 			};
@@ -615,17 +683,17 @@ void MainWin::OnExportAsCallgrind(wxCommandEvent& WXUNUSED(event))
 			CallgrindHelper::WriteName(txt, mapFl, "fl", database->getFileName(symbol->sourcefile), true);
 			CallgrindHelper::WriteName(txt, mapFn, "fn", symbol->procname);
 
-			for (const auto &pair : selfCostLines)
-				CallgrindHelper::WriteEvents(txt, pair.first, pair.second, statsDuration);
+			for (const auto &[sourceline, count] : selfCostLines)
+				CallgrindHelper::WriteEvents(txt, sourceline, count, statsDuration);
 
-			for (const auto &childcall_samplecount : childCost_SampleCounts)
+			for (const auto &[key, count] : childCost_SampleCounts)
 			{
-				const LineChildPair& key = childcall_samplecount.first;
-				CallgrindHelper::WriteName(txt, mapOb, "cob", database->getModuleName(key.second->module));
-				CallgrindHelper::WriteName(txt, mapFl, "cfl", database->getFileName(key.second->sourcefile), true);
-				CallgrindHelper::WriteName(txt, mapFn, "cfn", key.second->procname);
-				txt << "calls=" << childCost_CallCounts[key] << " " << database->getAddrInfo(key.second->address)->sourceline << "\n";
-				CallgrindHelper::WriteEvents(txt, key.first, childcall_samplecount.second, statsDuration);
+				const auto &[sourceline, child] = key;
+				CallgrindHelper::WriteName(txt, mapOb, "cob", database->getModuleName(child->module));
+				CallgrindHelper::WriteName(txt, mapFl, "cfl", database->getFileName(child->sourcefile), true);
+				CallgrindHelper::WriteName(txt, mapFn, "cfn", child->procname);
+				txt << "calls=" << childCost_CallCounts[key] << " " << database->getAddrInfo(child->address)->sourceline << "\n";
+				CallgrindHelper::WriteEvents(txt, sourceline, count, statsDuration);
 			}
 		}
 	}
@@ -759,6 +827,7 @@ void MainWin::reload(bool loadMinidump/*=false*/)
 {
 	try
 	{
+		proclist->SetItemCount(0);
 		database->reload(collapseOSCalls->IsChecked(), loadMinidump);
 	}
 	catch (SleepyException &e)
@@ -773,7 +842,10 @@ void MainWin::showSource( const Database::AddrInfo *addrinfo )
 	if (sourceAndLog->GetSelection() != 0)
 		sourceAndLog->SetSelection(0); // Open source tab
 
-	const Database::Symbol *symbol = (addrinfo ? addrinfo->symbol : NULL);
+	if (!addrinfo)
+		return;
+
+	const Database::Symbol *symbol = addrinfo->symbol;
 	std::vector<double> linecounts = database->getLineCounts(symbol->sourcefile);
 
 	if (symbol->procname == L"KiFastSystemCallRet")
@@ -789,14 +861,13 @@ void MainWin::focusSymbol(const Database::AddrInfo *addrinfo)
 	proclist->focusSymbol(symbol);
 	callers->focusSymbol(symbol);
 	callees->focusSymbol(symbol);
-	//callStack->focusSymbol(symbol);
 }
 
 void MainWin::inspectSymbol(const Database::AddrInfo *addrinfo, bool addtohistory/*=true*/)
 {
 	const Database::Symbol *symbol = (addrinfo ? addrinfo->symbol : NULL);
 	showSource(addrinfo);
-	proclist->focusSymbol(symbol);
+	proclist->focusSymbol(symbol, true);
 	callers->showList(database->getCallers(symbol));
 	callees->showList(database->getCallees(symbol));
 	threadSamples->showList(database->getSymbolSamples(symbol));
@@ -823,23 +894,26 @@ void MainWin::focusThread(Database::ThreadID tid)
 	threads->focusThread(tid);
 }
 
-void MainWin::reset()
+void MainWin::reset(bool bRefresh)
 {
 	viewstate.highlighted.clear();
 	viewstate.filtered.clear();
 	history.clear();
 	historyPos = 0;
 
-	proclist->DeleteAllItems();
-	callers->DeleteAllItems();
-	callees->DeleteAllItems();
+	proclist->SetItemCount(0);
+	callers->SetItemCount(0);
+	callees->SetItemCount(0);
 	threadSamples->reset();
 	callStack->reset();
 	sourceview->reset();
 
 	resetFilters();
-	symbolsChanged();
-	refresh();
+	if (bRefresh)
+	{
+		symbolsChanged();
+		refresh();
+	}
 }
 
 void MainWin::symbolsChanged()
@@ -925,7 +999,7 @@ void MainWin::updateThreads()
 void MainWin::refreshSelectedThreads()
 {
 	std::vector<Database::ThreadID> newFilterThreads = threads->getSelectedThreads();
-	database->setFilterThreads(newFilterThreads);
+	database->setFilterThreads(std::move(newFilterThreads));
 	symbolsChanged();
 	callStack->reset();
 	refresh();
@@ -935,17 +1009,7 @@ void MainWin::setProgress(const wchar_t *text, int max)
 {
 	if (text)
 	{
-		if (!gauge)
-		{
-			wxStatusBar *statusBar = GetStatusBar();
-			gauge = new wxGauge(statusBar, -1, 0xFFFF, wxDefaultPosition, wxDefaultSize, wxGA_HORIZONTAL|wxGA_SMOOTH);
-
-			wxRect gaugeRect;
-			statusBar->GetFieldRect(1, gaugeRect);
-			int margin = FromDIP(2);
-			gauge->SetPosition(wxPoint(gaugeRect.x+margin, gaugeRect.y+margin));
-			gauge->SetSize(wxSize(gaugeRect.width-2*margin, gaugeRect.height-2*margin));
-		}
+		gauge->Show();
 
 		SetStatusText(text, 0);
 		SetStatusText("", 1);
@@ -959,11 +1023,7 @@ void MainWin::setProgress(const wchar_t *text, int max)
 	}
 	else
 	{
-		if (gauge)
-		{
-			delete gauge;
-			gauge = NULL;
-		}
+		gauge->Hide();
 
 		updateStatusBar();
 	}
@@ -971,6 +1031,5 @@ void MainWin::setProgress(const wchar_t *text, int max)
 
 void MainWin::updateProgress(int pos)
 {
-	assert(gauge);
 	gauge->SetValue(pos);
 }

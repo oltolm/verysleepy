@@ -21,11 +21,16 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 http://www.gnu.org/copyleft/gpl.html.
 =====================================================================*/
 #include "optionsdlg.h"
+#include "profilergui.h"
+
+#include <wx/checkbox.h>
 #include <wx/filepicker.h>
-#include <wx/msw/wrapcctl.h> // include <commctrl.h> "properly"
-#include <wx/valnum.h>
+#include <wx/listbox.h>
+#include <wx/radiobut.h>
 #include <wx/slider.h>
 #include <wx/stattext.h>
+#include <wx/textctrl.h>
+#include <wx/valnum.h>
 
 class wxPercentSlider : public wxSlider
 {
@@ -95,25 +100,29 @@ OptionsDlg::OptionsDlg()
 	wxBoxSizer *symPathSizer = new wxBoxSizer(wxHORIZONTAL);
 	wxBoxSizer *symPathButtonSizer = new wxBoxSizer(wxVERTICAL);
 
-	static const struct { wxButton * OptionsDlg::* button; OptionsId id; const wchar_t *icon; const char *tip; } symPathButtons[] = {
-		{ &OptionsDlg::symPathAdd     , Options_SymPath_Add     , L"button_add"   , "Browse for a directory to add" },
-		{ &OptionsDlg::symPathRemove  , Options_SymPath_Remove  , L"button_remove", "Remove selected directory"     },
-		{ &OptionsDlg::symPathMoveUp  , Options_SymPath_MoveUp  , L"button_up"    , "Move selected directory up"    },
-		{ &OptionsDlg::symPathMoveDown, Options_SymPath_MoveDown, L"button_down"  , "Move selected directory down"  },
-	};
-	for (size_t n=0; n<_countof(symPathButtons); n++)
-	{
-		wxButton *b = this->*symPathButtons[n].button = new wxButton(
-			this,
-			symPathButtons[n].id,
-			wxEmptyString,
-			wxDefaultPosition,
-			FromDIP(wxSize(20, 20)),
-			wxBU_EXACTFIT);
-		b->SetBitmap(LoadPngResource(symPathButtons[n].icon, this));
-		b->SetToolTip(symPathButtons[n].tip);
-		symPathButtonSizer->Add(b, 1);
-	}
+	symPathAdd = new wxButton(this, Options_SymPath_Add, wxEmptyString, wxDefaultPosition,
+							  FromDIP(wxSize(20, 20)), wxBU_EXACTFIT);
+	symPathAdd->SetBitmap(LoadPngResource(L"button_add", this));
+	symPathAdd->SetToolTip(L"Browse for a directory to add");
+	symPathButtonSizer->Add(symPathAdd, 1);
+
+	symPathRemove = new wxButton(this, Options_SymPath_Remove, wxEmptyString, wxDefaultPosition,
+							  FromDIP(wxSize(20, 20)), wxBU_EXACTFIT);
+	symPathRemove->SetBitmap(LoadPngResource(L"button_remove", this));
+	symPathRemove->SetToolTip(L"Remove selected directory");
+	symPathButtonSizer->Add(symPathRemove, 1);
+
+	symPathMoveUp = new wxButton(this, Options_SymPath_MoveUp, wxEmptyString, wxDefaultPosition,
+							  FromDIP(wxSize(20, 20)), wxBU_EXACTFIT);
+	symPathMoveUp->SetBitmap(LoadPngResource(L"button_up", this));
+	symPathMoveUp->SetToolTip(L"Move selected directory up");
+	symPathButtonSizer->Add(symPathMoveUp, 1);
+
+	symPathMoveDown = new wxButton(this, Options_SymPath_MoveDown, wxEmptyString, wxDefaultPosition,
+							  FromDIP(wxSize(20, 20)), wxBU_EXACTFIT);
+	symPathMoveDown->SetBitmap(LoadPngResource(L"button_down", this));
+	symPathMoveDown->SetToolTip(L"Move selected directory down");
+	symPathButtonSizer->Add(symPathMoveDown, 1);
 	UpdateSymPathButtons();
 
 	symPathSizer->Add(symPaths, FromDIP(100), wxEXPAND);
@@ -225,10 +234,6 @@ OptionsDlg::OptionsDlg()
 
 	SetSize(FromDIP(wxSize(400, -1)));
 	Centre();
-}
-
-OptionsDlg::~OptionsDlg()
-{
 }
 
 void OptionsDlg::OnOk(wxCommandEvent& WXUNUSED(event))

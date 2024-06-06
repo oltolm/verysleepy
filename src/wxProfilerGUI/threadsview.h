@@ -23,13 +23,15 @@ http://www.gnu.org/copyleft/gpl.html.
 #pragma once
 
 #include "database.h"
-#include "../utils/sortlist.h"
 
-class ThreadsView : public wxSortedListCtrl
+#include <wx/listctrl.h>
+#include <wx/timer.h>
+
+class ThreadsView : public wxListView
 {
 public:
 	ThreadsView(wxWindow *parent, Database *database);
-	virtual ~ThreadsView();
+	virtual ~ThreadsView() = default;
 
 	void OnSelected(wxListEvent &event);
 	void OnDeSelected(wxListEvent &event);
@@ -42,39 +44,39 @@ public:
 	void clearSelectedThreads();
 
 	void focusThread(Database::ThreadID tid);
+	wxString OnGetItemText(long item, long column) const override;
+	wxItemAttr *OnGetItemAttr(long item) const override;
 
-private:
 	enum ColumnType {
 		COL_TID,
 		COL_NAME,
 		MAX_COLUMNS,
 	};
 
-	DECLARE_EVENT_TABLE()
-
 	struct ThreadRow {
 		Database::ThreadID tid;
 		std::wstring name;
 	};
 
+private:
 	std::vector<ThreadRow> threads;
 
 	Database *database;
-	int sort_column;
-	SortType sort_dir;
 	wxTimer selectionTimer;
+	Database::ThreadID m_focused;
 
 	void startSelectionTimer();
 	void getThreadsFromDatabase();
-	void sortThreads();
 	void fillList();
+
+	DECLARE_EVENT_TABLE()
 };
 
-class ThreadSamplesView : public wxSortedListCtrl
+class ThreadSamplesView : public wxListView
 {
 public:
 	ThreadSamplesView(wxWindow *parent, Database *database);
-	virtual ~ThreadSamplesView();
+	virtual ~ThreadSamplesView() = default;
 
 	void OnSort(wxListEvent &event);
 	void OnActivated(wxListEvent &event);
@@ -82,7 +84,6 @@ public:
 	void showList(Database::SymbolSamples const &symbolSamples);
 	void reset();
 
-private:
 	enum ColumnType {
 		COL_TID,
 		COL_NAME,
@@ -93,23 +94,23 @@ private:
 		MAX_COLUMNS,
 	};
 
-	DECLARE_EVENT_TABLE()
-
 	struct ThreadRow {
 		Database::ThreadID tid;
 		std::wstring name;
 		double exclusive, inclusive;
 	};
 
+	wxString OnGetItemText(long item, long column) const override;
+
+private:
 	double totalCount;
 	std::vector<ThreadRow> threads;
 
 	Database *database;
-	int sort_column;
-	SortType sort_dir;
 
-	void sortThreads();
 	void fillList();
+
+	DECLARE_EVENT_TABLE()
 };
 
 enum {

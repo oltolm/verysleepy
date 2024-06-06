@@ -21,12 +21,16 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 http://www.gnu.org/copyleft/gpl.html.
 =====================================================================*/
 
+#include "../utils/container.h"
 #include "CallstackView.h"
 #include "contextmenu.h"
+#include "database.h"
 #include "mainwin.h"
-#include <wx/menu.h>
-#include <wx/clipbrd.h>
+
 #include <sstream>
+#include <wx/clipbrd.h>
+#include <wx/listctrl.h>
+#include <wx/menu.h>
 
 enum {
 	ID_COLLAPSE_FUNC=2001,
@@ -45,7 +49,7 @@ class FunctionMenuWindow : public wxWindow
 public:
 	int option;
 
-	FunctionMenuWindow(wxWindow *parent) : wxWindow(parent, -1), option(0), mPushed(false)
+	FunctionMenuWindow(wxWindow *parent) : wxWindow(parent, wxID_ANY), option(0), mPushed(false)
 	{
 		this      ->Bind(wxEVT_MENU          , &FunctionMenuWindow::OnMenu     , this, wxID_ANY);
 		theMainWin->Bind(wxEVT_MENU_OPEN     , &FunctionMenuWindow::OnOpen     , this, wxID_ANY);
@@ -68,10 +72,10 @@ private:
 
 	void OnOpen(wxMenuEvent &event)
 	{
-		this->mMenu = event.GetMenu();
+		mMenu = event.GetMenu();
 		if (!mPushed)
 		{
-			theMainWin->GetStatusBar()->PushStatusText(wxString());
+			theMainWin->GetStatusBar()->PushStatusText("");
 			mPushed = true;
 		}
 	}
@@ -88,7 +92,7 @@ private:
 	const wxString GetHelpString(wxMenuEvent &event)
 	{
 		if (event.GetMenuId() < 0)
-			return wxString();
+			return "";
 		else
 			return mMenu->GetHelpString(event.GetMenuId());
 	}
@@ -108,37 +112,33 @@ private:
 	wxMenu* mMenu;
 };
 
-void FunctionMenu(wxListCtrl *list, Database *database)
+void FunctionMenu(wxListView *list, Database *database)
 {
 	FunctionMenuWindow funcWindow(list);
 	wxMenu *menu = new wxMenu;
 
-	Database::Address addr;
 	const Database::Symbol* sym;
 	std::vector<Database::Address> selection;
 
+	auto addressList = dynamic_cast<AddressList*>(list);
 	{
-		long i = list->GetNextItem(-1, wxLIST_NEXT_ALL, wxLIST_STATE_FOCUSED);
-		if (i < 0)
+		long i = list->GetFocusedItem();
+		if (i == wxNOT_FOUND)
 			return;
-		const Database::AddrInfo *addrinfo = (const Database::AddrInfo *)list->GetItemData(i);
+		Database::Address addr = addressList->getAddress(i);
+		const Database::AddrInfo *addrinfo = database->getAddrInfo(addr);
 		sym = addrinfo->symbol;
-		addr = sym->address;
 	}
 
-	for (long item = -1;;)
+	for (long item = list->GetFirstSelected(); item != wxNOT_FOUND; item = list->GetNextSelected(item))
 	{
-		item = list->GetNextItem(item,
-			wxLIST_NEXT_ALL,
-			wxLIST_STATE_SELECTED);
-		if (item == -1)
-			break;
-
-		const Database::AddrInfo *itemaddrinfo = (const Database::AddrInfo *)list->GetItemData(item);
+		const Database::AddrInfo *itemaddrinfo;
+		Database::Address addr = addressList->getAddress(item);
+		itemaddrinfo = database->getAddrInfo(addr);
 		selection.push_back(itemaddrinfo->symbol->address);
 	}
 
-	if (selection.size() == 0)
+	if (selection.empty())
 		return;
 
 	// Focused symbol properties
@@ -181,7 +181,7 @@ void FunctionMenu(wxListCtrl *list, Database *database)
 	}
 
 	wxString highlightTarget = selection.size()==1 ? sym->procname : L"selected";
-	if (set_get(theMainWin->getViewState()->highlighted, addr))
+	if (set_get(theMainWin->getViewState()->highlighted, sym->address))
 		menu->AppendCheckItem(ID_UNHIGHLIGHT, wxString::Format("Unhighlight %s", highlightTarget));
 	else
 		menu->AppendCheckItem(ID_HIGHLIGHT  , wxString::Format("Highlight %s"  , highlightTarget));
@@ -192,14 +192,8 @@ void FunctionMenu(wxListCtrl *list, Database *database)
 	case ID_COPY:
 	{
 		std::wstringstream buf;
-		for (long item = -1;;)
+		for (long item = list->GetFirstSelected(); item != wxNOT_FOUND; item = list->GetNextItem(item))
 		{
-			item = list->GetNextItem(item,
-				wxLIST_NEXT_ALL,
-				wxLIST_STATE_SELECTED);
-			if (item == -1)
-				break;
-
 			for (int col = 0; col < list->GetColumnCount(); col++)
 			{
 				if (col)
