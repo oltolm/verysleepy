@@ -83,6 +83,3 @@ public:
 	void Add(const wchar_t *str);
 	const std::wstring& Get() const { return string; }
 };
-
-std::wstring toWideString(const std::string& str);
-std::string toMultiByteString(const std::wstring& str);

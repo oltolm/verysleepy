@@ -22,7 +22,6 @@ http://www.gnu.org/copyleft/gpl.html..
 
 #include "../utils/dbginterface.h"
 #include "../utils/except.h"
-#include "../utils/stringutils.h"
 #include "latesymbolinfo.h"
 #include "profilergui.h"
 
@@ -65,13 +64,13 @@ LateSymbolInfo::~LateSymbolInfo()
 
 // Send debugger output to the wxWidgets current logging facility.
 // The UI implements a logging facility in the form of a log panel.
-struct DebugOutputCallbacks : public IDebugOutputCallbacks
+struct DebugOutputCallbacksWide : public IDebugOutputCallbacksWide
 {
 	HRESULT	STDMETHODCALLTYPE QueryInterface(__in REFIID WXUNUSED(InterfaceId), __out PVOID* WXUNUSED(Interface)) noexcept { return E_NOINTERFACE; }
 	ULONG	STDMETHODCALLTYPE AddRef() noexcept { return 1; }
 	ULONG	STDMETHODCALLTYPE Release() noexcept { return 0; }
 
-	HRESULT	STDMETHODCALLTYPE Output(__in ULONG WXUNUSED(Mask), __in PCSTR Text) noexcept
+	HRESULT	STDMETHODCALLTYPE Output(__in ULONG WXUNUSED(Mask), __in PCWSTR Text) noexcept
 	{
 		//OutputDebugStringW(Text);
 		wxLogMessage(L"%s", Text);
@@ -79,7 +78,7 @@ struct DebugOutputCallbacks : public IDebugOutputCallbacks
 	}
 };
 
-static DebugOutputCallbacks *debugOutputCallbacks = new DebugOutputCallbacks();
+static DebugOutputCallbacksWide *debugOutputCallbacksWide = new DebugOutputCallbacksWide();
 
 void LateSymbolInfo::loadMinidump(std::wstring& dumppath, bool delete_when_done)
 {
@@ -97,16 +96,16 @@ void LateSymbolInfo::loadMinidump(std::wstring& dumppath, bool delete_when_done)
 
 	SetLastError(0);
 	comenforce(DebugCreate(IID_PPV_ARGS(&debugClient)), "DebugCreate");
-	comenforce(debugClient.As(&debugClient5), "QueryInterface(IDebugClient4)" );
-	comenforce(debugClient.As(&debugControl4), "QueryInterface(IDebugControl3)");
-	comenforce(debugClient.As(&debugSymbols3), "QueryInterface(IDebugSymbols2)");
-	comenforce(debugClient5->SetOutputCallbacks(debugOutputCallbacks), "IDebugClient4::SetOutputCallbacks");
+	comenforce(debugClient.As(&debugClient5), "QueryInterface(IDebugClient5)" );
+	comenforce(debugClient.As(&debugControl4), "QueryInterface(IDebugControl4)");
+	comenforce(debugClient.As(&debugSymbols3), "QueryInterface(IDebugSymbols3)");
+	comenforce(debugClient5->SetOutputCallbacksWide(debugOutputCallbacksWide), "IDebugClient5::SetOutputCallbacksWide");
 	comenforce(debugSymbols3->SetSymbolOptions(SYMOPT_UNDNAME | SYMOPT_LOAD_LINES | SYMOPT_OMAP_FIND_NEAREST | SYMOPT_AUTO_PUBLICS | SYMOPT_DEBUG), "IDebugSymbols::SetSymbolOptions");
 
 	std::wstring sympath;
 	prefs.AdjustSymbolPath(sympath, true);
 
-	comenforce(debugSymbols3->SetSymbolPath(toMultiByteString(sympath).c_str()), "IDebugSymbols::SetSymbolPath");
+	comenforce(debugSymbols3->SetSymbolPathWide(sympath.c_str()), "IDebugSymbols::SetSymbolPathWide");
 	comenforce(debugControl4->WaitForEvent(0, INFINITE), "IDebugControl::WaitForEvent");
 
 	// Since we can't just enumerate all symbols in all modules referenced by the minidump,
@@ -135,7 +134,7 @@ void LateSymbolInfo::unloadMinidump()
 	}
 }
 
-CHAR LateSymbolInfo::buffer[4096];
+wchar_t LateSymbolInfo::buffer[4096];
 
 void LateSymbolInfo::filterSymbol(Database::Address address, std::wstring &module, std::wstring &procname, std::wstring &sourcefile, unsigned &sourceline)
 {
@@ -143,12 +142,12 @@ void LateSymbolInfo::filterSymbol(Database::Address address, std::wstring &modul
 	{
 		ULONG moduleindex;
 		if (SUCCEEDED(debugSymbols3->GetModuleByOffset(address, 0, &moduleindex, NULL)))
-			if (SUCCEEDED(debugSymbols3->GetModuleNameString(DEBUG_MODNAME_MODULE, moduleindex, 0, buffer, _countof(buffer), NULL)))
-				module = toWideString(buffer);
+			if (SUCCEEDED(debugSymbols3->GetModuleNameStringWide(DEBUG_MODNAME_MODULE, moduleindex, 0, buffer, _countof(buffer), NULL)))
+				module = buffer;
 
-		if (SUCCEEDED(debugSymbols3->GetNameByOffset(address, buffer, _countof(buffer), NULL, NULL)))
+		if (SUCCEEDED(debugSymbols3->GetNameByOffsetWide(address, buffer, _countof(buffer), NULL, NULL)))
 		{
-			std::wstring name = toWideString(buffer);
+			std::wstring name = buffer;
 			if (module != name)
 			{
 				procname = name;
@@ -161,9 +160,9 @@ void LateSymbolInfo::filterSymbol(Database::Address address, std::wstring &modul
 		}
 
 		ULONG line;
-		if (SUCCEEDED(debugSymbols3->GetLineByOffset(address, &line, buffer, _countof(buffer), NULL, NULL)))
+		if (SUCCEEDED(debugSymbols3->GetLineByOffsetWide(address, &line, buffer, _countof(buffer), NULL, NULL)))
 		{
-			sourcefile = toWideString(buffer);
+			sourcefile = buffer;
 			sourceline = line;
 		}
 	}

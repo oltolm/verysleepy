@@ -47,11 +47,11 @@ public:
 	void filterSymbol(Database::Address address, std::wstring &module, std::wstring &procname, std::wstring &sourcefile, unsigned &sourceline);
 
 private:
-	static CHAR buffer[4096];
+	static wchar_t buffer[4096];
 	std::wstring file_to_delete;
 
 	// Dbgeng COM objects for minidump symbols
-	Microsoft::WRL::ComPtr<IDebugClient4>  debugClient5;
-	Microsoft::WRL::ComPtr<IDebugControl3> debugControl4;
-	Microsoft::WRL::ComPtr<IDebugSymbols2> debugSymbols3;
+	Microsoft::WRL::ComPtr<IDebugClient5>  debugClient5;
+	Microsoft::WRL::ComPtr<IDebugControl4> debugControl4;
+	Microsoft::WRL::ComPtr<IDebugSymbols3> debugSymbols3;
 };

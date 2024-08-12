@@ -150,23 +150,3 @@ void StringList::Add(const wchar_t *str)
 	string.append(str);
 	string.append(L" ");
 }
-
-std::wstring toWideString(const std::string& str)
-{
-	int len = MultiByteToWideChar(CP_ACP, 0, str.c_str(), str.size(), nullptr, 0);
-	std::wstring wstr;
-	wstr.resize(len);
-	MultiByteToWideChar(CP_ACP, 0, str.c_str(), str.size(), &wstr[0], wstr.size());
-	return wstr;
-}
-
-std::string toMultiByteString(const std::wstring& str)
-{
-	BOOL usedDefaultChar;
-	CHAR defaultChar{};
-	int len = WideCharToMultiByte(CP_ACP, 0, str.c_str(), str.size(), nullptr, 0, &defaultChar, &usedDefaultChar);
-	std::string mbstr;
-	mbstr.resize(len);
-	WideCharToMultiByte(CP_ACP, 0, str.c_str(), str.size(), &mbstr[0], mbstr.size(), &defaultChar, &usedDefaultChar);
-	return mbstr;
-}
