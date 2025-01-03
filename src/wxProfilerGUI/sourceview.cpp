@@ -61,11 +61,10 @@ MSDevPaths msDevPaths;
 
 static const int MARGIN_TEXT_STYLE = wxSTC_STYLE_LASTPREDEFINED+1;
 
-SourceView::SourceView(wxWindow *parent, MainWin* mainwin_)
+SourceView::SourceView(wxWindow *parent)
 :	wxStyledTextCtrl(parent, SOURCE_VIEW,
 					 wxDefaultPosition, wxDefaultSize,
-					 wxSUNKEN_BORDER, wxEmptyString ),
-	mainwin(mainwin_)
+					 wxSUNKEN_BORDER, wxEmptyString )
 {
 	SetUseTabs (false);
 	SetTabWidth(8);
@@ -244,7 +243,7 @@ void SourceView::OnUpdateUI(wxUpdateUIEvent& event)
 	else
 		line += 1;//convert to 1-based line numbering
 
-	mainwin->setSourcePos(currentfile, line);
+	theMainWin->setSourcePos(currentfile, line);
 
 	event.Skip();
 }

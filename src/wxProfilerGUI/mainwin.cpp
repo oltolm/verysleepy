@@ -162,7 +162,7 @@ MainWin::MainWin(const wxString& title,
 
 	wxWindow *splitWindow = new wxWindow(this, wxID_ANY);
 
-	sourceview = new SourceView(this ,this);
+	sourceview = new SourceView(this);
 
 	// Create the windows
 	proclist = new ProcList(this       , true , database);

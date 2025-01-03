@@ -27,8 +27,6 @@ http://www.gnu.org/copyleft/gpl.html.
 
 #include <wx/stc/stc.h>
 
-class MainWin;
-
 /*=====================================================================
 SourceView
 ----------
@@ -42,7 +40,7 @@ public:
 	----------
 
 	=====================================================================*/
-	SourceView(wxWindow *parent, MainWin* mainwin);
+	SourceView(wxWindow *parent);
 
 	virtual ~SourceView();
 
@@ -59,7 +57,6 @@ private:
 	void updateText(const wxString& text);
 
 	std::wstring currentfile;
-	MainWin* mainwin;
 
 	DECLARE_EVENT_TABLE()
 
