@@ -688,7 +688,7 @@ Database::SymbolSamples Database::getSymbolSamples(const Symbol *symbol) const
 void Database::loadMinidump(wxInputStream &file)
 {
 	wxFFile minidump_file;
-	std::wstring dumppath = wxFileName::CreateTempFileName(wxEmptyString, &minidump_file);
+	wxString dumppath = wxFileName::CreateTempFileName(wxEmptyString, &minidump_file);
 	wxFFileOutputStream minidump_stream(minidump_file);
 	minidump_stream.Write(file);
 	minidump_stream.Close();
@@ -696,7 +696,7 @@ void Database::loadMinidump(wxInputStream &file)
 
 	try
 	{
-		late_sym_info->loadMinidump(dumppath, true);
+		late_sym_info->loadMinidump(dumppath.wc_string(), true);
 	}
 	catch (SleepyException &e)
 	{

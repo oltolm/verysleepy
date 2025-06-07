@@ -143,7 +143,7 @@ void SourceView::showFile(std::wstring path, int proclinenum, const std::vector<
 
 	// Don't show error messages with CPP highlighting
 	setPlainMode();
-	if (path == "[hint KiFastSystemCallRet]")
+	if (path == L"[hint KiFastSystemCallRet]")
 	{
 		updateText(
 			" Hint: KiFastSystemCallRet often means the thread was waiting for something else to finish.\n"
@@ -153,7 +153,7 @@ void SourceView::showFile(std::wstring path, int proclinenum, const std::vector<
 		return;
 	}
 
-	if (path == "" || path == "[unknown]")
+	if (path.empty() || path == L"[unknown]")
 	{
 		updateText("[ No source file available for this location. ]");
 		return;

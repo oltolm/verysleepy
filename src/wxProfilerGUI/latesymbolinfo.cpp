@@ -82,7 +82,7 @@ struct DebugOutputCallbacksWide : public IDebugOutputCallbacksWide
 
 static DebugOutputCallbacksWide *debugOutputCallbacksWide = new DebugOutputCallbacksWide();
 
-void LateSymbolInfo::loadMinidump(std::wstring& dumppath, bool delete_when_done)
+void LateSymbolInfo::loadMinidump(const std::wstring& dumppath, bool delete_when_done)
 {
 	// Method credit to http://stackoverflow.com/a/8119364/21501
 

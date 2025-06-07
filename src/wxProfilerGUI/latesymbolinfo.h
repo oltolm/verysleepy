@@ -41,7 +41,7 @@ public:
 	LateSymbolInfo();
 	~LateSymbolInfo();
 
-	void loadMinidump(std::wstring &dumppath, bool delete_when_done);
+	void loadMinidump(const std::wstring& dumppath, bool delete_when_done);
 	void unloadMinidump();
 
 	void filterSymbol(Database::Address address, std::wstring &module, std::wstring &procname, std::wstring &sourcefile, unsigned &sourceline);

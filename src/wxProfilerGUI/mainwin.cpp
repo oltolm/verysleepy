@@ -877,9 +877,10 @@ void MainWin::updateStatusBar()
 
 void MainWin::applyFilters()
 {
-	std::wstring filter_procname   = filters->GetProperty("procname"  )->GetValueAsString();
-	std::wstring filter_module     = filters->GetProperty("module"    )->GetValueAsString();
-	std::wstring filter_sourcefile = filters->GetProperty("sourcefile")->GetValueAsString();
+	std::wstring filter_procname = filters->GetProperty("procname")->GetValueAsString().wc_string();
+	std::wstring filter_module = filters->GetProperty("module")->GetValueAsString().wc_string();
+	std::wstring filter_sourcefile =
+		filters->GetProperty("sourcefile")->GetValueAsString().wc_string();
 
 	for (Database::Symbol::ID id = 0; id < database->getSymbolCount(); id++)
 	{

@@ -382,7 +382,7 @@ void ProfilerThread::run()
 void ProfilerThread::error(const std::wstring& what)
 {
 	failed = true;
-	std::cerr << "ProfilerThread Error: " << what << std::endl;
+	std::wcerr << "ProfilerThread Error: " << what << std::endl;
 
 	::MessageBox(NULL, std::wstring(L"Error: " + what).c_str(), L"Profiler Error", MB_OK);
 }

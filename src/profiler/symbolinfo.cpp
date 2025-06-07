@@ -157,7 +157,7 @@ void SymbolInfo::loadSymbolsUsing(DbgHelp* dbgHelp, const std::wstring& sympath)
 		{
 			// This is a secondary dbgHelp, so just complement debug
 			// information for modules that have none.
-			
+
 			for (size_t m=0;m<modules.size();m++)
 			{
 				Module &mod = modules[m];
@@ -408,13 +408,11 @@ std::wstring SymbolInfo::saveMinidump()
 #endif
 
 	wxFile f;
-	std::wstring dumppath = wxFileName::CreateTempFileName(wxEmptyString, &f);
-	wenforce(dbgHelpMs.MiniDumpWriteDump(
-		process_handle,
-		GetProcessId(process_handle),
-		(HANDLE)_get_osfhandle(f.fd()),
-		MiniDumpNormal,
-		NULL, NULL, NULL), "MiniDumpWriteDump");
+	std::wstring dumppath = wxFileName::CreateTempFileName(wxEmptyString, &f).wc_string();
+	wenforce(dbgHelpMs.MiniDumpWriteDump(process_handle, GetProcessId(process_handle),
+										 (HANDLE)_get_osfhandle(f.fd()), MiniDumpNormal, NULL, NULL,
+										 NULL),
+			 "MiniDumpWriteDump");
 	f.Close();
 	return dumppath;
 }
