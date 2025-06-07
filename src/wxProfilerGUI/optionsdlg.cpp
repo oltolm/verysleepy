@@ -25,6 +25,7 @@ http://www.gnu.org/copyleft/gpl.html.
 #include <wx/msw/wrapcctl.h> // include <commctrl.h> "properly"
 #include <wx/valnum.h>
 #include <wx/slider.h>
+#include <wx/statbox.h>
 #include <wx/stattext.h>
 
 class wxPercentSlider : public wxSlider
@@ -85,42 +86,51 @@ OptionsDlg::OptionsDlg()
 	wxBoxSizer *topsizer = new wxBoxSizer(wxVERTICAL);
 
 	wxStaticBoxSizer *symsizer = new wxStaticBoxSizer(wxVERTICAL, this, "Symbols");
-	wxStaticBoxSizer *symdirsizer = new wxStaticBoxSizer(wxVERTICAL, this, "Symbol search path");
+	wxStaticBoxSizer *symdirsizer = new wxStaticBoxSizer(wxHORIZONTAL, this, "Symbol search path");
 	wxStaticBoxSizer *symsrvsizer = new wxStaticBoxSizer(wxVERTICAL, this, "Symbol server");
 
-	symPaths = new wxListBox(this, Options_SymPath, wxDefaultPosition, FromDIP(wxSize(0, 75)), 0, NULL, wxLB_SINGLE | wxLB_NEEDED_SB | wxLB_HSCROLL);
-
-	wxBoxSizer *symPathSizer = new wxBoxSizer(wxHORIZONTAL);
 	wxBoxSizer *symPathButtonSizer = new wxBoxSizer(wxVERTICAL);
 
-	static const struct { wxButton * OptionsDlg::* button; OptionsId id; const wchar_t *icon; const char *tip; } symPathButtons[] = {
-		{ &OptionsDlg::symPathAdd     , Options_SymPath_Add     , L"button_add"   , "Browse for a directory to add" },
-		{ &OptionsDlg::symPathRemove  , Options_SymPath_Remove  , L"button_remove", "Remove selected directory"     },
-		{ &OptionsDlg::symPathMoveUp  , Options_SymPath_MoveUp  , L"button_up"    , "Move selected directory up"    },
-		{ &OptionsDlg::symPathMoveDown, Options_SymPath_MoveDown, L"button_down"  , "Move selected directory down"  },
-	};
-	for (size_t n=0; n<_countof(symPathButtons); n++)
-	{
-		wxButton *b = this->*symPathButtons[n].button = new wxButton(
-			this,
-			symPathButtons[n].id,
-			wxEmptyString,
-			wxDefaultPosition,
-			FromDIP(wxSize(20, 20)),
-			wxBU_EXACTFIT);
-		b->SetBitmap(LoadPngResource(symPathButtons[n].icon, this));
-		b->SetToolTip(symPathButtons[n].tip);
-		symPathButtonSizer->Add(b, 1);
-	}
+	symPaths =
+		new wxListBox(symdirsizer->GetStaticBox(), Options_SymPath, wxDefaultPosition,
+					  FromDIP(wxSize(0, 75)), 0, NULL, wxLB_SINGLE | wxLB_NEEDED_SB | wxLB_HSCROLL);
+
+	symPathAdd = new wxButton(symdirsizer->GetStaticBox(), Options_SymPath_Add, wxEmptyString,
+							  wxDefaultPosition, FromDIP(wxSize(20, 20)), wxBU_EXACTFIT);
+	symPathAdd->SetBitmap(wxBITMAP_PNG(button_add));
+	symPathAdd->SetToolTip(L"Browse for a directory to add");
+	symPathButtonSizer->Add(symPathAdd, 1);
+
+	symPathRemove = new wxButton(symdirsizer->GetStaticBox(), Options_SymPath_Remove, wxEmptyString,
+								 wxDefaultPosition, FromDIP(wxSize(20, 20)), wxBU_EXACTFIT);
+	symPathRemove->SetBitmap(wxBITMAP_PNG(button_remove));
+	symPathRemove->SetToolTip(L"Remove selected directory");
+	symPathButtonSizer->Add(symPathRemove, 1);
+
+	symPathMoveUp = new wxButton(symdirsizer->GetStaticBox(), Options_SymPath_MoveUp, wxEmptyString,
+								 wxDefaultPosition, FromDIP(wxSize(20, 20)), wxBU_EXACTFIT);
+	symPathMoveUp->SetBitmap(wxBITMAP_PNG(button_up));
+	symPathMoveUp->SetToolTip(L"Move selected directory up");
+	symPathButtonSizer->Add(symPathMoveUp, 1);
+
+	symPathMoveDown =
+		new wxButton(symdirsizer->GetStaticBox(), Options_SymPath_MoveDown, wxEmptyString,
+					 wxDefaultPosition, FromDIP(wxSize(20, 20)), wxBU_EXACTFIT);
+	symPathMoveDown->SetBitmap(wxBITMAP_PNG(button_down));
+	symPathMoveDown->SetToolTip(L"Move selected directory down");
+	symPathButtonSizer->Add(symPathMoveDown, 1);
 	UpdateSymPathButtons();
 
-	symPathSizer->Add(symPaths, FromDIP(100), wxEXPAND);
-	symPathSizer->Add(symPathButtonSizer, FromDIP(1), wxSHRINK);
+	symdirsizer->Add(symPaths, FromDIP(100), wxEXPAND);
+	symdirsizer->Add(symPathButtonSizer, FromDIP(1), wxSHRINK);
 
-	useSymServer = new wxCheckBox(this, Options_UseSymServer, "Use symbol server");
-	symCacheDir = new wxDirPickerCtrl(this, wxID_ANY, prefs.symCacheDir.GetConfigValue(), "Select a directory to store local symbols in:",
-		wxDefaultPosition, wxDefaultSize, wxDIRP_USE_TEXTCTRL);
-	symServer = new wxTextCtrl(this, wxID_ANY, prefs.symServer.GetValue());
+	useSymServer =
+		new wxCheckBox(symsrvsizer->GetStaticBox(), Options_UseSymServer, "Use symbol server");
+	symCacheDir = new wxDirPickerCtrl(
+		symsrvsizer->GetStaticBox(), wxID_ANY, prefs.symCacheDir.GetConfigValue(),
+		"Select a directory to store local symbols in:", wxDefaultPosition, wxDefaultSize,
+		wxDIRP_USE_TEXTCTRL);
+	symServer = new wxTextCtrl(symsrvsizer->GetStaticBox(), wxID_ANY, prefs.symServer.GetValue());
 
 	wxBoxSizer *minGwDbgHelpSizer = new wxBoxSizer(wxHORIZONTAL);
 	minGwDbgHelpSizer->Add(new wxStaticText(this, wxID_ANY, "MinGW DbgHelp engine:   "));
@@ -166,13 +176,15 @@ OptionsDlg::OptionsDlg()
 	symServer->Enable(prefs.useSymServer.GetValue());
 	saveMinidump->SetValue(prefs.saveMinidump.GetValue() >= 0);
 
-	symdirsizer->Add(symPathSizer, 0, wxALL|wxEXPAND, FromDIP(5));
-
 	symsrvsizer->Add(useSymServer, 0, wxALL, FromDIP(5));
-	symsrvsizer->Add(new wxStaticText(this, wxID_ANY, "Local cache directory:"), 0, wxLEFT|wxTOP, FromDIP(5));
-	symsrvsizer->Add(symCacheDir, 0, wxALL|wxEXPAND, FromDIP(5));
-	symsrvsizer->Add(new wxStaticText(this, wxID_ANY, "Symbol server location:"), 0, wxLEFT|wxTOP, FromDIP(5));
-	symsrvsizer->Add(symServer, 0, wxALL|wxEXPAND, FromDIP(5));
+	symsrvsizer->Add(
+		new wxStaticText(symsrvsizer->GetStaticBox(), wxID_ANY, "Local cache directory:"), 0,
+		wxLEFT | wxTOP, FromDIP(5));
+	symsrvsizer->Add(symCacheDir, 0, wxALL | wxEXPAND, FromDIP(5));
+	symsrvsizer->Add(
+		new wxStaticText(symsrvsizer->GetStaticBox(), wxID_ANY, "Symbol server location:"), 0,
+		wxLEFT | wxTOP, FromDIP(5));
+	symsrvsizer->Add(symServer, 0, wxALL | wxEXPAND, FromDIP(5));
 
 	symsizer->Add(symdirsizer, 0, wxALL|wxEXPAND, FromDIP(5));
 	symsizer->Add(symsrvsizer, 0, wxALL|wxEXPAND, FromDIP(5));
@@ -180,15 +192,18 @@ OptionsDlg::OptionsDlg()
 	symsizer->Add(saveMinidumpSizer, 0, wxALL, FromDIP(5));
 
 	wxStaticBoxSizer *throttlesizer = new wxStaticBoxSizer(wxVERTICAL, this, "Sample rate control");
-	throttle = new wxPercentSlider(this, Options_Throttle, prefs.throttle.GetValue(), 1, 100, wxDefaultPosition, wxDefaultSize,
-		wxSL_HORIZONTAL|wxSL_TICKS|wxSL_TOP|wxSL_LABELS);
+	throttle = new wxPercentSlider(
+		throttlesizer->GetStaticBox(), Options_Throttle, prefs.throttle.GetValue(), 1, 100,
+		wxDefaultPosition, wxDefaultSize, wxSL_HORIZONTAL | wxSL_TICKS | wxSL_TOP | wxSL_LABELS);
 	throttle->SetTickFreq(10);
-	throttlesizer->Add(new wxStaticText(this, wxID_ANY,
-		"Adjusts the sample rate speed. Useful for doing longer captures\n"
-		"where you wish to reduce the profiler overhead.\n"
-		"Higher values increase accuracy; lower values result in better\n"
-		"performance."), 0, wxALL, FromDIP(5));
-	throttlesizer->Add(throttle, 0, wxEXPAND|wxLEFT|wxTOP, FromDIP(5));
+	throttlesizer->Add(
+		new wxStaticText(throttlesizer->GetStaticBox(), wxID_ANY,
+						 "Adjusts the sample rate speed. Useful for doing longer captures\n"
+						 "where you wish to reduce the profiler overhead.\n"
+						 "Higher values increase accuracy; lower values result in better\n"
+						 "performance."),
+		0, wxALL, FromDIP(5));
+	throttlesizer->Add(throttle, 0, wxEXPAND | wxLEFT | wxTOP, FromDIP(5));
 
 	topsizer->Add(symsizer, 0, wxEXPAND|wxALL, 0);
 	topsizer->AddSpacer(FromDIP(5));
