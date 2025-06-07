@@ -558,6 +558,10 @@ bool ProfilerGUI::OnInit()
 		cbStartup();
 #endif
 #endif
+#if wxCHECK_VERSION(3, 3, 0)
+	SetAppearance(Appearance::System);
+#endif
+
 	wxInitAllImageHandlers();
 	try
 	{
