@@ -23,9 +23,9 @@ http://www.gnu.org/copyleft/gpl.html.
 =====================================================================*/
 #pragma once
 
-#include "profilergui.h"
 #include "../profiler/processinfo.h"
-#include "../utils/sortlist.h"
+#include "profilergui.h"
+#include <wx/listctrl.h>
 
 // DE: 20090325 ProcessList knows about threadlist and updates it based on process selection
 class ThreadList;
@@ -36,7 +36,7 @@ ProcessList
 -----------
 
 =====================================================================*/
-class ProcessList : public wxSortedListCtrl
+class ProcessList : public wxListView
 {
 public:
 	/*=====================================================================
@@ -72,6 +72,13 @@ public:
 	SymbolInfo* takeSymbolInfo();
 private:
 	DECLARE_EVENT_TABLE()
+
+	enum SortType
+	{
+		SORT_NONE,
+		SORT_UP,
+		SORT_DOWN
+	};
 
 	enum {
 		COL_NAME,

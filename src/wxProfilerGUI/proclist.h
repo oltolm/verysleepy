@@ -23,16 +23,16 @@ http://www.gnu.org/copyleft/gpl.html.
 =====================================================================*/
 #pragma once
 
-#include "profilergui.h"
 #include "database.h"
-#include "../utils/sortlist.h"
+#include "profilergui.h"
+#include <wx/listctrl.h>
 
 /*=====================================================================
 ProcList
 --------
 
 =====================================================================*/
-class ProcList : public wxSortedListCtrl
+class ProcList : public wxListView
 {
 public:
 	ProcList(wxWindow *parent, bool isroot, Database *database);
@@ -52,6 +52,13 @@ public:
 
 private:
 	Database::List list;
+
+	enum SortType
+	{
+		SORT_NONE,
+		SORT_UP,
+		SORT_DOWN
+	};
 
 	enum ColumnType
 	{

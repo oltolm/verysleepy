@@ -22,7 +22,6 @@ add_executable(
   src/utils/dbginterface.cpp
   src/utils/mythread.cpp
   src/utils/osutils.cpp
-  src/utils/sortlist.cpp
   src/utils/stringutils.cpp
   src/utils/WoW64.cpp
   src/wxProfilerGUI/aboutdlg.cpp

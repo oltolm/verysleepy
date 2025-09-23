@@ -26,9 +26,9 @@ http://www.gnu.org/copyleft/gpl.html.
 #include "profilergui.h"
 #include "../profiler/threadinfo.h"
 #include "../profiler/processinfo.h"
-#include "../utils/sortlist.h"
 
 #include <set>
+#include <wx/listctrl.h>
 class SymbolInfo;
 
 /*=====================================================================
@@ -36,7 +36,7 @@ ThreadsList
 -----------
 
 =====================================================================*/
-class ThreadList : public wxSortedListCtrl
+class ThreadList : public wxListView
 {
 public:
 	/*=====================================================================
@@ -66,6 +66,8 @@ public:
 	std::vector<const ThreadInfo*> getSelectedThreads(bool all=false);
 private:
 	DECLARE_EVENT_TABLE()
+
+	enum SortType { SORT_NONE, SORT_UP, SORT_DOWN };
 
 	enum {
 		COL_LOCATION,

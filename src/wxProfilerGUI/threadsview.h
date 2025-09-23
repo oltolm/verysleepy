@@ -23,9 +23,9 @@ http://www.gnu.org/copyleft/gpl.html.
 #pragma once
 
 #include "database.h"
-#include "../utils/sortlist.h"
+#include <wx/listctrl.h>
 
-class ThreadsView : public wxSortedListCtrl
+class ThreadsView : public wxListView
 {
 public:
 	ThreadsView(wxWindow *parent, Database *database);
@@ -44,6 +44,13 @@ public:
 	void focusThread(Database::ThreadID tid);
 
 private:
+	enum SortType
+	{
+		SORT_NONE,
+		SORT_UP,
+		SORT_DOWN
+	};
+
 	enum ColumnType {
 		COL_TID,
 		COL_NAME,
@@ -70,7 +77,7 @@ private:
 	void fillList();
 };
 
-class ThreadSamplesView : public wxSortedListCtrl
+class ThreadSamplesView : public wxListView
 {
 public:
 	ThreadSamplesView(wxWindow *parent, Database *database);
@@ -83,6 +90,13 @@ public:
 	void reset();
 
 private:
+	enum SortType
+	{
+		SORT_NONE,
+		SORT_UP,
+		SORT_DOWN
+	};
+
 	enum ColumnType {
 		COL_TID,
 		COL_NAME,

@@ -30,12 +30,11 @@ EVT_LIST_COL_CLICK(wxID_ANY, ThreadsView::OnSort)
 EVT_TIMER(THREADS_VIEW_TIMER, ThreadsView::OnTimer)
 END_EVENT_TABLE()
 
-
 ThreadsView::ThreadsView(wxWindow *parent, Database *database_)
-	: wxSortedListCtrl(parent, THREADS_VIEW, wxDefaultPosition, wxDefaultSize, wxLC_REPORT /*style*/)
-	, selectionTimer(this, THREADS_VIEW_TIMER)
+	: wxListView(parent, THREADS_VIEW, wxDefaultPosition, wxDefaultSize, wxLC_REPORT /*style*/),
+	  selectionTimer(this, THREADS_VIEW_TIMER)
 {
-	InitSort();
+	// InitSort();
 
 	wxListItem itemCol;
 	itemCol.m_mask = wxLIST_MASK_TEXT;
@@ -51,7 +50,7 @@ ThreadsView::ThreadsView(wxWindow *parent, Database *database_)
 	database = database_;
 	sort_column = COL_TID;
 	sort_dir = SORT_UP;
-	SetSortImage(sort_column, sort_dir);
+	// SetSortImage(sort_column, sort_dir);
 }
 
 ThreadsView::~ThreadsView()
@@ -83,7 +82,7 @@ void ThreadsView::OnTimer(wxTimerEvent &WXUNUSED(event))
 
 void ThreadsView::OnSort(wxListEvent &event)
 {
-	SetSortImage(sort_column, SORT_NONE);
+	// SetSortImage(sort_column, SORT_NONE);
 
 	if (sort_column == event.m_col)
 	{
@@ -95,7 +94,7 @@ void ThreadsView::OnSort(wxListEvent &event)
 		sort_dir = SORT_UP;
 	}
 
-	SetSortImage(sort_column, sort_dir);
+	// SetSortImage(sort_column, sort_dir);
 
 	sortThreads();
 	fillList();
@@ -208,11 +207,11 @@ EVT_LIST_COL_CLICK(wxID_ANY, ThreadSamplesView::OnSort)
 EVT_LIST_ITEM_ACTIVATED(THREAD_SAMPLES_VIEW, ThreadSamplesView::OnActivated)
 END_EVENT_TABLE()
 
-
 ThreadSamplesView::ThreadSamplesView(wxWindow *parent, Database *database_)
-	: wxSortedListCtrl(parent, THREAD_SAMPLES_VIEW, wxDefaultPosition, wxDefaultSize, wxLC_REPORT /*style*/)
+	: wxListView(parent, THREAD_SAMPLES_VIEW, wxDefaultPosition, wxDefaultSize,
+				 wxLC_REPORT /*style*/)
 {
-	InitSort();
+	// InitSort();
 
 	wxListItem itemCol;
 	itemCol.m_mask = wxLIST_MASK_TEXT;
@@ -240,8 +239,7 @@ ThreadSamplesView::ThreadSamplesView(wxWindow *parent, Database *database_)
 	database = database_;
 	sort_column = COL_EXCLUSIVE;
 	sort_dir = SORT_DOWN;
-	SetSortImage(sort_column, sort_dir);
-
+	// SetSortImage(sort_column, sort_dir);
 }
 
 ThreadSamplesView::~ThreadSamplesView()
@@ -250,7 +248,7 @@ ThreadSamplesView::~ThreadSamplesView()
 
 void ThreadSamplesView::OnSort(wxListEvent &event)
 {
-	SetSortImage(sort_column, SORT_NONE);
+	// SetSortImage(sort_column, SORT_NONE);
 
 	if (sort_column == event.m_col)
 	{
@@ -262,7 +260,7 @@ void ThreadSamplesView::OnSort(wxListEvent &event)
 		sort_dir = SORT_UP;
 	}
 
-	SetSortImage(sort_column, sort_dir);
+	// SetSortImage(sort_column, sort_dir);
 
 	sortThreads();
 	fillList();

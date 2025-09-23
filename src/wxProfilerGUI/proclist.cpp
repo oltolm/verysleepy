@@ -44,11 +44,12 @@ EVT_CONTEXT_MENU(ProcList::OnContextMenu)
 END_EVENT_TABLE()
 
 ProcList::ProcList(wxWindow *parent, bool isroot, Database *database)
-:	wxSortedListCtrl(parent, ProcList_List, wxDefaultPosition, wxDefaultSize, wxLC_REPORT /*style*/),
-	isroot(isroot), updating(false),
-	database(database)
+	: wxListView(parent, ProcList_List, wxDefaultPosition, wxDefaultSize, wxLC_REPORT /*style*/),
+	  isroot(isroot),
+	  updating(false),
+	  database(database)
 {
-	InitSort();
+	// InitSort();
 
 	this->isroot = isroot;
 
@@ -77,7 +78,7 @@ ProcList::ProcList(wxWindow *parent, bool isroot, Database *database)
 	else
 		sort_column = COL_SAMPLES;
 	sort_dir = SORT_DOWN;
-	SetSortImage(columns[sort_column].listctrl_column, sort_dir);
+	// SetSortImage(columns[sort_column].listctrl_column, sort_dir);
 }
 
 
@@ -103,7 +104,7 @@ void ProcList::setupColumn(ColumnType id, int width, SortType defsort, const wxS
 
 void ProcList::OnSort(wxListEvent& event)
 {
-	SetSortImage(columns[sort_column].listctrl_column, SORT_NONE);
+	// SetSortImage(columns[sort_column].listctrl_column, SORT_NONE);
 
 	int new_column = 0;
 	for (int n=0;n<MAX_COLUMNS;n++)
@@ -120,7 +121,7 @@ void ProcList::OnSort(wxListEvent& event)
 		sort_dir = columns[sort_column].default_sort;
 	}
 
-	SetSortImage(columns[sort_column].listctrl_column, sort_dir);
+	// SetSortImage(columns[sort_column].listctrl_column, sort_dir);
 
 	sortList();
 	displayList();

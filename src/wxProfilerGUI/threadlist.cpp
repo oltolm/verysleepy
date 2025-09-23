@@ -40,13 +40,14 @@ EVT_LIST_COL_CLICK(wxID_ANY, ThreadList::OnSort)
 EVT_TIMER(THREADS_LIST_TIMER, ThreadList::OnTimer)
 END_EVENT_TABLE()
 
-ThreadList::ThreadList(wxWindow *parent, const wxPoint& pos,
-						 const wxSize& size, wxButton *_ok_button, wxButton *_all_button)
-						 :	wxSortedListCtrl(parent, THREADS_LIST, pos, size, wxLC_REPORT),
-						 timer(this, THREADS_LIST_TIMER),
-						 ok_button(_ok_button), all_button(_all_button)
+ThreadList::ThreadList(wxWindow *parent, const wxPoint& pos, const wxSize& size,
+					   wxButton *_ok_button, wxButton *_all_button)
+	: wxListView(parent, THREADS_LIST, pos, size, wxLC_REPORT),
+	  timer(this, THREADS_LIST_TIMER),
+	  ok_button(_ok_button),
+	  all_button(_all_button)
 {
-	InitSort();
+	// InitSort();
 
 	wxListItem itemCol;
 	itemCol.m_mask = wxLIST_MASK_TEXT/* | wxLIST_MASK_IMAGE*/;
@@ -76,7 +77,7 @@ ThreadList::ThreadList(wxWindow *parent, const wxPoint& pos,
 
 	sort_column = COL_CPUUSAGE;
 	sort_dir = SORT_DOWN;
-	SetSortImage(sort_column, sort_dir);
+	// SetSortImage(sort_column, sort_dir);
 
 	process_handle = NULL;
 	syminfo = NULL;
@@ -214,7 +215,7 @@ void ThreadList::sortByName()
 
 void ThreadList::OnSort(wxListEvent& event)
 {
-	SetSortImage(sort_column, SORT_NONE);
+	// SetSortImage(sort_column, SORT_NONE);
 
 	if (sort_column == event.m_col)
 	{
@@ -226,7 +227,7 @@ void ThreadList::OnSort(wxListEvent& event)
 		sort_dir = (sort_column >= 1 && sort_column <= 4) ? SORT_DOWN : SORT_UP;
 	}
 
-	SetSortImage(sort_column, sort_dir);
+	// SetSortImage(sort_column, sort_dir);
 	updateSorting();
 }
 

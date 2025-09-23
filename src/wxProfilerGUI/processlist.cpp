@@ -34,16 +34,15 @@ EVT_LIST_COL_CLICK(wxID_ANY, ProcessList::OnSort)
 EVT_TIMER(PROCESS_LIST_TIMER, ProcessList::OnTimer)
 END_EVENT_TABLE()
 
-ProcessList::ProcessList(wxWindow *parent, const wxPoint& pos,
-						 const wxSize& size,
-						ThreadList* threadList_)
-						 :	wxSortedListCtrl(parent, PROCESS_LIST, pos, size, wxLC_REPORT | wxLC_SINGLE_SEL),
-						 timer(this, PROCESS_LIST_TIMER)
+ProcessList::ProcessList(wxWindow *parent, const wxPoint& pos, const wxSize& size,
+						 ThreadList *threadList_)
+	: wxListView(parent, PROCESS_LIST, pos, size, wxLC_REPORT | wxLC_SINGLE_SEL),
+	  timer(this, PROCESS_LIST_TIMER)
 {
 	threadList = threadList_;
 	selectionChanged = false;
 	firstUpdate = true;
-	InitSort();
+	// InitSort();
 
 	selected_process = -1;
 	syminfo = new SymbolInfo();
@@ -74,7 +73,7 @@ ProcessList::ProcessList(wxWindow *parent, const wxPoint& pos,
 
 	sort_column = COL_CPUUSAGE;
 	sort_dir = SORT_DOWN;
-	SetSortImage(sort_column, sort_dir);
+	// SetSortImage(sort_column, sort_dir);
 
 	timer.Start(1000); // 1 second interval
 }
@@ -275,7 +274,7 @@ void ProcessList::sortByType()
 #endif
 void ProcessList::OnSort(wxListEvent& event)
 {
-	SetSortImage(sort_column, SORT_NONE);
+	// SetSortImage(sort_column, SORT_NONE);
 
 	if (sort_column == event.m_col)
 	{
@@ -287,7 +286,7 @@ void ProcessList::OnSort(wxListEvent& event)
 		sort_dir = (sort_column >= 1 && sort_column <= 4) ? SORT_DOWN : SORT_UP;
 	}
 
-	SetSortImage(sort_column, sort_dir);
+	// SetSortImage(sort_column, sort_dir);
 	updateSorting();
 }
 
