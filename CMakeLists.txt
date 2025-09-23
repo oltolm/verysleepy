@@ -51,9 +51,8 @@ set(wxWidgets_USE_STATIC
   OFF
   CACHE BOOL "Link libraries statically?"
 )
-find_package(wxWidgets REQUIRED COMPONENTS core base aui propgrid stc)
-include(${wxWidgets_USE_FILE})
-target_link_libraries(sleepy PRIVATE dbgeng Shlwapi Winmm ${wxWidgets_LIBRARIES})
+find_package(wxWidgets CONFIG REQUIRED COMPONENTS core base aui propgrid stc)
+target_link_libraries(sleepy PRIVATE dbgeng Shlwapi Winmm wxWidgets::wxWidgets)
 
 # target_link_options(sleepy PRIVATE -static -static-libgcc -static-libstdc++)
 target_compile_definitions(sleepy PRIVATE UNICODE _UNICODE WIN32_LEAN_AND_MEAN)
