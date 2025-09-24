@@ -111,7 +111,7 @@ private:
 	wxMenu* mMenu;
 };
 
-void FunctionMenu(wxListCtrl *list, Database *database)
+void FunctionMenu(wxListView *list, Database *database)
 {
 	FunctionMenuWindow funcWindow(list);
 	wxMenu *menu = new wxMenu;
@@ -121,7 +121,7 @@ void FunctionMenu(wxListCtrl *list, Database *database)
 	std::vector<Database::Address> selection;
 
 	{
-		long i = list->GetNextItem(-1, wxLIST_NEXT_ALL, wxLIST_STATE_FOCUSED);
+		long i = list->GetFocusedItem();
 		if (i == wxNOT_FOUND)
 			return;
 		const Database::AddrInfo *addrinfo = (const Database::AddrInfo *)list->GetItemData(i);
@@ -129,14 +129,9 @@ void FunctionMenu(wxListCtrl *list, Database *database)
 		addr = sym->address;
 	}
 
-	for (long item = -1;;)
+	for (long item = list->GetFirstSelected(); item != wxNOT_FOUND;
+		 item = list->GetNextSelected(item))
 	{
-		item = list->GetNextItem(item,
-			wxLIST_NEXT_ALL,
-			wxLIST_STATE_SELECTED);
-		if (item == wxNOT_FOUND)
-			break;
-
 		const Database::AddrInfo *itemaddrinfo = (const Database::AddrInfo *)list->GetItemData(item);
 		selection.push_back(itemaddrinfo->symbol->address);
 	}
@@ -195,14 +190,9 @@ void FunctionMenu(wxListCtrl *list, Database *database)
 	case ID_COPY:
 	{
 		std::wstringstream buf;
-		for (long item = -1;;)
+		for (long item = list->GetFirstSelected(); item != wxNOT_FOUND;
+			 item = list->GetNextSelected(item))
 		{
-			item = list->GetNextItem(item,
-				wxLIST_NEXT_ALL,
-				wxLIST_STATE_SELECTED);
-			if (item == wxNOT_FOUND)
-				break;
-
 			for (int col = 0; col < list->GetColumnCount(); col++)
 			{
 				if (col)

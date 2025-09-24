@@ -79,7 +79,7 @@ END_EVENT_TABLE()
 CallstackView::CallstackView(wxWindow *parent,Database *_database)
 :	wxWindow(parent,wxID_ANY), database(_database), callstackActive(0), currSymbol(NULL), itemSelected(~0u)
 {
-	listCtrl = new wxListCtrl(this,LIST_CTRL,wxDefaultPosition,wxDefaultSize,wxLC_REPORT);
+	listCtrl = new wxListView(this, LIST_CTRL, wxDefaultPosition, wxDefaultSize, wxLC_REPORT);
 	setupColumn(COL_NAME,			170,	_T("Name"));
 	setupColumn(COL_MODULE,			70,		_T("Module"));
 	setupColumn(COL_SOURCEFILE,		270,	_T("Source File"));
@@ -245,9 +245,10 @@ void CallstackView::updateList()
 
 		listCtrl->SetItemFont(i, font);
 		if(i == itemSelected) {
-			listCtrl->SetItemState(i,wxLIST_STATE_FOCUSED|wxLIST_STATE_SELECTED, wxLIST_STATE_FOCUSED|wxLIST_STATE_SELECTED);
+			listCtrl->Select(i);
+			listCtrl->Focus(i);
 		} else {
-			listCtrl->SetItemState(i, 0, wxLIST_STATE_FOCUSED|wxLIST_STATE_SELECTED);
+			listCtrl->Select(i, false);
 		}
 		listCtrl->SetItemPtrData(i, (wxUIntPtr)addrinfo);
 	}

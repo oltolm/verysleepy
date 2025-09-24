@@ -268,13 +268,12 @@ void ProcList::focusSymbol(const Database::Symbol *symbol)
 		Database::Item *item = (Database::Item *)GetItemData(i);
 		if (item->symbol == symbol)
 		{
-			SetItemState(i,wxLIST_STATE_FOCUSED|wxLIST_STATE_SELECTED, wxLIST_STATE_FOCUSED|wxLIST_STATE_SELECTED);
-			EnsureVisible(i);
+			Select(i);
+			Focus(i);
 		}
 		else
 		{
-			if (GetItemState(i, wxLIST_STATE_FOCUSED|wxLIST_STATE_SELECTED))
-				SetItemState(i,0,wxLIST_STATE_SELECTED);
+			Select(i, false);
 		}
 	}
 
@@ -283,7 +282,7 @@ void ProcList::focusSymbol(const Database::Symbol *symbol)
 
 const Database::Symbol * ProcList::getFocusedSymbol()
 {
-	long i = GetNextItem(-1, wxLIST_NEXT_ALL, wxLIST_STATE_FOCUSED);
+	long i = GetFocusedItem();
 	return i != wxNOT_FOUND ? ((const Database::AddrInfo *)GetItemData(i))->symbol : NULL;
 }
 

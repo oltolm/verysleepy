@@ -331,9 +331,7 @@ void ProcessList::updateProcesses()
 			if(processInfo.getID() == selectedProcessId){
 				this->SetFocus();
 				this->EnsureVisible(index);
-				int state = this->GetItemState(index, wxLIST_STATE_SELECTED);
-				state |= wxLIST_STATE_SELECTED;
-				this->SetItemState(index, state, wxLIST_STATE_SELECTED);
+				this->Select(index);
 				break;
 			}
 			++index;

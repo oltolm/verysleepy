@@ -33,7 +33,7 @@ class wxStaticTextTransparent;
 class CallstackView : public wxWindow
 {
 	wxAuiToolBar			*toolBar;
-	wxListCtrl				*listCtrl;
+	wxListView *listCtrl;
 	wxStaticTextTransparent	*toolRange;
 	Database				*database;
 
