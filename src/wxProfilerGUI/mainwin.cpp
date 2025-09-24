@@ -89,7 +89,7 @@ MainWin::MainWin(const wxString& title,
 	size.x = config.Read("MainWinW", (long)size.x);
 	size.y = config.Read("MainWinH", (long)size.y);
 
-	Create(NULL, -1, title, pos, size, style);
+	Create(NULL, wxID_ANY, title, pos, size, style);
 
 	panel = NULL;
 	proclist = NULL;
@@ -160,7 +160,7 @@ MainWin::MainWin(const wxString& title,
 
 	aui = new wxAuiManager(this,wxAUI_MGR_RECTANGLE_HINT);
 
-	wxWindow *splitWindow = new wxWindow(this,-1);
+	wxWindow *splitWindow = new wxWindow(this, wxID_ANY);
 
 	sourceview = new SourceView(this ,this);
 
@@ -189,7 +189,7 @@ MainWin::MainWin(const wxString& title,
 		.BestSize(clientSize.GetWidth() * 2/3, clientSize.GetHeight() * 1/3)
 		);
 
-	wxWindow *splitFilters = new wxWindow(this, -1);
+	wxWindow *splitFilters = new wxWindow(this, wxID_ANY);
 
 	// Set up the filters (search) view
 	filters = new wxPropertyGrid(splitFilters, MainWin_Filters);
@@ -295,7 +295,7 @@ MainWin::MainWin(const wxString& title,
 	filters->FitColumns();
 
 	wxStatusBar *statusBar = GetStatusBar();
-	gauge = new wxGauge(statusBar, -1, 0xFFFF, wxDefaultPosition, wxDefaultSize,
+	gauge = new wxGauge(statusBar, wxID_ANY, 0xFFFF, wxDefaultPosition, wxDefaultSize,
 						wxGA_HORIZONTAL | wxGA_SMOOTH);
 
 	wxRect gaugeRect;

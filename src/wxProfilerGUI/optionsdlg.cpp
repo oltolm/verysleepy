@@ -267,9 +267,9 @@ void OptionsDlg::OnUseSymServer(wxCommandEvent& WXUNUSED(event))
 void OptionsDlg::UpdateSymPathButtons()
 {
 	int sel = symPaths->GetSelection();
-	symPathRemove  ->Enable(sel >= 0);
+	symPathRemove->Enable(sel != wxNOT_FOUND);
 	symPathMoveUp  ->Enable(sel > 0);
-	symPathMoveDown->Enable(sel >= 0 && sel < (int)symPaths->GetCount()-1);
+	symPathMoveDown->Enable(sel != wxNOT_FOUND && sel < (int)symPaths->GetCount() - 1);
 }
 
 void OptionsDlg::OnSymPath(wxCommandEvent& WXUNUSED(event))

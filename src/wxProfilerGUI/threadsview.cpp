@@ -126,7 +126,8 @@ void ThreadsView::updateList()
 std::vector<Database::ThreadID> ThreadsView::getSelectedThreads()
 {
 	std::vector<Database::ThreadID> selected;
-	for (long i = GetNextItem(-1, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED); i >= 0; i = GetNextItem(i, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED))
+	for (long i = GetNextItem(-1, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED); i != wxNOT_FOUND;
+		 i = GetNextItem(i, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED))
 	{
 		auto thread = (ThreadRow *)GetItemData(i);
 		selected.push_back(thread->tid);
@@ -137,7 +138,8 @@ std::vector<Database::ThreadID> ThreadsView::getSelectedThreads()
 void ThreadsView::clearSelectedThreads()
 {
 	std::vector<Database::ThreadID> selected;
-	for (long i = GetNextItem(-1, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED); i >= 0; i = GetNextItem(i, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED))
+	for (long i = GetNextItem(-1, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED); i != wxNOT_FOUND;
+		 i = GetNextItem(i, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED))
 	{
 		SetItemState(i, 0, wxLIST_STATE_SELECTED);
 	}
@@ -149,7 +151,7 @@ void ThreadsView::focusThread(Database::ThreadID tid)
 	if (it == threads.end())
 		return;
 	long i = FindItem(-1, (wxUIntPtr) & *it);
-	if (i >= 0)
+	if (i != wxNOT_FOUND)
 	{
 		SetItemState(i, wxLIST_STATE_FOCUSED, wxLIST_STATE_FOCUSED);
 		EnsureVisible(i);

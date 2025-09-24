@@ -45,7 +45,10 @@ class FunctionMenuWindow : public wxWindow
 public:
 	int option;
 
-	FunctionMenuWindow(wxWindow *parent) : wxWindow(parent, -1), option(0), mPushed(false)
+	FunctionMenuWindow(wxWindow *parent)
+		: wxWindow(parent, wxID_ANY),
+		  option(0),
+		  mPushed(false)
 	{
 		this      ->Bind(wxEVT_MENU          , &FunctionMenuWindow::OnMenu     , this, wxID_ANY);
 		theMainWin->Bind(wxEVT_MENU_OPEN     , &FunctionMenuWindow::OnOpen     , this, wxID_ANY);
@@ -119,7 +122,7 @@ void FunctionMenu(wxListCtrl *list, Database *database)
 
 	{
 		long i = list->GetNextItem(-1, wxLIST_NEXT_ALL, wxLIST_STATE_FOCUSED);
-		if (i < 0)
+		if (i == wxNOT_FOUND)
 			return;
 		const Database::AddrInfo *addrinfo = (const Database::AddrInfo *)list->GetItemData(i);
 		sym = addrinfo->symbol;
@@ -131,7 +134,7 @@ void FunctionMenu(wxListCtrl *list, Database *database)
 		item = list->GetNextItem(item,
 			wxLIST_NEXT_ALL,
 			wxLIST_STATE_SELECTED);
-		if (item == -1)
+		if (item == wxNOT_FOUND)
 			break;
 
 		const Database::AddrInfo *itemaddrinfo = (const Database::AddrInfo *)list->GetItemData(item);
@@ -197,7 +200,7 @@ void FunctionMenu(wxListCtrl *list, Database *database)
 			item = list->GetNextItem(item,
 				wxLIST_NEXT_ALL,
 				wxLIST_STATE_SELECTED);
-			if (item == -1)
+			if (item == wxNOT_FOUND)
 				break;
 
 			for (int col = 0; col < list->GetColumnCount(); col++)

@@ -284,7 +284,7 @@ void ProcList::focusSymbol(const Database::Symbol *symbol)
 const Database::Symbol * ProcList::getFocusedSymbol()
 {
 	long i = GetNextItem(-1, wxLIST_NEXT_ALL, wxLIST_STATE_FOCUSED);
-	return i >= 0 ? ((const Database::AddrInfo *)GetItemData(i))->symbol : NULL;
+	return i != wxNOT_FOUND ? ((const Database::AddrInfo *)GetItemData(i))->symbol : NULL;
 }
 
 void ProcList::OnSelected(wxListEvent& event)
