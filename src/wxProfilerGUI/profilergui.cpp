@@ -649,15 +649,16 @@ bool ProfilerGUI::Run()
 	else if (!cmdline_attach.empty())
 	{
 		std::unique_ptr<AttachInfo> info(AttachToProcess(cmdline_attach));
-		if (!cmdline_thread_ids.empty()) {
-			std::vector<HANDLE> profile_threads;
-			for (auto tid_h : info->thread_handles) {
-				DWORD test_tid = GetThreadId(tid_h);
-				if (std::find(cmdline_thread_ids.begin(),cmdline_thread_ids.end(),test_tid) != cmdline_thread_ids.end()) {
-					profile_threads.push_back(tid_h);
-				}
-			}
-			info->thread_handles = profile_threads;
+		if (!cmdline_thread_ids.empty())
+		{
+			auto pred = [&](HANDLE hThread) -> bool {
+				DWORD dwThreadId = GetThreadId(hThread);
+				return std::find(cmdline_thread_ids.begin(), cmdline_thread_ids.end(),
+								 dwThreadId) == cmdline_thread_ids.end();
+			};
+			info->thread_handles.erase(
+				std::remove_if(info->thread_handles.begin(), info->thread_handles.end(), pred),
+				info->thread_handles.end());
 			// Do not attach to any new threads created after this point in time.
 			info->attach_all_threads = false;
 		}
