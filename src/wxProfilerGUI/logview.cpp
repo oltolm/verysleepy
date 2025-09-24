@@ -70,7 +70,7 @@ void LogViewLog::DoLogRecord(wxLogLevel WXUNUSED(level), const wxString& msg, co
 	size_t len = str.length();
 	for (size_t n=0;n<len;n++)
 	{
-		if (str[n] == 8)
+		if (str[n] == '\b')
 		{
 			if (backspaceat == -1)
 				backspaceat = (int)n;
