@@ -202,8 +202,6 @@ ThreadSamplesView::ThreadSamplesView(wxWindow *parent, Database *database_)
 	: wxListView(parent, THREAD_SAMPLES_VIEW, wxDefaultPosition, wxDefaultSize,
 				 wxLC_REPORT /*style*/)
 {
-	// InitSort();
-
 	wxListItem itemCol;
 	itemCol.m_mask = wxLIST_MASK_TEXT;
 	itemCol.m_image = -1;
@@ -228,33 +226,58 @@ ThreadSamplesView::ThreadSamplesView(wxWindow *parent, Database *database_)
 	SetColumnWidth(COL_INCLUSIVEPCT, FromDIP(70));
 
 	database = database_;
-	sort_column = COL_EXCLUSIVE;
-	sort_dir = SORT_DOWN;
-	// SetSortImage(sort_column, sort_dir);
+	ShowSortIndicator(COL_EXCLUSIVE, false);
 }
 
 ThreadSamplesView::~ThreadSamplesView()
 {
 }
 
+static int ThreadSampleComparator(wxIntPtr item1, wxIntPtr item2, wxIntPtr data)
+{
+	auto sort_column = ((ThreadSamplesView *)data)->GetSortIndicator();
+	auto ascending = ((ThreadSamplesView *)data)->IsAscendingSortIndicator();
+	auto a = (ThreadSamplesView::ThreadRow *)item1;
+	auto b = (ThreadSamplesView::ThreadRow *)item2;
+	if (!ascending)
+		std::swap(a, b);
+
+	switch (sort_column)
+	{
+	case ThreadSamplesView::COL_TID:
+		return a->tid < b->tid ? -1 : a->tid > b->tid ? 1 : 0;
+	case ThreadSamplesView::COL_NAME:
+		return wcsicmp(a->name.c_str(), b->name.c_str());
+	case ThreadSamplesView::COL_EXCLUSIVE:
+	case ThreadSamplesView::COL_EXCLUSIVEPCT:
+		if (a->exclusive != b->exclusive)
+			return a->exclusive < b->exclusive ? -1 : a->exclusive > b->exclusive ? 1 : 0;
+		return a->inclusive < b->inclusive ? -1 : a->inclusive > b->inclusive ? 1 : 0;
+	case ThreadSamplesView::COL_INCLUSIVE:
+	case ThreadSamplesView::COL_INCLUSIVEPCT:
+		if (a->inclusive != b->inclusive)
+			return a->inclusive < b->inclusive ? -1 : a->inclusive > b->inclusive ? 1 : 0;
+		return a->exclusive < b->exclusive ? -1 : a->exclusive > b->exclusive ? 1 : 0;
+	case ThreadSamplesView::MAX_COLUMNS:
+		break;
+	}
+	return 0;
+}
+
 void ThreadSamplesView::OnSort(wxListEvent &event)
 {
-	// SetSortImage(sort_column, SORT_NONE);
-
-	if (sort_column == event.m_col)
+	bool ascending;
+	if (GetSortIndicator() == event.GetColumn())
 	{
 		// toggle if we clicked on the same column as last time
-		sort_dir = (SortType)((SORT_UP + SORT_DOWN) - sort_dir);
+		ascending = GetUpdatedAscendingSortIndicator(event.GetColumn());
 	} else {
 		// if switching columns, start with the default sort for that column type
-		sort_column = event.m_col;
-		sort_dir = SORT_UP;
+		ascending = true;
 	}
 
-	// SetSortImage(sort_column, sort_dir);
-
-	sortThreads();
-	fillList();
+	ShowSortIndicator(event.GetColumn(), ascending);
+	SortItems(ThreadSampleComparator, (wxIntPtr)this);
 }
 
 void ThreadSamplesView::OnActivated(wxListEvent &event)
@@ -287,8 +310,8 @@ void ThreadSamplesView::showList(Database::SymbolSamples const &symbolSamples)
 		threads.push_back(row);
 	}
 
-	sortThreads();
 	fillList();
+	SortItems(ThreadSampleComparator, (wxIntPtr)this);
 }
 
 void ThreadSamplesView::reset()
@@ -298,41 +321,6 @@ void ThreadSamplesView::reset()
 	threads.clear();
 }
 
-void ThreadSamplesView::sortThreads()
-{
-	switch (sort_column)
-	{
-		case COL_TID:
-			std::stable_sort(threads.begin(), threads.end(), [](ThreadRow const &t0, ThreadRow const &t1) {
-				return t0.tid < t1.tid;
-			});
-			break;
-		case COL_NAME:
-			std::stable_sort(threads.begin(), threads.end(), [](ThreadRow const &t0, ThreadRow const &t1) {
-				return toLower(t0.name) < toLower(t1.name);
-			});
-			break;
-		case COL_EXCLUSIVE:
-		case COL_EXCLUSIVEPCT:
-			std::stable_sort(threads.begin(), threads.end(), [](ThreadRow const &t0, ThreadRow const &t1) {
-				if (t0.exclusive != t1.exclusive)
-					return t0.exclusive < t1.exclusive;
-				return t0.inclusive < t1.inclusive;
-			});
-			break;
-		case COL_INCLUSIVE:
-		case COL_INCLUSIVEPCT:
-			std::stable_sort(threads.begin(), threads.end(), [](ThreadRow const &t0, ThreadRow const &t1) {
-				if (t0.inclusive != t1.inclusive)
-					return t0.inclusive < t1.inclusive;
-				return t0.exclusive < t1.exclusive;
-			});
-			break;
-	}
-	if (sort_dir == SORT_DOWN)
-		std::reverse(threads.begin(), threads.end());
-}
-
 void ThreadSamplesView::fillList()
 {
 	Freeze();
@@ -340,8 +328,8 @@ void ThreadSamplesView::fillList()
 
 	for (int i = 0; i < (int)threads.size(); ++i)
 	{
-		long tmp = InsertItem(i, "", -1);
-		SetItemData(tmp, i);
+		InsertItem(i, "", -1);
+		SetItemPtrData(i, (wxUIntPtr)&threads[i]);
 
 		wxString tid = wxString::Format("%d", threads[i].tid);
 		SetItem(i, COL_TID, tid);

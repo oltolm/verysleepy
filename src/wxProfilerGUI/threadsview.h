@@ -80,14 +80,6 @@ public:
 	void showList(Database::SymbolSamples const &symbolSamples);
 	void reset();
 
-private:
-	enum SortType
-	{
-		SORT_NONE,
-		SORT_UP,
-		SORT_DOWN
-	};
-
 	enum ColumnType {
 		COL_TID,
 		COL_NAME,
@@ -98,22 +90,20 @@ private:
 		MAX_COLUMNS,
 	};
 
-	DECLARE_EVENT_TABLE()
-
 	struct ThreadRow {
 		Database::ThreadID tid;
 		std::wstring name;
 		double exclusive, inclusive;
 	};
 
+private:
+	DECLARE_EVENT_TABLE()
+
 	double totalCount;
 	std::vector<ThreadRow> threads;
 
 	Database *database;
-	int sort_column;
-	SortType sort_dir;
 
-	void sortThreads();
 	void fillList();
 };
 
