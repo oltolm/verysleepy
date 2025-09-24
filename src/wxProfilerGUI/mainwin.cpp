@@ -358,9 +358,12 @@ void MainWin::buildFilterAutocomplete()
 
 	setProgress(L"Applying autocomplete data...");
 
-	filters->SetPropertyAttribute("procname"  , "AutoComplete", arrayFromSet(procnameAutocomplete));
-	filters->SetPropertyAttribute("module"    , "AutoComplete", arrayFromSet(moduleAutocomplete));
-	filters->SetPropertyAttribute("sourcefile", "AutoComplete", arrayFromSet(sourcefileAutocomplete));
+	filters->SetPropertyAttribute("procname", wxPG_ATTR_AUTOCOMPLETE,
+								  arrayFromSet(procnameAutocomplete));
+	filters->SetPropertyAttribute("module", wxPG_ATTR_AUTOCOMPLETE,
+								  arrayFromSet(moduleAutocomplete));
+	filters->SetPropertyAttribute("sourcefile", wxPG_ATTR_AUTOCOMPLETE,
+								  arrayFromSet(sourcefileAutocomplete));
 
 	setProgress(NULL);
 }
