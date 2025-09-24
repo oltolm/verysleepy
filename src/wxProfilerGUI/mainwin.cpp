@@ -293,6 +293,16 @@ MainWin::MainWin(const wxString& title,
 	proclist->SetFocus();
 
 	filters->FitColumns();
+
+	wxStatusBar *statusBar = GetStatusBar();
+	gauge = new wxGauge(statusBar, -1, 0xFFFF, wxDefaultPosition, wxDefaultSize,
+						wxGA_HORIZONTAL | wxGA_SMOOTH);
+
+	wxRect gaugeRect;
+	statusBar->GetFieldRect(1, gaugeRect);
+	int margin = FromDIP(2);
+	gauge->SetPosition(wxPoint(gaugeRect.x + margin, gaugeRect.y + margin));
+	gauge->SetSize(wxSize(gaugeRect.width - 2 * margin, gaugeRect.height - 2 * margin));
 }
 
 WX_DECLARE_HASH_SET(wxString, wxStringHash, wxStringEqual, wxStringHashSet);
@@ -969,17 +979,8 @@ void MainWin::setProgress(const wchar_t *text, int max)
 {
 	if (text)
 	{
-		if (!gauge)
-		{
-			wxStatusBar *statusBar = GetStatusBar();
-			gauge = new wxGauge(statusBar, -1, 0xFFFF, wxDefaultPosition, wxDefaultSize, wxGA_HORIZONTAL|wxGA_SMOOTH);
 
-			wxRect gaugeRect;
-			statusBar->GetFieldRect(1, gaugeRect);
-			int margin = FromDIP(2);
-			gauge->SetPosition(wxPoint(gaugeRect.x+margin, gaugeRect.y+margin));
-			gauge->SetSize(wxSize(gaugeRect.width-2*margin, gaugeRect.height-2*margin));
-		}
+		gauge->Show();
 
 		SetStatusText(text, 0);
 		SetStatusText("", 1);
@@ -993,11 +994,7 @@ void MainWin::setProgress(const wchar_t *text, int max)
 	}
 	else
 	{
-		if (gauge)
-		{
-			delete gauge;
-			gauge = NULL;
-		}
+		gauge->Hide();
 
 		updateStatusBar();
 	}
@@ -1005,6 +1002,5 @@ void MainWin::setProgress(const wchar_t *text, int max)
 
 void MainWin::updateProgress(int pos)
 {
-	assert(gauge);
 	gauge->SetValue(pos);
 }
