@@ -147,14 +147,13 @@ LogView::~LogView()
 
 void LogView::OnContextMenu(wxContextMenuEvent& WXUNUSED(event))
 {
-	wxMenu *menu = new wxMenu;
-	menu->Append(wxID_COPY, _("&Copy"));
-	menu->Append(wxID_SELECTALL, _("Select &All"));
-	menu->Append(LogView_Clear, _("Clear &Log"));
-	menu->Enable(LogView_Clear, !this->GetValue().empty());
+	wxMenu menu;
+	menu.Append(wxID_COPY, _("&Copy"));
+	menu.Append(wxID_SELECTALL, _("Select &All"));
+	menu.Append(LogView_Clear, _("Clear &Log"));
+	menu.Enable(LogView_Clear, !this->GetValue().empty());
 
-	PopupMenu(menu);
-	delete menu;
+	PopupMenu(&menu);
 }
 
 void LogView::OnCopy(wxCommandEvent& WXUNUSED(event))
