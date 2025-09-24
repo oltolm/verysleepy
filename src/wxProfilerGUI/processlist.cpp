@@ -47,19 +47,19 @@ ProcessList::ProcessList(wxWindow *parent, const wxPoint& pos, const wxSize& siz
 	syminfo = new SymbolInfo();
 
 	wxListItem itemCol;
-	itemCol.m_mask = wxLIST_MASK_TEXT/* | wxLIST_MASK_IMAGE*/;
-	itemCol.m_text = _T("Process");
-	itemCol.m_image = -1;
+	itemCol.SetMask(wxLIST_MASK_TEXT /* | wxLIST_MASK_IMAGE*/);
+	itemCol.SetText(_T("Process"));
+	itemCol.SetImage(-1);
 	InsertColumn(COL_NAME, itemCol);
 #ifdef _WIN64
-	itemCol.m_text = _T("Type");
+	itemCol.SetText(_T("Type"));
 	InsertColumn(COL_TYPE, itemCol);
 #endif
-	itemCol.m_text = _T("CPU");
+	itemCol.SetText(_T("CPU"));
 	InsertColumn(COL_CPUUSAGE, itemCol);
-	itemCol.m_text = _T("Total CPU");
+	itemCol.SetText(_T("Total CPU"));
 	InsertColumn(COL_TOTALCPU, itemCol);
-	itemCol.m_text = _T("PID");
+	itemCol.SetText(_T("PID"));
 	InsertColumn(COL_PID, itemCol);
 
 	SetColumnWidth(COL_NAME, FromDIP(270));

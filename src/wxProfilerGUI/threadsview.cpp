@@ -36,11 +36,11 @@ ThreadsView::ThreadsView(wxWindow *parent, Database *database_)
 	  selectionTimer(this, THREADS_VIEW_TIMER)
 {
 	wxListItem itemCol;
-	itemCol.m_mask = wxLIST_MASK_TEXT;
-	itemCol.m_image = -1;
-	itemCol.m_text = _T("TID");
+	itemCol.SetMask(wxLIST_MASK_TEXT);
+	itemCol.SetImage(-1);
+	itemCol.SetText(_T("TID"));
 	InsertColumn(COL_TID, itemCol);
-	itemCol.m_text = _T("Thread Name");
+	itemCol.SetText(_T("Thread Name"));
 	InsertColumn(COL_NAME, itemCol);
 
 	SetColumnWidth(COL_TID, FromDIP(80));
@@ -203,19 +203,19 @@ ThreadSamplesView::ThreadSamplesView(wxWindow *parent, Database *database_)
 				 wxLC_REPORT /*style*/)
 {
 	wxListItem itemCol;
-	itemCol.m_mask = wxLIST_MASK_TEXT;
-	itemCol.m_image = -1;
-	itemCol.m_text = _T("TID");
+	itemCol.SetMask(wxLIST_MASK_TEXT);
+	itemCol.SetImage(-1);
+	itemCol.SetText(_T("TID"));
 	InsertColumn(COL_TID, itemCol);
-	itemCol.m_text = _T("Thread Name");
+	itemCol.SetText(_T("Thread Name"));
 	InsertColumn(COL_NAME, itemCol);
-	itemCol.m_text = _T("Exclusive");
+	itemCol.SetText(_T("Exclusive"));
 	InsertColumn(COL_EXCLUSIVE, itemCol);
-	itemCol.m_text = _T("Inclusive");
+	itemCol.SetText(_T("Inclusive"));
 	InsertColumn(COL_INCLUSIVE, itemCol);
-	itemCol.m_text = _T("% Exclusive");
+	itemCol.SetText(_T("% Exclusive"));
 	InsertColumn(COL_EXCLUSIVEPCT, itemCol);
-	itemCol.m_text = _T("% Inclusive");
+	itemCol.SetText(_T("% Inclusive"));
 	InsertColumn(COL_INCLUSIVEPCT, itemCol);
 
 	SetColumnWidth(COL_TID, FromDIP(80));

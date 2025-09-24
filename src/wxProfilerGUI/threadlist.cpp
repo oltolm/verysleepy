@@ -48,17 +48,17 @@ ThreadList::ThreadList(wxWindow *parent, const wxPoint& pos, const wxSize& size,
 	  all_button(_all_button)
 {
 	wxListItem itemCol;
-	itemCol.m_mask = wxLIST_MASK_TEXT/* | wxLIST_MASK_IMAGE*/;
-	itemCol.m_image = -1;
-	itemCol.m_text = _T("Location");
+	itemCol.SetMask(wxLIST_MASK_TEXT /* | wxLIST_MASK_IMAGE*/);
+	itemCol.SetImage(-1);
+	itemCol.SetText(_T("Location"));
 	InsertColumn(COL_LOCATION, itemCol);
-	itemCol.m_text = _T("CPU");
+	itemCol.SetText(_T("CPU"));
 	InsertColumn(COL_CPUUSAGE, itemCol);
-	itemCol.m_text = _T("Total CPU");
+	itemCol.SetText(_T("Total CPU"));
 	InsertColumn(COL_TOTALCPU, itemCol);
-	itemCol.m_text = _T("TID");
+	itemCol.SetText(_T("TID"));
 	InsertColumn(COL_ID, itemCol);
-	itemCol.m_text = _T("Thread Name");
+	itemCol.SetText(_T("Thread Name"));
 	InsertColumn(COL_NAME, itemCol);
 
 	SetColumnWidth(COL_LOCATION, FromDIP(270));
