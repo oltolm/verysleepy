@@ -43,12 +43,10 @@ public:
 
 	void focusThread(Database::ThreadID tid);
 
-private:
-	enum SortType
+	struct ThreadRow
 	{
-		SORT_NONE,
-		SORT_UP,
-		SORT_DOWN
+		Database::ThreadID tid;
+		std::wstring name;
 	};
 
 	enum ColumnType {
@@ -57,23 +55,16 @@ private:
 		MAX_COLUMNS,
 	};
 
+private:
 	DECLARE_EVENT_TABLE()
-
-	struct ThreadRow {
-		Database::ThreadID tid;
-		std::wstring name;
-	};
 
 	std::vector<ThreadRow> threads;
 
 	Database *database;
-	int sort_column;
-	SortType sort_dir;
 	wxTimer selectionTimer;
 
 	void startSelectionTimer();
 	void getThreadsFromDatabase();
-	void sortThreads();
 	void fillList();
 };
 
