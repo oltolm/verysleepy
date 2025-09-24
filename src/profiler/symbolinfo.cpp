@@ -97,7 +97,7 @@ void symWineCallback(const char *msg)
 		newline = msg[strlen(msg) - 1] == '\n';
 
 		wchar_t tmp[2048];
-		MultiByteToWideChar(CP_ACP, 0, msg, -1, tmp, sizeof(tmp));
+		MultiByteToWideChar(CP_ACP, 0, msg, -1, tmp, _countof(tmp));
 		g_symLog(tmp);
 	}
 }
