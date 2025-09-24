@@ -23,13 +23,14 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 http://www.gnu.org/copyleft/gpl.html..
 =====================================================================*/
 
-#include "../wxprofilergui/profilergui.h"
 #include "profilerthread.h"
-#include "threadinfo.h"
+#include "../wxprofilergui/profilergui.h"
 #include "debugger.h"
+#include "threadinfo.h"
+#include <random>
+#include <wx/txtstrm.h>
 #include <wx/wfstream.h>
 #include <wx/zipstrm.h>
-#include <wx/txtstrm.h>
 
 #include "../utils/stringutils.h"
 #include <fstream>
@@ -98,42 +99,26 @@ void ProfilerThread::sample(const SAMPLE_TYPE timeSpent)
 	if ( count == 0)
 		return;
 
-	size_t *order = (size_t *)alloca( count * sizeof(size_t) );
-	for (size_t n=0;n<count;n++)
-		order[n] = n;
-	for (size_t n=count;n--;)
-	{
-		size_t i = rand() * count / (RAND_MAX+1);
-		assert( i < count );
-		std::swap( order[i], order[n] );
-	}
+	std::default_random_engine dre;
+	std::shuffle(profilers.begin(), profilers.end(), dre);
 
-	char *failedProfilers = (char *)alloca(count);
-	memset(failedProfilers, 0, count);
-
-	for (size_t n = 0;n < count; ++n)
-	{
-		Profiler& profiler = profilers[order[n]];
-		try {
-			if (profiler.sampleTarget(timeSpent, sym_info))
-				++numsamplessofar;
-			else
-				failedProfilers[order[n]] = true;
-		}
-		catch (const ProfilerExcep& e)
-		{
-			error(_T("ProfilerExcep: ") + e.what());
-			this->commit_suicide = true;
-		}
-	}
-
-	for (ptrdiff_t n = (ptrdiff_t)count-1; n >= 0; --n)
-	{
-		if (!failedProfilers[n] || !profilers[n].targetExited())
-			continue;
-		profilers[n] = profilers.back();
-		profilers.erase(std::prev(profilers.end()));
-	}
+	profilers.erase(std::remove_if(profilers.begin(), profilers.end(),
+								   [this, timeSpent](Profiler& p) -> bool {
+									   try
+									   {
+										   bool failed = !p.sampleTarget(timeSpent, sym_info);
+										   if (!failed)
+											   ++numsamplessofar;
+										   return failed && p.targetExited();
+									   }
+									   catch (const ProfilerExcep& e)
+									   {
+										   error(_T("ProfilerExcep: ") + e.what());
+										   commit_suicide = true;
+										   return false;
+									   }
+								   }),
+					profilers.end());
 
 	numThreadsRunning = (int)profilers.size();
 }
