@@ -35,8 +35,6 @@ public:
 	bool Paused() { return paused; }
 	bool Cancelled() { return cancelled; }
 
-	virtual WXLRESULT MSWWindowProc(WXUINT nMsg, WXWPARAM wParam, WXLPARAM lParam);
-
 private:
 	void OnOk( wxCommandEvent & event );
 	void OnPause( wxCommandEvent & event );
@@ -46,7 +44,6 @@ private:
 	wxGauge *progressBar;
 	wxStaticText *progressText;
 	class wxBitmapToggleButton *pauseButton;
-	struct ITaskbarList3 *win7taskBar;
 
 	DECLARE_EVENT_TABLE()
 };
