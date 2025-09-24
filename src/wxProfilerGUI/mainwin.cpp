@@ -295,14 +295,13 @@ MainWin::MainWin(const wxString& title,
 	filters->FitColumns();
 
 	wxStatusBar *statusBar = GetStatusBar();
-	gauge = new wxGauge(statusBar, wxID_ANY, 0xFFFF, wxDefaultPosition, wxDefaultSize,
-						wxGA_HORIZONTAL | wxGA_SMOOTH);
-
 	wxRect gaugeRect;
 	statusBar->GetFieldRect(1, gaugeRect);
 	int margin = FromDIP(2);
-	gauge->SetPosition(wxPoint(gaugeRect.x + margin, gaugeRect.y + margin));
-	gauge->SetSize(wxSize(gaugeRect.width - 2 * margin, gaugeRect.height - 2 * margin));
+	gauge = new wxGauge(statusBar, wxID_ANY, 0xFFFF,
+						wxPoint(gaugeRect.x + margin, gaugeRect.y + margin),
+						wxSize(gaugeRect.width - 2 * margin, gaugeRect.height - 2 * margin),
+						wxGA_HORIZONTAL | wxGA_SMOOTH);
 }
 
 WX_DECLARE_HASH_SET(wxString, wxStringHash, wxStringEqual, wxStringHashSet);
