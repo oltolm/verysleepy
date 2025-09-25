@@ -89,9 +89,9 @@ CallstackView::CallstackView(wxWindow *parent,Database *_database)
 	setupColumn(COL_ADDRESS,		100,	_T("Address"));
 
 	toolBar = new wxAuiToolBar(this);
-	toolBar->AddTool(TOOL_PREV,"-",LoadPngResource(L"button_prev", this),_T("Previous"));
-	toolBar->AddTool(TOOL_NEXT,"+",LoadPngResource(L"button_next", this),_T("Next"));
-	toolBar->AddTool(TOOL_EXPORT_CSV,"CSV",LoadPngResource(L"button_exportcsv", this),_T("Export as CSV"));
+	toolBar->AddTool(TOOL_PREV, "-", wxBITMAP_PNG(button_prev), _T("Previous"));
+	toolBar->AddTool(TOOL_NEXT, "+", wxBITMAP_PNG(button_next), _T("Next"));
+	toolBar->AddTool(TOOL_EXPORT_CSV, "CSV", wxBITMAP_PNG(button_exportcsv), _T("Export as CSV"));
 	toolRange = new wxStaticTextTransparent(toolBar,wxID_ANY);
 	toolBar->AddControl(toolRange);
 

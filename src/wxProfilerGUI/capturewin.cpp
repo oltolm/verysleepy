@@ -60,7 +60,7 @@ CaptureWin::CaptureWin()
 							  wxGA_HORIZONTAL | wxGA_PROGRESS);
 	progressBar->SetRange(MAX_RANGE);
 
-	wxBitmap pause = LoadPngResource(L"button_pause", this);
+	wxBitmap pause = wxBITMAP_PNG(button_pause);
 	pauseButton = new wxBitmapToggleButton(
 		panel, CaptureWin_Pause, pause, wxDefaultPosition, wxDefaultSize, wxBU_EXACTFIT );
 
@@ -119,7 +119,7 @@ bool CaptureWin::UpdateProgress(std::wstring status, double progress)
 void CaptureWin::OnPause(wxCommandEvent& event)
 {
 	paused = event.IsChecked();
-	pauseButton->SetBitmapLabel(LoadPngResource(paused ? L"button_go" : L"button_pause", this));
+	pauseButton->SetBitmapLabel(paused ? wxBITMAP_PNG(button_go) : wxBITMAP_PNG(button_pause));
 	SetTitle(paused ? _T(APPNAME) L" - paused" : _T(APPNAME) L" - profiling");
 }
 

@@ -72,8 +72,6 @@ struct AttachInfo
 	int limit_profile_time;
 };
 
-wxBitmap LoadPngResource(const wchar_t *szName, const wxWindowBase* w);
-
 // Encapsulate a (config) value that can be overridden.
 //   `T` must be copyable and have a (sensible) default constructor.
 template<typename T>

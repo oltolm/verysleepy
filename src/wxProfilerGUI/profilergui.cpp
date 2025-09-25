@@ -127,17 +127,6 @@ wxAppTraits *ProfilerGUI::CreateTraits()
 	return new ProfilerAppTraits;
 }
 
-wxBitmap LoadPngResource(const wchar_t *szName, const wxWindowBase* w)
-{
-	HRSRC hResource = FindResource(NULL,szName,L"PNG");
-	void *resource = LockResource(LoadResource(NULL,hResource));
-	wxMemoryInputStream is(resource,SizeofResource(NULL,hResource));
-	wxImage image(is, wxBITMAP_TYPE_ANY, -1);
-	wxSize size = w->FromDIP(image.GetSize());
-	image.Rescale(size.x, size.y);
-	return wxBitmap(image);
-}
-
 void CleanupTempFiles()
 {
 	for (std::wstring& s : tmp_files)

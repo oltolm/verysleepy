@@ -138,12 +138,12 @@ ThreadPicker::ThreadPicker()
 	rootsizer->Add(panel, 1, wxEXPAND | wxALL);
 
 	wxButton *ok_button = new wxButton(panel, wxID_OK, "Profile &Selected");
-	ok_button->SetBitmap(LoadPngResource(L"button_profilesel", this));
+	ok_button->SetBitmap(wxBITMAP_PNG(button_profilesel));
 	ok_button->SetBitmapPosition(wxRIGHT);
 	ok_button->SetBitmapMargins(-1,-1);
 	ok_button->SetToolTip("Begins profiling selected threads.");
 	wxButton *all_button = new wxButton(panel, wxID_SELECTALL, "Profile &All");
-	all_button->SetBitmap(LoadPngResource(L"button_profileall", this));
+	all_button->SetBitmap(wxBITMAP_PNG(button_profileall));
 	all_button->SetBitmapPosition(wxRIGHT);
 	all_button->SetBitmapMargins(-1,-1);
 	all_button->Disable();
@@ -172,13 +172,13 @@ ThreadPicker::ThreadPicker()
 	rightsizer->Add(threadlist, 1, wxEXPAND | wxTOP, FromDIP(3));
 
 	wxButton *refreshButton = new wxButton(panel, ProcWin_Refresh, "Refresh");
-	refreshButton->SetBitmap(LoadPngResource(L"button_refresh", this));
+	refreshButton->SetBitmap(wxBITMAP_PNG(button_refresh));
 	refreshButton->SetBitmapPosition(wxRIGHT);
 	refreshButton->SetBitmapMargins(-1,-1);
 	refreshButton->SetToolTip("Refreshes the list of processes and threads.");
 
 	wxButton *downloadButton = new wxButton(panel, ProcWin_Download, "Download");
-	downloadButton->SetBitmap(LoadPngResource(L"button_download", this));
+	downloadButton->SetBitmap(wxBITMAP_PNG(button_download));
 	downloadButton->SetBitmapPosition(wxRIGHT);
 	downloadButton->SetBitmapMargins(-1,-1);
 	downloadButton->SetToolTip("Downloads symbols from a remote symbol server.");
