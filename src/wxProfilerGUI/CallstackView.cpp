@@ -43,7 +43,7 @@ public:
 		GetTextExtent(spaces,&size.x,&size.y);
 		Create(parent, id, wxDefaultPosition, size, wxTRANSPARENT_WINDOW|wxNO_BORDER);
 		SetMinSize(size);
-		SetBackgroundColour(lightOrDark(*wxGREEN));
+		SetBackgroundColour(lightOrDark(wxTheColourDatabase->Find("green")));
 	}
 
 	void OnPaint(wxPaintEvent& WXUNUSED(event))
@@ -225,7 +225,7 @@ void CallstackView::updateList()
 			listCtrl->SetItem(i, COL_NAME, snow->procname);
 
 		if (snow->isCollapseFunction || snow->isCollapseModule)
-			listCtrl->SetItemTextColour(i, lightOrDark(*wxGREEN));
+			listCtrl->SetItemTextColour(i, lightOrDark(wxTheColourDatabase->Find("green")));
 		else
 			listCtrl->SetItemTextColour(i, listCtrl->GetTextColour());
 

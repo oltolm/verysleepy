@@ -104,12 +104,12 @@ void SourceView::setCppMode()
 	SetMarginType	(0, wxSTC_MARGIN_NUMBER);
 	SetMarginWidth	(0, FromDIP(40));
 	StyleSetForeground(wxSTC_STYLE_LINENUMBER, lightOrDark(wxColour(32, 32, 32)));
-	StyleSetBackground(wxSTC_STYLE_LINENUMBER, lightOrDark(wxColour(192, 192, 192)));
+	StyleSetBackground(wxSTC_STYLE_LINENUMBER, lightOrDark(wxTheColourDatabase->Find("silver")));
 
 	SetMarginType	(1, wxSTC_MARGIN_RTEXT);
 	SetMarginWidth	(1, FromDIP(50));
 	StyleSetForeground(MARGIN_TEXT_STYLE, lightOrDark(*wxRED));
-	StyleSetBackground(MARGIN_TEXT_STYLE, lightOrDark(wxColour(192, 192, 192)));
+	StyleSetBackground(MARGIN_TEXT_STYLE, lightOrDark(wxTheColourDatabase->Find("silver")));
 
 	StyleSetForeground(wxSTC_C_DEFAULT, lightOrDark(*wxBLACK));
 	StyleSetForeground(wxSTC_C_STRING, lightOrDark(wxColour(163, 21, 21)));
@@ -122,11 +122,12 @@ void SourceView::setCppMode()
 	StyleSetForeground(wxSTC_C_NUMBER, lightOrDark(*wxBLACK));
 	StyleSetForeground(wxSTC_C_CHARACTER, lightOrDark(*wxBLACK));
 
-	StyleSetForeground(wxSTC_C_COMMENT, lightOrDark(*wxGREEN));
-	StyleSetForeground(wxSTC_C_COMMENTLINE, lightOrDark(*wxGREEN));
-	StyleSetForeground(wxSTC_C_COMMENTDOC, lightOrDark(*wxGREEN));
-	StyleSetForeground(wxSTC_C_COMMENTDOCKEYWORD, lightOrDark(*wxGREEN));
-	StyleSetForeground(wxSTC_C_COMMENTDOCKEYWORDERROR, lightOrDark(*wxGREEN));
+	StyleSetForeground(wxSTC_C_COMMENT, lightOrDark(wxTheColourDatabase->Find("green")));
+	StyleSetForeground(wxSTC_C_COMMENTLINE, lightOrDark(wxTheColourDatabase->Find("green")));
+	StyleSetForeground(wxSTC_C_COMMENTDOC, lightOrDark(wxTheColourDatabase->Find("green")));
+	StyleSetForeground(wxSTC_C_COMMENTDOCKEYWORD, lightOrDark(wxTheColourDatabase->Find("green")));
+	StyleSetForeground(wxSTC_C_COMMENTDOCKEYWORDERROR,
+					   lightOrDark(wxTheColourDatabase->Find("green")));
 	StyleSetBold(wxSTC_C_WORD, true);
 	StyleSetBold(wxSTC_C_WORD2, true);
 	StyleSetBold(wxSTC_C_COMMENTDOCKEYWORD, true);

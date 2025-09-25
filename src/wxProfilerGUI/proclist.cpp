@@ -208,7 +208,7 @@ void ProcList::displayList()
 		item.SetText(sym->procname);
 
 		if (sym->isCollapseFunction || sym->isCollapseModule)
-			item.SetTextColour(lightOrDark(*wxGREEN));
+			item.SetTextColour(lightOrDark(wxTheColourDatabase->Find("green")));
 		else
 		if (i->inclusive == 0 && i->exclusive == 0)
 			item.SetTextColour(wxColor(128, 128, 128)); // gray
