@@ -27,49 +27,11 @@ http://www.gnu.org/copyleft/gpl.html.
 #include <wx/filedlg.h>
 #include <wx/dcclient.h>
 #include <wx/gdicmn.h>
+#include <wx/sizer.h>
 #include "contextmenu.h"
 #include "mainwin.h"
 #include "../utils/stringutils.h"
 #include "guiutils.h"
-
-class wxStaticTextTransparent: public wxControl
-{
-	wxString label;
-public:
-	wxStaticTextTransparent(wxWindow *parent,wxWindowID id)
-	{
-		wxString spaces(' ',1024);
-		wxSize	size;
-		GetTextExtent(spaces,&size.x,&size.y);
-		Create(parent, id, wxDefaultPosition, size, wxTRANSPARENT_WINDOW|wxNO_BORDER);
-		SetMinSize(size);
-		SetBackgroundColour(lightOrDark(wxTheColourDatabase->Find("green")));
-	}
-
-	void OnPaint(wxPaintEvent& WXUNUSED(event))
-	{
-		wxPaintDC dc(this);
-		dc.SetBackgroundMode(wxTRANSPARENT);
-		dc.SetFont(GetFont());
-		dc.DrawText(label, 0,0);
-	}
-
-	void SetLabel(const wxString& label_)
-	{
-		this->label = label_;
-	}
-
-	void OnEraseBackground(wxEraseEvent& WXUNUSED(event))
-	{
-	}
-
-	DECLARE_EVENT_TABLE()
-};
-
-BEGIN_EVENT_TABLE(wxStaticTextTransparent, wxControl)
-EVT_PAINT(wxStaticTextTransparent::OnPaint)
-EVT_ERASE_BACKGROUND(wxStaticTextTransparent::OnEraseBackground)
-END_EVENT_TABLE()
 
 BEGIN_EVENT_TABLE(CallstackView, wxWindow)
 EVT_SIZE(CallstackView::OnSize)
@@ -88,12 +50,12 @@ CallstackView::CallstackView(wxWindow *parent,Database *_database)
 	setupColumn(COL_SOURCELINE,		40,		_T("Source Line"));
 	setupColumn(COL_ADDRESS,		100,	_T("Address"));
 
-	toolBar = new wxAuiToolBar(this);
+	toolBar =
+		new wxAuiToolBar(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxAUI_TB_NO_AUTORESIZE);
 	toolBar->AddTool(TOOL_PREV, "-", wxBITMAP_PNG(button_prev), _T("Previous"));
 	toolBar->AddTool(TOOL_NEXT, "+", wxBITMAP_PNG(button_next), _T("Next"));
 	toolBar->AddTool(TOOL_EXPORT_CSV, "CSV", wxBITMAP_PNG(button_exportcsv), _T("Export as CSV"));
-	toolRange = new wxStaticTextTransparent(toolBar,wxID_ANY);
-	toolBar->AddControl(toolRange);
+	toolBar->AddLabel(TOOL_LABEL);
 
 	toolBar->Realize();
 
@@ -157,9 +119,8 @@ void CallstackView::showCallStack(const Database::Symbol *symbol)
 		callstackCosts[i].second = database->getFilteredSampleCount(callstacks[i]->samples);
 	}
 
-	std::sort(callstackCosts.begin(), callstackCosts.end(), [this](std::pair<const Database::CallStack *, double> const &a, std::pair<const Database::CallStack *, double> const &b) {
-		return a.second > b.second;
-	});
+	std::sort(callstackCosts.begin(), callstackCosts.end(),
+			  [](auto const& a, auto const& b) { return a.second > b.second; });
 
 	callstackActive = 0;
 
@@ -187,7 +148,7 @@ void CallstackView::updateTools()
 	toolBar->EnableTool(TOOL_PREV,callstackActive != 0);
 	toolBar->EnableTool(TOOL_NEXT,int(callstackActive) < int(callstacks.size()-1));
 	toolBar->EnableTool(TOOL_EXPORT_CSV,!callstacks.empty());
-	toolRange->SetLabel(callstackStats);
+	toolBar->SetToolLabel(TOOL_LABEL, callstackStats);
 	toolBar->Realize();
 	toolBar->Refresh();
 }

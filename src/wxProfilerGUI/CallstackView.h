@@ -34,7 +34,6 @@ class CallstackView : public wxWindow
 {
 	wxAuiToolBar			*toolBar;
 	wxListView *listCtrl;
-	wxStaticTextTransparent	*toolRange;
 	Database				*database;
 
 	enum ColumnType
@@ -52,6 +51,7 @@ class CallstackView : public wxWindow
 		TOOL_PREV,
 		TOOL_NEXT,
 		TOOL_EXPORT_CSV,
+		TOOL_LABEL,
 	};
 
 	enum ListCtrl {
