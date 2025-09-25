@@ -110,8 +110,10 @@ OptionsDlg::OptionsDlg()
 	topsizer->Add(appearanceSizer);
 
 	wxStaticBoxSizer *symsizer = new wxStaticBoxSizer(wxVERTICAL, this, "Symbols");
-	wxStaticBoxSizer *symdirsizer = new wxStaticBoxSizer(wxHORIZONTAL, this, "Symbol search path");
-	wxStaticBoxSizer *symsrvsizer = new wxStaticBoxSizer(wxVERTICAL, this, "Symbol server");
+	wxStaticBoxSizer *symdirsizer =
+		new wxStaticBoxSizer(wxHORIZONTAL, symsizer->GetStaticBox(), "Symbol search path");
+	wxStaticBoxSizer *symsrvsizer =
+		new wxStaticBoxSizer(wxVERTICAL, symsizer->GetStaticBox(), "Symbol server");
 
 	wxBoxSizer *symPathButtonSizer = new wxBoxSizer(wxVERTICAL);
 
@@ -157,13 +159,14 @@ OptionsDlg::OptionsDlg()
 	symServer = new wxTextCtrl(symsrvsizer->GetStaticBox(), wxID_ANY, prefs.symServer.GetValue());
 
 	wxBoxSizer *minGwDbgHelpSizer = new wxBoxSizer(wxHORIZONTAL);
-	minGwDbgHelpSizer->Add(new wxStaticText(this, wxID_ANY, "MinGW DbgHelp engine:   "));
+	minGwDbgHelpSizer->Add(
+		new wxStaticText(symsizer->GetStaticBox(), wxID_ANY, "MinGW DbgHelp engine:   "));
 
-	mingwWine = new wxRadioButton(this, wxID_ANY, "Wine  ");
+	mingwWine = new wxRadioButton(symsizer->GetStaticBox(), wxID_ANY, "Wine  ");
 	mingwWine->SetToolTip("Use Wine's DbgHelp implementation for MinGW symbols (dbghelpw.dll).");
 	minGwDbgHelpSizer->Add(mingwWine);
 
-	mingwDrMingw = new wxRadioButton(this, wxID_ANY, "Dr. MinGW");
+	mingwDrMingw = new wxRadioButton(symsizer->GetStaticBox(), wxID_ANY, "Dr. MinGW");
 	mingwDrMingw->SetToolTip("Use Dr. MinGW's DbgHelp implementation for MinGW symbols (dbghelpdr.dll).");
 	minGwDbgHelpSizer->Add(mingwDrMingw);
 
@@ -171,7 +174,8 @@ OptionsDlg::OptionsDlg()
 
 	wxBoxSizer *saveMinidumpSizer = new wxBoxSizer(wxHORIZONTAL);
 
-	saveMinidump = new wxCheckBox(this, Options_SaveMinidump, "Save minidump after ");
+	saveMinidump =
+		new wxCheckBox(symsizer->GetStaticBox(), Options_SaveMinidump, "Save minidump after ");
 	saveMinidump->SetToolTip(
 		"Include a minidump in saved profiling results.\n"
 		"This enables the \"Load symbols from minidump\" option,\n"
@@ -180,19 +184,16 @@ OptionsDlg::OptionsDlg()
 	saveMinidumpSizer->Add(saveMinidump);
 
 	saveMinidumpTimeValue = prefs.saveMinidump.GetConfigValue() < 0 ? 0 : prefs.saveMinidump.GetValue();
-	saveMinidumpTime = new wxTextCtrl(
-		this, wxID_ANY,
-		wxEmptyString, wxDefaultPosition,
-		wxSize(FromDIP(40), -1),
-		0,
-		wxIntegerValidator<int>(&saveMinidumpTimeValue));
+	saveMinidumpTime =
+		new wxTextCtrl(symsizer->GetStaticBox(), wxID_ANY, wxEmptyString, wxDefaultPosition,
+					   wxSize(FromDIP(40), -1), 0, wxIntegerValidator<int>(&saveMinidumpTimeValue));
 	saveMinidumpTime->SetToolTip(
 		"Saving a minidump at the very start of a profiling session\n"
 		"may not work as expected, as not all DLLs may be loaded yet.\n"
 		"You can set a delay after which a minidump will be saved.");
 	saveMinidumpTime->Enable(prefs.saveMinidump.GetValue() >= 0);
 	saveMinidumpSizer->Add(saveMinidumpTime, 0, wxTOP, FromDIP(-3));
-	saveMinidumpSizer->Add(new wxStaticText(this, wxID_ANY, " seconds"));
+	saveMinidumpSizer->Add(new wxStaticText(symsizer->GetStaticBox(), wxID_ANY, " seconds"));
 
 	symPaths->Append(wxSplit(prefs.symSearchPath.GetValue(), ';', 0));
 	useSymServer->SetValue(prefs.useSymServer.GetValue());
