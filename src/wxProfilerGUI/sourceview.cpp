@@ -22,6 +22,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 http://www.gnu.org/copyleft/gpl.html.
 =====================================================================*/
 #include "sourceview.h"
+#include "guiutils.h"
 #include <wx/gdicmn.h>
 
 #define countof(_x) (sizeof(_x)/sizeof(_x[0]))
@@ -102,30 +103,30 @@ void SourceView::setCppMode()
 
 	SetMarginType	(0, wxSTC_MARGIN_NUMBER);
 	SetMarginWidth	(0, FromDIP(40));
-	StyleSetForeground (wxSTC_STYLE_LINENUMBER, wxColour( 32, 32, 32));
-	StyleSetBackground (wxSTC_STYLE_LINENUMBER, wxColour(192,192,192));
+	StyleSetForeground(wxSTC_STYLE_LINENUMBER, lightOrDark(wxColour(32, 32, 32)));
+	StyleSetBackground(wxSTC_STYLE_LINENUMBER, lightOrDark(wxColour(192, 192, 192)));
 
 	SetMarginType	(1, wxSTC_MARGIN_RTEXT);
 	SetMarginWidth	(1, FromDIP(50));
-	StyleSetForeground(MARGIN_TEXT_STYLE, *wxRED);
-	StyleSetBackground (MARGIN_TEXT_STYLE, wxColour(192,192,192));
+	StyleSetForeground(MARGIN_TEXT_STYLE, lightOrDark(*wxRED));
+	StyleSetBackground(MARGIN_TEXT_STYLE, lightOrDark(wxColour(192, 192, 192)));
 
-	StyleSetForeground(wxSTC_C_DEFAULT, *wxBLACK);
-	StyleSetForeground (wxSTC_C_STRING,				wxColour(163,21,21));
-	StyleSetForeground(wxSTC_C_PREPROCESSOR, *wxBLUE);
+	StyleSetForeground(wxSTC_C_DEFAULT, lightOrDark(*wxBLACK));
+	StyleSetForeground(wxSTC_C_STRING, lightOrDark(wxColour(163, 21, 21)));
+	StyleSetForeground(wxSTC_C_PREPROCESSOR, lightOrDark(*wxBLUE));
 
-	StyleSetForeground(wxSTC_C_IDENTIFIER, *wxBLACK);
+	StyleSetForeground(wxSTC_C_IDENTIFIER, lightOrDark(*wxBLACK));
 
-	StyleSetForeground(wxSTC_C_WORD, *wxBLUE);
-	StyleSetForeground(wxSTC_C_WORD2, *wxBLUE);
-	StyleSetForeground(wxSTC_C_NUMBER, *wxBLACK);
-	StyleSetForeground(wxSTC_C_CHARACTER, *wxBLACK);
+	StyleSetForeground(wxSTC_C_WORD, lightOrDark(*wxBLUE));
+	StyleSetForeground(wxSTC_C_WORD2, lightOrDark(*wxBLUE));
+	StyleSetForeground(wxSTC_C_NUMBER, lightOrDark(*wxBLACK));
+	StyleSetForeground(wxSTC_C_CHARACTER, lightOrDark(*wxBLACK));
 
-	StyleSetForeground(wxSTC_C_COMMENT, *wxGREEN);
-	StyleSetForeground(wxSTC_C_COMMENTLINE, *wxGREEN);
-	StyleSetForeground(wxSTC_C_COMMENTDOC, *wxGREEN);
-	StyleSetForeground(wxSTC_C_COMMENTDOCKEYWORD, *wxGREEN);
-	StyleSetForeground(wxSTC_C_COMMENTDOCKEYWORDERROR, *wxGREEN);
+	StyleSetForeground(wxSTC_C_COMMENT, lightOrDark(*wxGREEN));
+	StyleSetForeground(wxSTC_C_COMMENTLINE, lightOrDark(*wxGREEN));
+	StyleSetForeground(wxSTC_C_COMMENTDOC, lightOrDark(*wxGREEN));
+	StyleSetForeground(wxSTC_C_COMMENTDOCKEYWORD, lightOrDark(*wxGREEN));
+	StyleSetForeground(wxSTC_C_COMMENTDOCKEYWORDERROR, lightOrDark(*wxGREEN));
 	StyleSetBold(wxSTC_C_WORD, true);
 	StyleSetBold(wxSTC_C_WORD2, true);
 	StyleSetBold(wxSTC_C_COMMENTDOCKEYWORD, true);
@@ -225,11 +226,11 @@ void SourceView::OnPaint(wxPaintEvent& event)
 {
 
 	{
-	//wxPaintDC dc(this);
-	//dc.BeginDrawing();
-	//dc.SetBrush( *wxRED_BRUSH );
-	//dc.DrawLine(100, 0, 100, 300);
-	//dc.EndDrawing();
+		// wxPaintDC dc(this);
+		// dc.BeginDrawing();
+		// dc.SetBrush( lightOrDark(*wxRED_)BRUSH );
+		// dc.DrawLine(100, 0, 100, 300);
+		// dc.EndDrawing();
 	}
 
 	event.Skip();

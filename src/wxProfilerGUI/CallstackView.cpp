@@ -30,6 +30,7 @@ http://www.gnu.org/copyleft/gpl.html.
 #include "contextmenu.h"
 #include "mainwin.h"
 #include "../utils/stringutils.h"
+#include "guiutils.h"
 
 class wxStaticTextTransparent: public wxControl
 {
@@ -42,7 +43,7 @@ public:
 		GetTextExtent(spaces,&size.x,&size.y);
 		Create(parent, id, wxDefaultPosition, size, wxTRANSPARENT_WINDOW|wxNO_BORDER);
 		SetMinSize(size);
-		SetBackgroundColour(*wxGREEN);
+		SetBackgroundColour(lightOrDark(*wxGREEN));
 	}
 
 	void OnPaint(wxPaintEvent& WXUNUSED(event))
@@ -224,12 +225,12 @@ void CallstackView::updateList()
 			listCtrl->SetItem(i, COL_NAME, snow->procname);
 
 		if (snow->isCollapseFunction || snow->isCollapseModule)
-			listCtrl->SetItemTextColour(i, *wxGREEN);
+			listCtrl->SetItemTextColour(i, lightOrDark(*wxGREEN));
 		else
 			listCtrl->SetItemTextColour(i, listCtrl->GetTextColour());
 
 		if (set_get(viewstate->highlighted, snow->address))
-			listCtrl->SetItemBackgroundColour(i, *wxYELLOW);
+			listCtrl->SetItemBackgroundColour(i, lightOrDark(*wxYELLOW));
 		else
 			listCtrl->SetItemBackgroundColour(i, listCtrl->GetBackgroundColour());
 

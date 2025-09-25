@@ -29,6 +29,7 @@ http://www.gnu.org/copyleft/gpl.html.
 #include <fstream>
 #include <algorithm>
 #include "contextmenu.h"
+#include "guiutils.h"
 #include "mainwin.h"
 
 enum
@@ -207,13 +208,13 @@ void ProcList::displayList()
 		item.SetText(sym->procname);
 
 		if (sym->isCollapseFunction || sym->isCollapseModule)
-			item.SetTextColour(*wxGREEN);
+			item.SetTextColour(lightOrDark(*wxGREEN));
 		else
 		if (i->inclusive == 0 && i->exclusive == 0)
 			item.SetTextColour(wxColor(128, 128, 128)); // gray
 
 		if (set_get(viewstate->highlighted, sym->address))
-			item.SetBackgroundColour(*wxYELLOW);
+			item.SetBackgroundColour(lightOrDark(*wxYELLOW));
 
 		const Database::AddrInfo *addrinfo = database->getAddrInfo(i->address);
 		int state = map_get(item_state, addrinfo, 0);
