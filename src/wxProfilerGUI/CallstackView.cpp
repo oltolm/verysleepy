@@ -226,12 +226,12 @@ void CallstackView::updateList()
 		if (snow->isCollapseFunction || snow->isCollapseModule)
 			listCtrl->SetItemTextColour(i, *wxGREEN);
 		else
-			listCtrl->SetItemTextColour(i, *wxBLACK);
+			listCtrl->SetItemTextColour(i, listCtrl->GetTextColour());
 
 		if (set_get(viewstate->highlighted, snow->address))
 			listCtrl->SetItemBackgroundColour(i, *wxYELLOW);
 		else
-			listCtrl->SetItemBackgroundColour(i, *wxWHITE);
+			listCtrl->SetItemBackgroundColour(i, listCtrl->GetBackgroundColour());
 
 		listCtrl->SetItem(i, COL_MODULE    , database->getModuleName(snow->module));
 		listCtrl->SetItem(i, COL_SOURCEFILE, database->getFileName  (snow->sourcefile));
