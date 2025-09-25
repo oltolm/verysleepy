@@ -50,15 +50,15 @@ http://www.gnu.org/copyleft/gpl.html.
 
 // DE: 20090325 Linking fails in debug target under visual studio 2005
 // RJM: works for me :-/
-//#include <wx/apptrait.h>
-//#if wxUSE_STACKWALKER && defined( __WXDEBUG__ )
+// #include <wx/apptrait.h>
+// #if wxUSE_STACKWALKER && defined( __WXDEBUG__ )
 //// silly workaround for the link error with debug configuration:
 //// \src\common\appbase.cpp
-//wxString wxAppTraitsBase::GetAssertStackTrace()
+// wxString wxAppTraitsBase::GetAssertStackTrace()
 //{
-//   return wxT("");
-//}
-//#endif
+//    return wxT("");
+// }
+// #endif
 
 static const wxCmdLineEntryDesc g_cmdLineDesc[] =
 {
@@ -558,9 +558,6 @@ bool ProfilerGUI::OnInit()
 		cbStartup();
 #endif
 #endif
-#if wxCHECK_VERSION(3, 3, 0)
-	SetAppearance(Appearance::System);
-#endif
 
 	wxInitAllImageHandlers();
 	try
@@ -577,8 +574,25 @@ bool ProfilerGUI::OnInit()
 		prefs.symServer.SetConfigValue(config.Read("SymbolServer", "http://msdl.microsoft.com/download/symbols"));
 		prefs.symCacheDir.SetConfigValue(config.Read("SymbolCache", symCache));
 		prefs.useWinePref = config.Read("UseWine", (long)0) != 0;
+		prefs.appearance = (Theme)config.ReadLong("Appearance", System);
+		prefs.useWinePref = config.Read("UseWine", (long)0) != 0;
 		prefs.saveMinidump.SetConfigValue(config.Read("SaveMinidump", -1));
 		prefs.throttle.SetConfigValue(prefs.ValidateThrottle(config.Read("SpeedThrottle", 100)));
+
+#if wxCHECK_VERSION(3, 3, 0)
+		switch (prefs.appearance)
+		{
+		case Light:
+			SetAppearance(Appearance::Light);
+			break;
+		case Dark:
+			SetAppearance(Appearance::Dark);
+			break;
+		case System:
+			SetAppearance(Appearance::System);
+			break;
+		}
+#endif
 
 		m_fileHistory.Load(config);
 
@@ -696,6 +710,7 @@ int ProfilerGUI::OnExit()
 	config.Write("SymbolServer", prefs.symServer.GetConfigValue());
 	config.Write("SymbolCache", prefs.symCacheDir.GetConfigValue());
 	config.Write("UseWine", prefs.useWinePref);
+	config.Write("Appearance", (long)prefs.appearance);
 	config.Write("SaveMinidump", prefs.saveMinidump.GetConfigValue());
 	config.Write("SpeedThrottle", prefs.throttle.GetConfigValue());
 

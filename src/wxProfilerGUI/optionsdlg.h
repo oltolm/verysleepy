@@ -57,6 +57,9 @@ private:
 	wxTextCtrl *saveMinidumpTime;
 	wxRadioButton *mingwWine;
 	wxRadioButton *mingwDrMingw;
+	wxRadioButton *light;
+	wxRadioButton *dark;
+	wxRadioButton *system;
 	int saveMinidumpTimeValue;
 	wxSlider *throttle;
 

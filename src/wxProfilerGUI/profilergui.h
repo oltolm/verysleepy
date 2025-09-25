@@ -46,6 +46,13 @@ extern wxIcon sleepy_icon;
 class SymbolInfo;
 class ThreadPicker;
 
+enum Theme
+{
+	Light,
+	Dark,
+	System
+};
+
 enum AttachMode
 {
 	ATTACH_ALL_THREAD,	// default
@@ -132,6 +139,7 @@ public:
 	OverridableOption<int> throttle;
 
 	bool useWinePref, useWineSwitch, useMingwSwitch;
+	Theme appearance;
 	AttachMode attachMode;
 
 	bool UseWine()

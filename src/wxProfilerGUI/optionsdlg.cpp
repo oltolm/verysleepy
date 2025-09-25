@@ -85,6 +85,30 @@ OptionsDlg::OptionsDlg()
 	wxBoxSizer *rootsizer = new wxBoxSizer(wxVERTICAL);
 	wxBoxSizer *topsizer = new wxBoxSizer(wxVERTICAL);
 
+	wxStaticBoxSizer *appearanceSizer = new wxStaticBoxSizer(wxHORIZONTAL, this, "Appearance");
+	light = new wxRadioButton(appearanceSizer->GetStaticBox(), wxID_ANY, "Light");
+	dark = new wxRadioButton(appearanceSizer->GetStaticBox(), wxID_ANY, "Dark");
+	system = new wxRadioButton(appearanceSizer->GetStaticBox(), wxID_ANY, "System");
+	switch (prefs.appearance)
+	{
+
+	case Light:
+		light->SetValue(true);
+		break;
+	case Dark:
+		dark->SetValue(true);
+		break;
+	case System:
+		system->SetValue(true);
+		break;
+	}
+
+	appearanceSizer->Add(light);
+	appearanceSizer->Add(dark);
+	appearanceSizer->Add(system);
+
+	topsizer->Add(appearanceSizer);
+
 	wxStaticBoxSizer *symsizer = new wxStaticBoxSizer(wxVERTICAL, this, "Symbols");
 	wxStaticBoxSizer *symdirsizer = new wxStaticBoxSizer(wxHORIZONTAL, this, "Symbol search path");
 	wxStaticBoxSizer *symsrvsizer = new wxStaticBoxSizer(wxVERTICAL, this, "Symbol server");
@@ -262,6 +286,12 @@ void OptionsDlg::OnOk(wxCommandEvent& WXUNUSED(event))
 				prefs.symServer.SetConfigValue(symServer->GetValue());
 		}
 		prefs.useWinePref = mingwWine->GetValue();
+		if (light->GetValue())
+			prefs.appearance = Light;
+		else if (dark->GetValue())
+			prefs.appearance = Dark;
+		else if (system->GetValue())
+			prefs.appearance = System;
 		if (!prefs.saveMinidump.IsOverridden())
 			prefs.saveMinidump.SetConfigValue(saveMinidump->GetValue() ? saveMinidumpTimeValue : -1);
 		if (!prefs.throttle.IsOverridden())
