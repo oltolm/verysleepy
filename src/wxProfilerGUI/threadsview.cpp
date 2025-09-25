@@ -21,6 +21,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 http://www.gnu.org/copyleft/gpl.html.
 =====================================================================*/
 #include "threadsview.h"
+#include "guiutils.h"
 #include "mainwin.h"
 #include <wx/types.h>
 
@@ -155,7 +156,8 @@ void ThreadsView::focusThread(Database::ThreadID tid)
 
 		for (int j = 0; j < GetItemCount(); ++j)
 		{
-			SetItemTextColour(j, wxColor(0, i == j ? 128 : 0, 0));
+			SetItemTextColour(j, i == j ? lightOrDark(wxTheColourDatabase->Find("green"))
+										: GetTextColour());
 		}
 	}
 }

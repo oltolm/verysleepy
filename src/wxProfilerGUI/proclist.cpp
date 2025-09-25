@@ -207,13 +207,13 @@ void ProcList::displayList()
 		item.SetText(sym->procname);
 
 		if (sym->isCollapseFunction || sym->isCollapseModule)
-			item.SetTextColour(wxColor(0,128,0));
+			item.SetTextColour(*wxGREEN);
 		else
 		if (i->inclusive == 0 && i->exclusive == 0)
-			item.SetTextColour(wxColor(128, 128, 128));
+			item.SetTextColour(wxColor(128, 128, 128)); // gray
 
 		if (set_get(viewstate->highlighted, sym->address))
-			item.SetBackgroundColour(wxColor(255,255,0));
+			item.SetBackgroundColour(*wxYELLOW);
 
 		const Database::AddrInfo *addrinfo = database->getAddrInfo(i->address);
 		int state = map_get(item_state, addrinfo, 0);

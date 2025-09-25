@@ -26,6 +26,7 @@ http://www.gnu.org/copyleft/gpl.html.
 #include <wx/aui/auibar.h>
 #include <wx/filedlg.h>
 #include <wx/dcclient.h>
+#include <wx/gdicmn.h>
 #include "contextmenu.h"
 #include "mainwin.h"
 #include "../utils/stringutils.h"
@@ -223,14 +224,14 @@ void CallstackView::updateList()
 			listCtrl->SetItem(i, COL_NAME, snow->procname);
 
 		if (snow->isCollapseFunction || snow->isCollapseModule)
-			listCtrl->SetItemTextColour(i,wxColor(0,128,0));
+			listCtrl->SetItemTextColour(i, *wxGREEN);
 		else
-			listCtrl->SetItemTextColour(i,wxColor(0,0,0));
+			listCtrl->SetItemTextColour(i, *wxBLACK);
 
 		if (set_get(viewstate->highlighted, snow->address))
-			listCtrl->SetItemBackgroundColour(i, wxColor(255,255,0));
+			listCtrl->SetItemBackgroundColour(i, *wxYELLOW);
 		else
-			listCtrl->SetItemBackgroundColour(i, wxColor(255,255,255));
+			listCtrl->SetItemBackgroundColour(i, *wxWHITE);
 
 		listCtrl->SetItem(i, COL_MODULE    , database->getModuleName(snow->module));
 		listCtrl->SetItem(i, COL_SOURCEFILE, database->getFileName  (snow->sourcefile));

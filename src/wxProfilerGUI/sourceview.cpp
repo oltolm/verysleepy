@@ -22,6 +22,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 http://www.gnu.org/copyleft/gpl.html.
 =====================================================================*/
 #include "sourceview.h"
+#include <wx/gdicmn.h>
 
 #define countof(_x) (sizeof(_x)/sizeof(_x[0]))
 
@@ -106,25 +107,25 @@ void SourceView::setCppMode()
 
 	SetMarginType	(1, wxSTC_MARGIN_RTEXT);
 	SetMarginWidth	(1, FromDIP(50));
-	StyleSetForeground (MARGIN_TEXT_STYLE, wxColour(255,  0,  0));
+	StyleSetForeground(MARGIN_TEXT_STYLE, *wxRED);
 	StyleSetBackground (MARGIN_TEXT_STYLE, wxColour(192,192,192));
 
-	StyleSetForeground (wxSTC_C_DEFAULT,			wxColour(0,0,0)	);
+	StyleSetForeground(wxSTC_C_DEFAULT, *wxBLACK);
 	StyleSetForeground (wxSTC_C_STRING,				wxColour(163,21,21));
-	StyleSetForeground (wxSTC_C_PREPROCESSOR,		wxColour(0,0,255));
+	StyleSetForeground(wxSTC_C_PREPROCESSOR, *wxBLUE);
 
-	StyleSetForeground (wxSTC_C_IDENTIFIER,			wxColour(0,0,0));
+	StyleSetForeground(wxSTC_C_IDENTIFIER, *wxBLACK);
 
-	StyleSetForeground (wxSTC_C_WORD,				wxColour(0,0,255));
-	StyleSetForeground (wxSTC_C_WORD2,				wxColour(0,0,255));
-	StyleSetForeground (wxSTC_C_NUMBER,				wxColour(0,0,0));
-	StyleSetForeground (wxSTC_C_CHARACTER,			wxColour(0,0,0));
+	StyleSetForeground(wxSTC_C_WORD, *wxBLUE);
+	StyleSetForeground(wxSTC_C_WORD2, *wxBLUE);
+	StyleSetForeground(wxSTC_C_NUMBER, *wxBLACK);
+	StyleSetForeground(wxSTC_C_CHARACTER, *wxBLACK);
 
-	StyleSetForeground (wxSTC_C_COMMENT,				wxColour(0,128,0));
-	StyleSetForeground (wxSTC_C_COMMENTLINE,			wxColour(0,128,0));
-	StyleSetForeground (wxSTC_C_COMMENTDOC,				wxColour(0,128,0));
-	StyleSetForeground (wxSTC_C_COMMENTDOCKEYWORD,		wxColour(0,128,0));
-	StyleSetForeground (wxSTC_C_COMMENTDOCKEYWORDERROR, wxColour(0,128,0));
+	StyleSetForeground(wxSTC_C_COMMENT, *wxGREEN);
+	StyleSetForeground(wxSTC_C_COMMENTLINE, *wxGREEN);
+	StyleSetForeground(wxSTC_C_COMMENTDOC, *wxGREEN);
+	StyleSetForeground(wxSTC_C_COMMENTDOCKEYWORD, *wxGREEN);
+	StyleSetForeground(wxSTC_C_COMMENTDOCKEYWORDERROR, *wxGREEN);
 	StyleSetBold(wxSTC_C_WORD, true);
 	StyleSetBold(wxSTC_C_WORD2, true);
 	StyleSetBold(wxSTC_C_COMMENTDOCKEYWORD, true);
