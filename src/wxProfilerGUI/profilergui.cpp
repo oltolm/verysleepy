@@ -75,16 +75,16 @@ static const wxCmdLineEntryDesc g_cmdLineDesc[] =
 	{ wxCMD_LINE_SWITCH, "mt", "", "When attaching a process, profiles only main thread.",  wxCMD_LINE_VAL_NONE },
 	{ wxCMD_LINE_SWITCH, "mbt", "", "When attaching a process, profiles only most busy thread.",    wxCMD_LINE_VAL_NONE },
 	{ wxCMD_LINE_OPTION, "thread", "", "Profiles the specified thread(s) in the process, multiple threads must be in a comma-delimited list without spaces (See /a for specifying the process ID). Examples: `/thread:2124` or `/thread:8086,24601,42`",    wxCMD_LINE_VAL_STRING, wxCMD_LINE_PARAM_OPTIONAL|wxCMD_LINE_NEEDS_SEPARATOR },
-	
+
 	{ wxCMD_LINE_OPTION, "minidump", "", "capture a minidump after N seconds time.",        wxCMD_LINE_VAL_NUMBER, wxCMD_LINE_PARAM_OPTIONAL },
 	{ wxCMD_LINE_OPTION, "samplerate", "", "set the sample rate speed",                     wxCMD_LINE_VAL_NUMBER, wxCMD_LINE_PARAM_OPTIONAL },
 	{ wxCMD_LINE_OPTION, "symsearchpath", "", "Specify the symbol search path.",            wxCMD_LINE_VAL_STRING, wxCMD_LINE_PARAM_OPTIONAL|wxCMD_LINE_NEEDS_SEPARATOR },
 	{ wxCMD_LINE_OPTION, "symcachedir", "", "Specify the directory to use for the symbol cache.", wxCMD_LINE_VAL_STRING, wxCMD_LINE_PARAM_OPTIONAL|wxCMD_LINE_NEEDS_SEPARATOR },
 	{ wxCMD_LINE_SWITCH, "usesymserver", "", "Use a symbol server.",                        wxCMD_LINE_VAL_NONE, wxCMD_LINE_SWITCH_NEGATABLE },
 	{ wxCMD_LINE_OPTION, "symserver", "", "Specify the symbol server path/URL.",            wxCMD_LINE_VAL_STRING, wxCMD_LINE_PARAM_OPTIONAL|wxCMD_LINE_NEEDS_SEPARATOR },
-	
+
 	{ wxCMD_LINE_PARAM, NULL, NULL, "Loads an existing profile from a file.",               wxCMD_LINE_VAL_STRING, wxCMD_LINE_PARAM_OPTIONAL},
-	
+
 	{ wxCMD_LINE_NONE }
 };
 

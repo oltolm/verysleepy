@@ -88,8 +88,6 @@ void LateSymbolInfo::loadMinidump(const std::wstring& dumppath, bool delete_when
 
 	if (debugClient5 || debugControl4 || debugSymbols3)
 	{
-		//throw SleepyException(L"Minidump symbols already loaded.");
-
 		// maybe the user moved a .pdb to somewhere where we can now find it?
 		unloadMinidump();
 	}

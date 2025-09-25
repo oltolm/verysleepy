@@ -205,7 +205,6 @@ MainWin::MainWin(const wxString& title,
 
 	sourceAndLog->AddPage(sourceview,wxT("Source"));
 	log = new LogView(sourceAndLog);
-	//wxTextCtrl *log = new wxTextCtrl(this, 0, "", wxDefaultPosition, wxSize(100,100), wxTE_MULTILINE|wxTE_READONLY);
 	sourceAndLog->AddPage(log,wxT("Log"));
 
 	callViews = new wxAuiNotebook(this,wxID_ANY,wxDefaultPosition,wxDefaultSize,wxAUI_NB_TOP|wxAUI_NB_TAB_SPLIT|wxAUI_NB_TAB_MOVE|wxAUI_NB_SCROLL_BUTTONS|wxNO_BORDER|wxNO_BORDER);
@@ -837,7 +836,6 @@ void MainWin::focusSymbol(const Database::AddrInfo *addrinfo)
 	proclist->focusSymbol(symbol);
 	callers->focusSymbol(symbol);
 	callees->focusSymbol(symbol);
-	//callStack->focusSymbol(symbol);
 }
 
 void MainWin::inspectSymbol(const Database::AddrInfo *addrinfo, bool addtohistory/*=true*/)

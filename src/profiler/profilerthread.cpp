@@ -183,9 +183,6 @@ void ProfilerThread::sampleLoop()
 
 void ProfilerThread::saveData()
 {
-	//get process id of the process the target thread is running in
-	//const DWORD process_id = GetProcessIdOfThread(profiler.getTarget());
-
 	wxFFileOutputStream out(filename);
 	wxZipOutputStream zip(out);
 	wxTextOutputStream txt(zip, wxEOL_NATIVE, wxConvAuto(wxFONTENCODING_UTF8));

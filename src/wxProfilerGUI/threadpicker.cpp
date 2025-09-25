@@ -360,20 +360,6 @@ ThreadPicker::~ThreadPicker()
 		delete attach_info;
 }
 
-/*
-unsigned int ThreadPicker::getSelectedThread()
-{
-	const ProcessInfo* info = processlist->getSelectedProcess();
-
-	if(info)
-	{
-		return info->threads[0].getID();
-	}
-
-	return 0;
-}
-*/
-
 bool ThreadPicker::TryAttachToProcess(bool allThreads)
 {
 	try

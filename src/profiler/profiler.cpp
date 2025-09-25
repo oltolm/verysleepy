@@ -326,17 +326,3 @@ bool Profiler::targetExited() const
 	DWORD code = WaitForSingleObject(target_thread, 0);
 	return code != WAIT_TIMEOUT;
 }
-
-
-//void Profiler::saveIPs(std::ostream& stream)
-//{
-//	for (auto i = counts.begin(); i != counts.end(); ++i)
-//	{
-//		const Sample &sample = i->first;
-//		int count = i->second;
-//		stream << ::toHexString(sample.addr) << " " << count << "\n";
-//	}
-//
-//	stream.flush();
-//}
-//

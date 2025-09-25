@@ -68,9 +68,6 @@ AboutDlg::AboutDlg()
 	m_sizerText->Add(sizerIconAndTitle, 1, wxEXPAND);
 	m_sizerText->AddSpacer(FromDIP(10));
 
-//	AddText(_T(APPNAME) L":");
-//	AddDev("Your Name Here", "http://example.com/", "maintainer");
-
 	AddText("Very Sleepy:");
 	AddDev("Richard Mitton", "http://www.codersnotes.com/", "maintainer");
 	AddDev("Vladimir Panteleev", "http://thecybershadow.net/", "maintainer");

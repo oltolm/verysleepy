@@ -225,15 +225,6 @@ void SourceView::reset()
 
 void SourceView::OnPaint(wxPaintEvent& event)
 {
-
-	{
-		// wxPaintDC dc(this);
-		// dc.BeginDrawing();
-		// dc.SetBrush( lightOrDark(*wxRED_)BRUSH );
-		// dc.DrawLine(100, 0, 100, 300);
-		// dc.EndDrawing();
-	}
-
 	event.Skip();
 }
 
