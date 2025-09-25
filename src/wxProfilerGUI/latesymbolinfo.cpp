@@ -162,8 +162,8 @@ void LateSymbolInfo::filterSymbol(Database::Address address, std::wstring &modul
 
 				// Remove redundant "Module!" prefix
 				size_t modlength = module.length();
-				if (procname.length() > modlength+1 && module.compare(0, modlength, procname, 0, modlength)==0 && procname[modlength] == '!')
-					procname.erase(0, modlength+1);
+				if (procname.compare(0, modlength + 1, module + L'!') == 0)
+					procname.erase(0, modlength + 1);
 			}
 		}
 
