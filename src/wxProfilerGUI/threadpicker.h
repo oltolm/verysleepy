@@ -107,7 +107,6 @@ public:
 	wxCheckBox *time_check;
 	wxTextCtrl *time_ctrl;
 	int time_value;
-	wxIntegerValidator<int>* time_validator;
 
 private:
 	ProcessList* processlist;

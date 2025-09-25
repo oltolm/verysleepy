@@ -25,6 +25,7 @@ http://www.gnu.org/copyleft/gpl.html.
 #include "launchdlg.h"
 #include "optionsdlg.h"
 #include "../profiler/symbolinfo.h"
+#include <climits>
 #include <wx/menu.h>
 #include <wx/button.h>
 #include <wx/stattext.h>
@@ -152,13 +153,13 @@ ThreadPicker::ThreadPicker()
 
 	// RM: 20110614 Set time for profiler to run for
 	time_value = 100;
-	time_validator = new wxIntegerValidator<int>(&time_value);
-	time_validator->SetMin(0);
 	time_check = new wxCheckBox(panel, ProcWin_TimeCheck, "Profile for set time (s)");
-	time_ctrl = new wxTextCtrl(panel, ProcWin_TimeCtrl, "100", wxDefaultPosition, FromDIP(wxSize(60,20)), 0, *time_validator );
+	time_ctrl =
+		new wxTextCtrl(panel, ProcWin_TimeCtrl, "100", wxDefaultPosition, FromDIP(wxSize(60, 20)),
+					   0, wxIntegerValidator<int>(&time_value, 0, INT_MAX));
 	time_ctrl->Disable();
-	time_ctrl->SetToolTip("When enabled, this will limit the profile to run for a set time in seconds.");
-	time_validator->SetWindow(time_ctrl);
+	time_ctrl->SetToolTip(
+		"When enabled, this will limit the profile to run for a set time in seconds.");
 
 	// DE: 20090325 one list for processes and one list for selected process threads
 	threadlist = new ThreadList(panel, ok_button, all_button);
@@ -355,7 +356,6 @@ ThreadPicker::~ThreadPicker()
 {
 	g_symLog = NULL;
 	delete log;
-	delete time_validator;
 	if (attach_info)
 		delete attach_info;
 }
@@ -400,7 +400,7 @@ void ThreadPicker::AttachToProcess(bool allThreads)
 	enforce(processInfo, "No process selected");
 
 	// RM: 20130614 Check if the user wants the profile to run for a set time period
-	if (time_check->IsChecked() && time_validator->TransferFromWindow() )
+	if (time_check->IsChecked() && time_ctrl->GetValidator()->TransferFromWindow())
 	{
 		attach_info->limit_profile_time = time_value;
 	}
