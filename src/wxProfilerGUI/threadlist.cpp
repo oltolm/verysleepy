@@ -175,8 +175,7 @@ void ThreadList::OnSort(wxListEvent& event)
 }
 
 int ThreadList::getNumDisplayedThreads() {
-	int numThreads = (int) threads.size();
-	return numThreads < MAX_NUM_DISPLAYED_THREADS ? numThreads : MAX_NUM_DISPLAYED_THREADS;
+	return std::min<int>(threads.size(), MAX_NUM_DISPLAYED_THREADS);
 }
 
 void ThreadList::fillList()
