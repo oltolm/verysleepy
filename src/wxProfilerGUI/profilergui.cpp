@@ -741,7 +741,7 @@ bool ProfilerGUI::OnCmdLineParsed(wxCmdLineParser& parser)
 	if (parser.Found("thread", &param))
 	{
 		auto tids_str = wxSplit(param,',');
-		for (size_t i=0; i<tids_str.GetCount(); i++)
+		for (size_t i = 0; i < tids_str.size(); i++)
 		{
 			long tid;
 			if (tids_str[i].ToLong(&tid))
