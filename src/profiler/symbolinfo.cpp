@@ -229,11 +229,8 @@ void SymbolInfo::loadSymbols(HANDLE process_handle_, bool download)
 		{
 			// Convert the EXE path to its containing folder and append the
 			// resulting folder to the symbol search path.
-			wchar_t *p = wcsrchr(szExePath, '\\');
-
-			if (p != NULL)
+			if (PathRemoveFileSpec(szExePath))
 			{
-				*p = '\0';
 				sympath += std::wstring(L";") + szExePath;
 			}
 		}
