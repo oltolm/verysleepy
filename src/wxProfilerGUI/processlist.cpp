@@ -237,7 +237,7 @@ void ProcessList::fillList()
 	{
 		ProcessInfo *process = (ProcessInfo *)GetItemData(i);
 
-		this->SetItem(i, COL_NAME, process->getName().c_str());
+		this->SetItem(i, COL_NAME, process->getName());
 
 		wxString str;
 		if (process->cpuUsage >= 0)

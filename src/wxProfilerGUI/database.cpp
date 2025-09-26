@@ -132,7 +132,8 @@ void Database::loadFromPath(const std::wstring& _profilepath, bool collapseOSCal
 			{
 				versionFound = true;
 				wxString ver = name.Mid(8, name.Length()-(8+9));
-				enforce(ver == FORMAT_VERSION, wxString::Format("Cannot load capture file: %s", name.c_str()).c_str());
+				enforce(ver == FORMAT_VERSION,
+						wxString::Format("Cannot load capture file: %s", name).c_str());
 			}
 		}
 
@@ -185,7 +186,7 @@ void Database::loadFromPath(const std::wstring& _profilepath, bool collapseOSCal
 		if ( standard_entries.find(name) != standard_entries.end() ) continue;
 		else if (name.Left(8) == "Version ") continue;
 
-		wxLogWarning("Other fluff found in capture file (%s)\n", name.c_str());
+		wxLogWarning("Other fluff found in capture file (%s)\n", name);
 	}
 
 	setRoot(NULL);

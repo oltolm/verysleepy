@@ -218,9 +218,9 @@ void CallstackView::updateList()
 		const Database::AddrInfo *addrinfo = database->getAddrInfo(addr);
 
 		if (i == (size_t)listCtrl->GetItemCount())
-			listCtrl->InsertItem(i,snow->procname.c_str());
+			listCtrl->InsertItem(i, snow->procname);
 		else
-			listCtrl->SetItem(i,COL_NAME,snow->procname.c_str());
+			listCtrl->SetItem(i, COL_NAME, snow->procname);
 
 		if (snow->isCollapseFunction || snow->isCollapseModule)
 			listCtrl->SetItemTextColour(i,wxColor(0,128,0));

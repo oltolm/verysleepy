@@ -387,8 +387,7 @@ AttachInfo *ProfilerGUI::RunProcess(const std::wstring &run_cmd, const std::wstr
 	STARTUPINFO si = {sizeof(si)};
 	PROCESS_INFORMATION pi = {};
 
-	std::vector<wchar_t> run_cmd_dup(run_cmd.size() + 1); // CreateProcess lpCommandLine must be mutable
-	std::copy(run_cmd.begin(), run_cmd.end(), run_cmd_dup.begin());
+	std::wstring run_cmd_dup = run_cmd; // CreateProcess lpCommandLine must be mutable
 	wenforce(CreateProcess( NULL, &run_cmd_dup[0], NULL, NULL, FALSE, 0, NULL, run_cwd.size() ? run_cwd.c_str() : NULL, &si, &pi ), "CreateProcess");
 
 	if (!CanProfileProcess(pi.hProcess))
@@ -726,19 +725,19 @@ bool ProfilerGUI::OnCmdLineParsed(wxCmdLineParser& parser)
 	}
 
 	if (parser.Found("i", &param))
-		cmdline_load = param.c_str();
+		cmdline_load = param;
 	if (parser.GetParamCount())
 		cmdline_load = parser.GetParam(0);
 	if (parser.Found("o", &param))
-		cmdline_save = param.c_str();
+		cmdline_save = param;
 	if (!parser.Found("d", &cmdline_delay))
 		cmdline_delay = 0;
 	if (!parser.Found("t", &cmdline_timeout))
 		cmdline_timeout = -1;
 	if (parser.Found("r", &param))
-		cmdline_run = param.c_str();
+		cmdline_run = param;
 	if (parser.Found("a", &param))
-		cmdline_attach = param.c_str();
+		cmdline_attach = param;
 	if (parser.Found("thread", &param))
 	{
 		auto tids_str = wxSplit(param,',');
