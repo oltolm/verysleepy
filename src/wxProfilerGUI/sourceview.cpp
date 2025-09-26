@@ -201,8 +201,7 @@ void SourceView::showFile(std::wstring path, int proclinenum, const std::vector<
 	{
 		if (linecounts[line])
 		{
-			wchar_t currCount[32];
-			swprintf(currCount, countof(currCount), L"%0.2fs ", linecounts[line]);
+			wxString currCount = wxString::Format(L"%0.2fs ", linecounts[line]);
 			MarginSetText (line-1, currCount);
 			MarginSetStyle(line-1, MARGIN_TEXT_STYLE);
 		}

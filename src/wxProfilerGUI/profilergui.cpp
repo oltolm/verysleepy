@@ -230,20 +230,21 @@ std::wstring ProfilerGUI::LaunchProfiler(const AttachInfo *info)
 			{
 				timer.fired = false;
 
-				const wchar_t *status = profilerthread->getStatus();
+				std::wstring status = profilerthread->getStatus();
 				int numSamples = profilerthread->getSampleProgress();
 				int numThreads = profilerthread->getNumThreadsRunning();
 				int timeout = info->limit_profile_time;
 				double elapsed = profilerthread->getDuration();
 
-				wchar_t tmp[256];
-				if (!status)
+				if (status.empty())
 				{
 					if (timeout == -1)
-						swprintf(tmp, L"%i samples, %.1fs elapsed, %i threads running", numSamples, elapsed, numThreads);
+						status = wxString::Format(L"%i samples, %.1fs elapsed, %i threads running",
+												  numSamples, elapsed, numThreads);
 					else
-						swprintf(tmp, L"%i samples, %.1fs/%ds elapsed, %i threads running", numSamples, elapsed, timeout, numThreads);
-					status = tmp;
+						status =
+							wxString::Format(L"%i samples, %.1fs/%ds elapsed, %i threads running",
+											 numSamples, elapsed, timeout, numThreads);
 				}
 
 				double progress = timeout == -1 ? std::numeric_limits<double>::quiet_NaN() : (elapsed / timeout);

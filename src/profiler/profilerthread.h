@@ -67,7 +67,7 @@ public:
 	int getNumThreadsRunning() const { return numThreadsRunning; }
 	bool getDone() const { return done; }
 	bool getFailed() const { return failed; }
-	const wchar_t* getStatus() const { return status; }
+	std::wstring getStatus() const { return status; }
 	SAMPLE_TYPE getDuration() const { return duration; }
 	int getSampleProgress() const { return numsamplessofar; }
 	void getSymbolsProgress(int *permille, std::wstring *stage) const { *permille = symbolsPermille; *stage = symbolsStage; }
@@ -97,7 +97,7 @@ private:
 	Debugger *debugger;
 	SAMPLE_TYPE duration;
 	//int numsamples;
-	const wchar_t* status;
+	std::wstring status;
 	int numsamplessofar;
 	int numThreadsRunning;
 	bool done;

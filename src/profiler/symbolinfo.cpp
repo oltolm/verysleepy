@@ -352,16 +352,14 @@ const std::wstring SymbolInfo::getProcForAddr(PROFILER_ADDR addr,
 
 	if(!result)
 	{
-		wchar_t buf[256];
 #if defined(_WIN64)
 		if(is64BitProcess)
-			swprintf(buf, 256, L"[%016llX]", addr);
+			return wxString::Format(L"[%016llX]", addr).wc_string();
 		else
-			swprintf(buf, 256, L"[%08X]", (unsigned __int32)(addr));
+			return wxString::Format(L"[%08X]", (unsigned __int32)(addr)).wc_string();
 #else
-		swprintf(buf, 256, L"[%08X]", addr);
+		return wxString::Format(L"[%08X]", addr).wc_string();
 #endif
-		return buf;
 	}
 
 	//------------------------------------------------------------------------

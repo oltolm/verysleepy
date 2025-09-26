@@ -239,20 +239,20 @@ void ProcessList::fillList()
 
 		this->SetItem(i, COL_NAME, process->getName().c_str());
 
-		char str[32];
+		wxString str;
 		if (process->cpuUsage >= 0)
-			sprintf(str, "%i%%", process->cpuUsage);
+			str = wxString::Format("%i%%", process->cpuUsage);
 		else
-			strcpy(str, "-");
+			str = "-";
 		this->SetItem(i, COL_CPUUSAGE, str);
 
 		if (process->totalCpuTimeMs >= 0)
-			sprintf(str, "%0.1f s", (double)(process->totalCpuTimeMs) / 1000);
+			str = wxString::Format("%0.1f s", (double)(process->totalCpuTimeMs) / 1000);
 		else
-			strcpy(str, "-");
+			str = "-";
 		this->SetItem(i, COL_TOTALCPU, str);
 
-		sprintf(str, "%li", process->getID());
+		str = wxString::Format("%li", process->getID());
 		this->SetItem(i, COL_PID, str);
 #ifdef _WIN64
 		if (Is64BitProcess(process->getProcessHandle()))

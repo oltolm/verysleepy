@@ -30,7 +30,7 @@ public:
 	CaptureWin();
 	virtual ~CaptureWin();
 
-	bool UpdateProgress(const wchar_t *status, double progress);
+	bool UpdateProgress(std::wstring status, double progress);
 
 	bool Paused() { return paused; }
 	bool Cancelled() { return cancelled; }

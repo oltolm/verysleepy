@@ -188,20 +188,20 @@ void ThreadList::fillList()
 		ThreadInfo *thread = (ThreadInfo *)GetItemData(i);
 		this->SetItem(i, COL_LOCATION, thread->getLocation());
 
-		char str[32];
+		wxString str;
 		if (thread->cpuUsage >= 0)
-			sprintf(str, "%i%%", thread->cpuUsage);
+			str = wxString::Format("%i%%", thread->cpuUsage);
 		else
-			strcpy(str, "-");
+			str = "-";
 		this->SetItem(i, COL_CPUUSAGE, str);
 
 		if (thread->totalCpuTimeMs >= 0)
-			sprintf(str, "%0.1f s", (double)(thread->totalCpuTimeMs) / 1000);
+			str = wxString::Format("%0.1f s", (double)(thread->totalCpuTimeMs) / 1000);
 		else
-			strcpy(str, "-");
+			str = "-";
 		this->SetItem(i, COL_TOTALCPU, str);
 
-		sprintf(str, "%ld", thread->getID());
+		str = wxString::Format("%ld", thread->getID());
 		this->SetItem(i, COL_ID, str);
 
 		this->SetItem(i, COL_NAME, thread->getName());

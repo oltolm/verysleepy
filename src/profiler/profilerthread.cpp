@@ -166,7 +166,7 @@ void ProfilerThread::sampleLoop()
 			minidump_saved = true;
 			status = L"Saving minidump";
 			minidump = sym_info->saveMinidump();
-			status = NULL;
+			status = L"";
 			continue;
 		}
 
@@ -330,7 +330,7 @@ void ProfilerThread::run()
 			thread_names[notification.threadId] = getThreadDescriptorName(notification.threadHandle);
 		});
 
-	status = NULL;
+	status = L"";
 	try
 	{
 		sampleLoop();
