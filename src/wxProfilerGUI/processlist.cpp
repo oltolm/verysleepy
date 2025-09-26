@@ -34,9 +34,9 @@ EVT_LIST_COL_CLICK(wxID_ANY, ProcessList::OnSort)
 EVT_TIMER(PROCESS_LIST_TIMER, ProcessList::OnTimer)
 END_EVENT_TABLE()
 
-ProcessList::ProcessList(wxWindow *parent, const wxPoint& pos, const wxSize& size,
-						 ThreadList *threadList_)
-	: wxListView(parent, PROCESS_LIST, pos, size, wxLC_REPORT | wxLC_SINGLE_SEL),
+ProcessList::ProcessList(wxWindow *parent, ThreadList *threadList_)
+	: wxListView(parent, PROCESS_LIST, wxDefaultPosition, wxDefaultSize,
+				 wxLC_REPORT | wxLC_SINGLE_SEL),
 	  timer(this, PROCESS_LIST_TIMER)
 {
 	threadList = threadList_;

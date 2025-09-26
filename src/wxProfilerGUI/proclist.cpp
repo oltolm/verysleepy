@@ -44,7 +44,7 @@ EVT_CONTEXT_MENU(ProcList::OnContextMenu)
 END_EVENT_TABLE()
 
 ProcList::ProcList(wxWindow *parent, bool isroot, Database *database)
-	: wxListView(parent, ProcList_List, wxDefaultPosition, wxDefaultSize, wxLC_REPORT /*style*/),
+	: wxListView(parent, ProcList_List),
 	  isroot(isroot),
 	  updating(false),
 	  database(database)

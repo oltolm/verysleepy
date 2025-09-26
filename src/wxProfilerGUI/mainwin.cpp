@@ -487,8 +487,9 @@ void MainWin::open(const wxString& filename)
 
 void MainWin::OnSaveAs(wxCommandEvent& WXUNUSED(event))
 {
-	wxFileDialog dlg(this, "Save File As", "", "capture.sleepy", _T(APPNAME) L" Profiles (*.sleepy)|*.sleepy",
-		wxFD_SAVE|wxFD_OVERWRITE_PROMPT);
+	wxFileDialog dlg(this, "Save File As", wxEmptyString, "capture.sleepy",
+					 _T(APPNAME) L" Profiles (*.sleepy)|*.sleepy",
+					 wxFD_SAVE | wxFD_OVERWRITE_PROMPT);
 	if (dlg.ShowModal() != wxID_CANCEL)
 	{
 		if (!CopyFile(profilepath.c_str(), dlg.GetPath().wc_str(), FALSE))
@@ -504,8 +505,8 @@ void MainWin::OnSaveAs(wxCommandEvent& WXUNUSED(event))
 
 void MainWin::OnExportAsCsv(wxCommandEvent& WXUNUSED(event))
 {
-	wxFileDialog dlg(this, "Export File As", "", "capture.csv", "CSV Files (*.csv)|*.csv",
-		wxFD_SAVE|wxFD_OVERWRITE_PROMPT);
+	wxFileDialog dlg(this, "Export File As", wxEmptyString, "capture.csv",
+					 "CSV Files (*.csv)|*.csv", wxFD_SAVE | wxFD_OVERWRITE_PROMPT);
 	if (dlg.ShowModal() != wxID_CANCEL)
 	{
 		wxFileOutputStream file(dlg.GetPath());
@@ -537,7 +538,9 @@ void MainWin::OnExportAsCsv(wxCommandEvent& WXUNUSED(event))
 
 void MainWin::OnExportAsCallgrind(wxCommandEvent& WXUNUSED(event))
 {
-	wxFileDialog dlg(this, "Export File As", "", "callgrind.capture", "Callgrind Files (callgrind.*)|callgrind.*", wxFD_SAVE|wxFD_OVERWRITE_PROMPT);
+	wxFileDialog dlg(this, "Export File As", wxEmptyString, "callgrind.capture",
+					 "Callgrind Files (callgrind.*)|callgrind.*",
+					 wxFD_SAVE | wxFD_OVERWRITE_PROMPT);
 	if (dlg.ShowModal() != wxID_CANCEL)
 	{
 		wxFileOutputStream file(dlg.GetPath());

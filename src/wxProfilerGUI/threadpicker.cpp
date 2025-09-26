@@ -85,9 +85,8 @@ void symLogCallback(const wchar_t *text)
 }
 
 ThreadPicker::ThreadPicker()
-:	wxModalFrame(NULL, wxID_ANY, APPNAME,
-			 wxDefaultPosition, wxDefaultSize,
-			 wxDEFAULT_FRAME_STYLE), attach_info(NULL)
+	: wxModalFrame(NULL, wxID_ANY, APPNAME),
+	  attach_info(NULL)
 {
 	SetIcon(sleepy_icon);
 
@@ -138,12 +137,12 @@ ThreadPicker::ThreadPicker()
 	wxPanel *panel = new wxPanel(this);
 	rootsizer->Add(panel, 1, wxEXPAND | wxALL);
 
-	wxButton *ok_button = new wxButton(panel, wxID_OK, "Profile &Selected", wxDefaultPosition, wxDefaultSize);
+	wxButton *ok_button = new wxButton(panel, wxID_OK, "Profile &Selected");
 	ok_button->SetBitmap(LoadPngResource(L"button_profilesel", this));
 	ok_button->SetBitmapPosition(wxRIGHT);
 	ok_button->SetBitmapMargins(-1,-1);
 	ok_button->SetToolTip("Begins profiling selected threads.");
-	wxButton *all_button = new wxButton(panel, wxID_SELECTALL,"Profile &All", wxDefaultPosition, wxDefaultSize);
+	wxButton *all_button = new wxButton(panel, wxID_SELECTALL, "Profile &All");
 	all_button->SetBitmap(LoadPngResource(L"button_profileall", this));
 	all_button->SetBitmapPosition(wxRIGHT);
 	all_button->SetBitmapMargins(-1,-1);
@@ -162,8 +161,8 @@ ThreadPicker::ThreadPicker()
 	time_validator->SetWindow(time_ctrl);
 
 	// DE: 20090325 one list for processes and one list for selected process threads
-	threadlist = new ThreadList(panel, wxDefaultPosition, wxDefaultSize, ok_button, all_button);
-	processlist = new ProcessList(panel, wxDefaultPosition, wxDefaultSize, threadlist);
+	threadlist = new ThreadList(panel, ok_button, all_button);
+	processlist = new ProcessList(panel, threadlist);
 
 	leftsizer->Add(new wxStaticText(panel, wxID_ANY, "Select a process to profile:"), 0, wxTOP, FromDIP(5));
 	leftsizer->Add(processlist, 1, wxEXPAND | wxTOP, FromDIP(3));
@@ -172,13 +171,13 @@ ThreadPicker::ThreadPicker()
 	rightsizer->Add(new wxStaticText(panel, wxID_ANY, "Select thread(s) to profile: (CTRL-click for multiple)"), 0, wxTOP, FromDIP(5));
 	rightsizer->Add(threadlist, 1, wxEXPAND | wxTOP, FromDIP(3));
 
-	wxButton *refreshButton = new wxButton(panel, ProcWin_Refresh, "Refresh", wxDefaultPosition, wxDefaultSize);
+	wxButton *refreshButton = new wxButton(panel, ProcWin_Refresh, "Refresh");
 	refreshButton->SetBitmap(LoadPngResource(L"button_refresh", this));
 	refreshButton->SetBitmapPosition(wxRIGHT);
 	refreshButton->SetBitmapMargins(-1,-1);
 	refreshButton->SetToolTip("Refreshes the list of processes and threads.");
 
-	wxButton *downloadButton = new wxButton(panel, ProcWin_Download, "Download", wxDefaultPosition, wxDefaultSize);
+	wxButton *downloadButton = new wxButton(panel, ProcWin_Download, "Download");
 	downloadButton->SetBitmap(LoadPngResource(L"button_download", this));
 	downloadButton->SetBitmapPosition(wxRIGHT);
 	downloadButton->SetBitmapMargins(-1,-1);

@@ -50,17 +50,17 @@ public:
 		  option(0),
 		  mPushed(false)
 	{
-		this      ->Bind(wxEVT_MENU          , &FunctionMenuWindow::OnMenu     , this, wxID_ANY);
-		theMainWin->Bind(wxEVT_MENU_OPEN     , &FunctionMenuWindow::OnOpen     , this, wxID_ANY);
-		theMainWin->Bind(wxEVT_MENU_CLOSE    , &FunctionMenuWindow::OnClose    , this, wxID_ANY);
-		theMainWin->Bind(wxEVT_MENU_HIGHLIGHT, &FunctionMenuWindow::OnHighlight, this, wxID_ANY);
+		this->Bind(wxEVT_MENU, &FunctionMenuWindow::OnMenu, this);
+		theMainWin->Bind(wxEVT_MENU_OPEN, &FunctionMenuWindow::OnOpen, this);
+		theMainWin->Bind(wxEVT_MENU_CLOSE, &FunctionMenuWindow::OnClose, this);
+		theMainWin->Bind(wxEVT_MENU_HIGHLIGHT, &FunctionMenuWindow::OnHighlight, this);
 	}
 
 	~FunctionMenuWindow()
 	{
-		theMainWin->Unbind(wxEVT_MENU_OPEN     , &FunctionMenuWindow::OnOpen     , this, wxID_ANY);
-		theMainWin->Unbind(wxEVT_MENU_CLOSE    , &FunctionMenuWindow::OnClose    , this, wxID_ANY);
-		theMainWin->Unbind(wxEVT_MENU_HIGHLIGHT, &FunctionMenuWindow::OnHighlight, this, wxID_ANY);
+		theMainWin->Unbind(wxEVT_MENU_OPEN, &FunctionMenuWindow::OnOpen, this);
+		theMainWin->Unbind(wxEVT_MENU_CLOSE, &FunctionMenuWindow::OnClose, this);
+		theMainWin->Unbind(wxEVT_MENU_HIGHLIGHT, &FunctionMenuWindow::OnHighlight, this);
 	}
 
 private:

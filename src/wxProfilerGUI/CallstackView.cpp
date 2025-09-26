@@ -79,7 +79,7 @@ END_EVENT_TABLE()
 CallstackView::CallstackView(wxWindow *parent,Database *_database)
 :	wxWindow(parent,wxID_ANY), database(_database), callstackActive(0), currSymbol(NULL), itemSelected(~0u)
 {
-	listCtrl = new wxListView(this, LIST_CTRL, wxDefaultPosition, wxDefaultSize, wxLC_REPORT);
+	listCtrl = new wxListView(this, LIST_CTRL);
 	setupColumn(COL_NAME,			170,	_T("Name"));
 	setupColumn(COL_MODULE,			70,		_T("Module"));
 	setupColumn(COL_SOURCEFILE,		270,	_T("Source File"));
@@ -294,7 +294,8 @@ void CallstackView::OnTool(wxCommandEvent &event)
 		updateList();
 	}
 	if(event.GetId() == TOOL_EXPORT_CSV) {
-		wxFileDialog dlg(this, "Export Callstack As", "", "callstack.csv", "CSV Files (*.csv)|*.csv", wxFD_SAVE|wxFD_OVERWRITE_PROMPT);
+		wxFileDialog dlg(this, "Export Callstack As", wxEmptyString, "callstack.csv",
+						 "CSV Files (*.csv)|*.csv", wxFD_SAVE | wxFD_OVERWRITE_PROMPT);
 		if (dlg.ShowModal() != wxID_CANCEL)
 		{
 			wxFileOutputStream file(dlg.GetPath());

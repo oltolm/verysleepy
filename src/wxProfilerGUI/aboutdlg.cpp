@@ -34,8 +34,7 @@ AboutDlg::AboutDlg()
 {
 	Init();
 
-	if ( !wxDialog::Create(NULL, wxID_ANY, _T("About ") _T(APPNAME),
-		wxDefaultPosition, wxDefaultSize, wxDEFAULT_DIALOG_STYLE) )
+	if (!wxDialog::Create(NULL, wxID_ANY, _T("About ") _T(APPNAME)))
 		return;
 
 	m_sizerText = new wxBoxSizer(wxVERTICAL);

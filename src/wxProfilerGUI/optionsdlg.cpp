@@ -79,9 +79,7 @@ EVT_CHECKBOX(Options_SaveMinidump, OptionsDlg::OnSaveMinidump)
 END_EVENT_TABLE()
 
 OptionsDlg::OptionsDlg()
-:	wxDialog(NULL, wxID_ANY, wxString(_T("Options")),
-			 wxDefaultPosition, wxDefaultSize,
-			 wxDEFAULT_DIALOG_STYLE)
+	: wxDialog(NULL, wxID_ANY, wxString(_T("Options")))
 {
 	wxBoxSizer *rootsizer = new wxBoxSizer(wxVERTICAL);
 	wxBoxSizer *topsizer = new wxBoxSizer(wxVERTICAL);

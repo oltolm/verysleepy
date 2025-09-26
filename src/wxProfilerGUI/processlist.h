@@ -45,9 +45,7 @@ public:
 
 	=====================================================================*/
 	// DE: 20090325 ProcessList knows about threadlist and updates it based on process selection
-	ProcessList(wxWindow *parent, const wxPoint& pos,
-			const wxSize& size,
-			ThreadList* threadList);
+	ProcessList(wxWindow *parent, ThreadList *threadList);
 
 	virtual ~ProcessList();
 

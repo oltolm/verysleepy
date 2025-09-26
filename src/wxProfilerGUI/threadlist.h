@@ -44,8 +44,7 @@ public:
 	-----------
 
 	=====================================================================*/
-	ThreadList(wxWindow *parent, const wxPoint& pos,
-			const wxSize& size, wxButton *ok_button, wxButton *all_button);
+	ThreadList(wxWindow *parent, wxButton *ok_button, wxButton *all_button);
 
 	virtual ~ThreadList();
 

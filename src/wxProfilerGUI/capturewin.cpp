@@ -44,9 +44,7 @@ EVT_BUTTON(wxID_CANCEL, CaptureWin::OnCancel)
 END_EVENT_TABLE()
 
 CaptureWin::CaptureWin()
-:	wxDialog(NULL, wxID_ANY, wxString(_T(APPNAME) _T(" - profiling")),
-			 wxDefaultPosition, wxDefaultSize,
-			 wxDEFAULT_DIALOG_STYLE)
+	: wxDialog(NULL, wxID_ANY, wxString(_T(APPNAME) _T(" - profiling")))
 {
 	cancelled = stopped = paused = false;
 
