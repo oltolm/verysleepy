@@ -49,8 +49,6 @@ ProcList::ProcList(wxWindow *parent, bool isroot, Database *database)
 	  updating(false),
 	  database(database)
 {
-	// InitSort();
-
 	this->isroot = isroot;
 
 	for (int n=0;n<MAX_COLUMNS;n++)
@@ -58,36 +56,30 @@ ProcList::ProcList(wxWindow *parent, bool isroot, Database *database)
 
 	if (isroot)
 	{
-		setupColumn(COL_NAME,			360,	SORT_UP,	_T("Name"));
-		setupColumn(COL_EXCLUSIVE,		70,		SORT_DOWN,	_T("Exclusive"));
-		setupColumn(COL_INCLUSIVE,		70,		SORT_DOWN,	_T("Inclusive"));
-		setupColumn(COL_EXCLUSIVEPCT,	70,		SORT_DOWN,	_T("% Exclusive"));
-		setupColumn(COL_INCLUSIVEPCT,	70,		SORT_DOWN,	_T("% Inclusive"));
+		setupColumn(COL_NAME, 360, true, _T("Name"));
+		setupColumn(COL_EXCLUSIVE, 70, false, _T("Exclusive"));
+		setupColumn(COL_INCLUSIVE, 70, false, _T("Inclusive"));
+		setupColumn(COL_EXCLUSIVEPCT, 70, false, _T("% Exclusive"));
+		setupColumn(COL_INCLUSIVEPCT, 70, false, _T("% Inclusive"));
 	} else {
-		setupColumn(COL_NAME,			170,	SORT_UP,	_T("Name"));
-		setupColumn(COL_SAMPLES,		70,		SORT_DOWN,	_T("Samples"));
-		setupColumn(COL_CALLSPCT,		70,		SORT_DOWN,	_T("% Calls"));
+		setupColumn(COL_NAME, 170, true, _T("Name"));
+		setupColumn(COL_SAMPLES, 70, false, _T("Samples"));
+		setupColumn(COL_CALLSPCT, 70, false, _T("% Calls"));
 	}
-	setupColumn(COL_MODULE,			70,		SORT_UP,	_T("Module"));
-	setupColumn(COL_SOURCEFILE,		270,	SORT_UP,	_T("Source File"));
-	setupColumn(COL_SOURCELINE,		40,		SORT_UP,	_T("Source Line"));
-	setupColumn(COL_ADDRESS,		100,	SORT_UP,	_T("Address"));
+	setupColumn(COL_MODULE, 70, true, _T("Module"));
+	setupColumn(COL_SOURCEFILE, 270, true, _T("Source File"));
+	setupColumn(COL_SOURCELINE, 40, true, _T("Source Line"));
+	setupColumn(COL_ADDRESS, 100, true, _T("Address"));
 
-	if (isroot)
-		sort_column = COL_EXCLUSIVE;
-	else
-		sort_column = COL_SAMPLES;
-	sort_dir = SORT_DOWN;
-	// SetSortImage(columns[sort_column].listctrl_column, sort_dir);
+	ShowSortIndicator(columns[isroot ? COL_EXCLUSIVE : COL_SAMPLES].listctrl_column, false);
 }
-
 
 ProcList::~ProcList()
 {
 
 }
 
-void ProcList::setupColumn(ColumnType id, int width, SortType defsort, const wxString &name)
+void ProcList::setupColumn(ColumnType id, int width, bool defsort, const wxString& name)
 {
 	int index = GetColumnCount();
 
@@ -102,29 +94,71 @@ void ProcList::setupColumn(ColumnType id, int width, SortType defsort, const wxS
 	InsertColumn(index, itemCol);
 }
 
+static int ProcComparator(wxIntPtr item1, wxIntPtr item2, wxIntPtr data)
+{
+	auto sort_column = ((ProcList *)data)->GetSortIndicator();
+	auto ascending = ((ProcList *)data)->IsAscendingSortIndicator();
+	auto a = (Database::Item *)item1;
+	auto b = (Database::Item *)item2;
+	if (!ascending)
+		std::swap(a, b);
+
+	int columnType = 0;
+	for (int n = 0; n < ((ProcList *)data)->MAX_COLUMNS; ++n)
+		if (((ProcList *)data)->columns[n].listctrl_column == sort_column)
+			columnType = n;
+
+	switch (columnType)
+	{
+	case ProcList::COL_NAME:
+		return a->symbol->procname.compare(b->symbol->procname);
+	case ProcList::COL_EXCLUSIVE:
+	case ProcList::COL_EXCLUSIVEPCT:
+	case ProcList::COL_SAMPLES:
+	case ProcList::COL_CALLSPCT:
+		if (a->exclusive != b->exclusive)
+			return a->exclusive < b->exclusive ? -1 : a->exclusive > b->exclusive ? 1 : 0;
+		return a->inclusive < b->inclusive ? -1 : a->inclusive > b->inclusive ? 1 : 0;
+	case ProcList::COL_INCLUSIVE:
+	case ProcList::COL_INCLUSIVEPCT:
+		if (a->inclusive != b->inclusive)
+			return a->inclusive < b->inclusive ? -1 : a->inclusive > b->inclusive ? 1 : 0;
+		return a->exclusive < b->exclusive;
+	case ProcList::COL_MODULE:
+		return a->symbol->module < b->symbol->module   ? -1
+			   : a->symbol->module > b->symbol->module ? 1
+													   : 0;
+	case ProcList::COL_SOURCEFILE:
+		return a->symbol->sourcefile < b->symbol->sourcefile   ? -1
+			   : a->symbol->sourcefile > b->symbol->sourcefile ? 1
+															   : 0;
+	case ProcList::COL_SOURCELINE:
+	case ProcList::COL_ADDRESS:
+		return a->address < b->address ? -1 : a->address > b->address ? 1 : 0;
+	case ProcList::MAX_COLUMNS:
+		break;
+	}
+	return 0;
+}
+
 void ProcList::OnSort(wxListEvent& event)
 {
-	// SetSortImage(columns[sort_column].listctrl_column, SORT_NONE);
-
-	int new_column = 0;
-	for (int n=0;n<MAX_COLUMNS;n++)
-		if (columns[n].listctrl_column == event.m_col)
-			new_column = n;
-
-	if (sort_column == new_column)
+	bool ascending = false;
+	if (GetSortIndicator() == event.GetColumn())
 	{
 		// toggle if we clicked on the same column as last time
-		sort_dir = (SortType)((SORT_UP+SORT_DOWN) - sort_dir);
-	} else {
+		ascending = GetUpdatedAscendingSortIndicator(event.GetColumn());
+	}
+	else
+	{
 		// if switching columns, start with the default sort for that column type
-		sort_column = new_column;
-		sort_dir = columns[sort_column].default_sort;
+		for (const auto& column : columns)
+			if (column.listctrl_column == event.GetColumn())
+				ascending = column.default_sort;
 	}
 
-	// SetSortImage(columns[sort_column].listctrl_column, sort_dir);
-
-	sortList();
-	displayList();
+	ShowSortIndicator(event.GetColumn(), ascending);
+	SortItems(ProcComparator, (wxIntPtr)this);
 }
 
 void ProcList::OnContextMenu(wxContextMenuEvent& WXUNUSED(event))
@@ -132,47 +166,11 @@ void ProcList::OnContextMenu(wxContextMenuEvent& WXUNUSED(event))
 	FunctionMenu(this, database);
 }
 
-struct NamePred       { bool operator () (const Database::Item &a, const Database::Item &b) { return a.symbol->procname   < b.symbol->procname  ; } };
-struct ExclusivePred  { bool operator () (const Database::Item &a, const Database::Item &b) {
-	if (a.exclusive != b.exclusive)
-		return a.exclusive < b.exclusive;
-	return a.inclusive < b.inclusive;
-} };
-struct InclusivePred  { bool operator () (const Database::Item &a, const Database::Item &b) {
-	if (a.inclusive != b.inclusive)
-		return a.inclusive < b.inclusive;
-	return a.exclusive < b.exclusive;
-} };
-struct ModulePred     { bool operator () (const Database::Item &a, const Database::Item &b) { return a.symbol->module     < b.symbol->module    ; } };
-struct SourceFilePred { bool operator () (const Database::Item &a, const Database::Item &b) { return a.symbol->sourcefile < b.symbol->sourcefile; } };
-struct AddressPred    { bool operator () (const Database::Item &a, const Database::Item &b) { return a.address            < b.address           ; } };
-
-void ProcList::sortList()
-{
-	switch(sort_column) {
-	case COL_NAME:         std::stable_sort(list.items.begin(), list.items.end(), NamePred      ()); break;
-	case COL_EXCLUSIVE:
-	case COL_EXCLUSIVEPCT:
-	case COL_SAMPLES:
-	case COL_CALLSPCT:     std::stable_sort(list.items.begin(), list.items.end(), ExclusivePred ()); break;
-	case COL_INCLUSIVE:
-	case COL_INCLUSIVEPCT: std::stable_sort(list.items.begin(), list.items.end(), InclusivePred ()); break;
-	case COL_MODULE:       std::stable_sort(list.items.begin(), list.items.end(), ModulePred    ()); break;
-	case COL_SOURCEFILE:   std::stable_sort(list.items.begin(), list.items.end(), SourceFilePred()); break;
-	case COL_SOURCELINE:
-	case COL_ADDRESS:      std::stable_sort(list.items.begin(), list.items.end(), AddressPred   ()); break;
-	}
-
-	if (sort_dir == SORT_DOWN)
-		std::reverse(list.items.begin(), list.items.end());
-}
-
-
 void ProcList::showList(const Database::List &list_)
 {
 	this->list = list_;
-	sortList();
 	displayList();
+	SortItems(ProcComparator, (wxIntPtr)this);
 }
 
 void ProcList::displayList()
@@ -180,9 +178,13 @@ void ProcList::displayList()
 	theMainWin->setProgress(L"Saving list state...");
 	std::unordered_map<const Database::AddrInfo *, int> item_state;
 	// TODO: use GetNextItem?
-	for (long i=0; i<GetItemCount(); i++)
-		if (int state = GetItemState(i, wxLIST_STATE_FOCUSED|wxLIST_STATE_SELECTED))
-			item_state[(const Database::AddrInfo *)GetItemData(i)] = state;
+	for (long i = 0; i < GetItemCount(); i++)
+		if (int state = GetItemState(i, wxLIST_STATE_FOCUSED | wxLIST_STATE_SELECTED))
+		{
+			Database::Item *item = (Database::Item *)GetItemData(i);
+			const Database::AddrInfo *addrinfo = database->getAddrInfo(item->address);
+			item_state[addrinfo] = state;
+		}
 
 	theMainWin->setProgress(L"Clearing list...");
 	Freeze();
@@ -215,7 +217,7 @@ void ProcList::displayList()
 
 		const Database::AddrInfo *addrinfo = database->getAddrInfo(i->address);
 		int state = map_get(item_state, addrinfo, 0);
-		item.SetData((void*)addrinfo);
+		item.SetData((void *)&*i);
 		item.SetState(state);
 		item.SetStateMask(wxLIST_STATE_FOCUSED|wxLIST_STATE_SELECTED);
 
@@ -261,11 +263,16 @@ void ProcList::focusSymbol(const Database::Symbol *symbol)
 	if (updating) return;
 	updating = true;
 
-	for(long i=0;i<(long)list.items.size();i++) {
-		if(list.items[i].symbol == symbol) {
+	for (long i = 0; i < GetItemCount(); i++)
+	{
+		Database::Item *item = (Database::Item *)GetItemData(i);
+		if (item->symbol == symbol)
+		{
 			SetItemState(i,wxLIST_STATE_FOCUSED|wxLIST_STATE_SELECTED, wxLIST_STATE_FOCUSED|wxLIST_STATE_SELECTED);
 			EnsureVisible(i);
-		} else {
+		}
+		else
+		{
 			if (GetItemState(i, wxLIST_STATE_FOCUSED|wxLIST_STATE_SELECTED))
 				SetItemState(i,0,wxLIST_STATE_SELECTED);
 		}
@@ -288,7 +295,8 @@ void ProcList::OnSelected(wxListEvent& event)
 
 	assert(GetWindowStyle() & wxLC_REPORT);
 
-	const Database::AddrInfo *addrinfo = (const Database::AddrInfo *)GetItemData(event.m_itemIndex);
+	const Database::Item *item = (const Database::Item *)GetItemData(event.m_itemIndex);
+	auto *addrinfo = database->getAddrInfo(item->address);
 	if (isroot)
 		theMainWin->inspectSymbol(addrinfo);
 	else
@@ -301,7 +309,8 @@ void ProcList::OnActivated(wxListEvent& event)
 {
 	assert(GetWindowStyle() & wxLC_REPORT);
 
-	const Database::AddrInfo *addrinfo = (const Database::AddrInfo *)GetItemData(event.m_itemIndex);
+	const Database::Item *item = (const Database::Item *)GetItemData(event.m_itemIndex);
+	const Database::AddrInfo *addrinfo = database->getAddrInfo(item->address);
 	if (!isroot)
 		theMainWin->inspectSymbol(addrinfo);
 }

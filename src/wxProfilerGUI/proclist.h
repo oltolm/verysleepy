@@ -50,14 +50,11 @@ public:
 	void focusSymbol(const Database::Symbol *symbol);
 	const Database::Symbol *getFocusedSymbol();
 
-private:
-	Database::List list;
-
-	enum SortType
+	struct Column
 	{
-		SORT_NONE,
-		SORT_UP,
-		SORT_DOWN
+		wxString name;
+		int listctrl_column;
+		bool default_sort;
 	};
 
 	enum ColumnType
@@ -76,24 +73,19 @@ private:
 		MAX_COLUMNS
 	};
 
-	struct Column
-	{
-		wxString name;
-		int listctrl_column;
-		SortType default_sort;
-	};
+	Column columns[MAX_COLUMNS];
+
+private:
+	Database::List list;
 
 	DECLARE_EVENT_TABLE()
 
 	bool isroot; // Are we the main proc list?
 	bool updating; // Is a selection update in progress? (ignore selection events)
 
-	Database* database;
-	int sort_column;
-	SortType sort_dir;
+	Database *database;
 
-	Column columns[MAX_COLUMNS];
-	void setupColumn(ColumnType id, int width, SortType defsort, const wxString &name);
+	void setupColumn(ColumnType id, int width, bool defsort, const wxString& name);
 	void setColumnValue(int row, ColumnType id, const wxString &value);
 
 	/// Sorts the in-memory list. Does not affect GUI.
