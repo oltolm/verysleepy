@@ -42,7 +42,6 @@ ProcessList::ProcessList(wxWindow *parent, const wxPoint& pos, const wxSize& siz
 	threadList = threadList_;
 	selectionChanged = false;
 	firstUpdate = true;
-	// InitSort();
 
 	selected_process = -1;
 	syminfo = new SymbolInfo();
@@ -71,9 +70,7 @@ ProcessList::ProcessList(wxWindow *parent, const wxPoint& pos, const wxSize& siz
 	SetColumnWidth(COL_TOTALCPU, FromDIP(70));
 	SetColumnWidth(COL_PID, FromDIP(50));
 
-	sort_column = COL_CPUUSAGE;
-	sort_dir = SORT_DOWN;
-	// SetSortImage(sort_column, sort_dir);
+	ShowSortIndicator(COL_CPUUSAGE, false);
 
 	timer.Start(1000); // 1 second interval
 }
@@ -181,155 +178,89 @@ void ProcessList::OnTimer(wxTimerEvent& WXUNUSED(event))
 	}
 }
 
-struct NameAscPred { bool operator () (const ProcessInfo &a, const ProcessInfo &b) {
-	return wcsicmp(a.getName().c_str(), b.getName().c_str()) < 0;
-} };
+static int ProcessComparator(wxIntPtr item1, wxIntPtr item2, wxIntPtr data)
+{
+	auto sort_column = ((wxListView *)data)->GetSortIndicator();
+	bool ascending = ((wxListView *)data)->IsAscendingSortIndicator();
+	auto a = (ProcessInfo *)item1;
+	auto b = (ProcessInfo *)item2;
+	if (!ascending)
+		std::swap(a, b);
 
-struct NameDescPred { bool operator () (const ProcessInfo &a, const ProcessInfo &b) {
-	return wcsicmp(a.getName().c_str(), b.getName().c_str()) > 0;
-} };
-
-struct CpuUsageAscPred { bool operator () (const ProcessInfo &a, const ProcessInfo &b) {
-	return a.cpuUsage < b.cpuUsage;
-} };
-
-struct CpuUsageDescPred { bool operator () (const ProcessInfo &a, const ProcessInfo &b) {
-	return a.cpuUsage > b.cpuUsage;
-} };
-
-struct TotalCpuTimeAscPred { bool operator () (const ProcessInfo &a, const ProcessInfo &b) {
-	return a.totalCpuTimeMs < b.totalCpuTimeMs;
-} };
-
-struct TotalCpuTimeDescPred { bool operator () (const ProcessInfo &a, const ProcessInfo &b) {
-	return a.totalCpuTimeMs > b.totalCpuTimeMs;
-} };
-
-struct PIDAscPred { bool operator () (const ProcessInfo &a, const ProcessInfo &b) {
-	return a.getID() < b.getID();
-} };
-
-struct PIDDescPred { bool operator () (const ProcessInfo &a, const ProcessInfo &b) {
-	return a.getID() > b.getID();
-} };
-
+	switch (sort_column)
+	{
+	case ProcessList::COL_NAME:
+		return wcsicmp(a->getName().c_str(), b->getName().c_str());
 #ifdef _WIN64
-struct TypeAscPred { bool operator () (const ProcessInfo &a, const ProcessInfo &b) {
-	if(a.getIs64Bits() == b.getIs64Bits()) {
-		CpuUsageAscPred cmp;
-		return cmp(a,b);
+	case ProcessList::COL_TYPE: {
+		if (a->getIs64Bits() == b->getIs64Bits())
+			return a->cpuUsage < b->cpuUsage ? -1 : a->cpuUsage > b->cpuUsage ? 1 : 0;
+		return a->getIs64Bits() < b->getIs64Bits()	 ? -1
+			   : a->getIs64Bits() > b->getIs64Bits() ? 1
+													 : 0;
 	}
-	return a.getIs64Bits() < b.getIs64Bits();
-} };
-
-struct TypeDescPred { bool operator () (const ProcessInfo &a, const ProcessInfo &b) {
-	if(a.getIs64Bits() == b.getIs64Bits()) {
-		CpuUsageDescPred cmp;
-		return cmp(a,b);
+#endif
+	case ProcessList::COL_CPUUSAGE:
+		return a->cpuUsage < b->cpuUsage ? -1 : a->cpuUsage > b->cpuUsage ? 1 : 0;
+	case ProcessList::COL_TOTALCPU:
+		return a->totalCpuTimeMs < b->totalCpuTimeMs   ? -1
+			   : a->totalCpuTimeMs > b->totalCpuTimeMs ? 1
+													   : 0;
+	case ProcessList::COL_PID:
+		return a->getID() < b->getID() ? -1 : a->getID() > b->getID() ? 1 : 0;
+	case ProcessList::NUM_COLUMNS:
+		break;
 	}
-	return a.getIs64Bits() > b.getIs64Bits();
-} };
-#endif
-
-void ProcessList::sortByName()
-{
-	if (sort_dir == SORT_UP)
-		std::stable_sort(processes.begin(), processes.end(), NameAscPred());
-	else
-		std::stable_sort(processes.begin(), processes.end(), NameDescPred());
+	return 0;
 }
 
-void ProcessList::sortByCpuUsage()
-{
-	if (sort_dir == SORT_UP)
-		std::stable_sort(processes.begin(), processes.end(), CpuUsageAscPred());
-	else
-		std::stable_sort(processes.begin(), processes.end(), CpuUsageDescPred());
-}
-
-void ProcessList::sortByTotalCpuTime()
-{
-	if (sort_dir == SORT_UP)
-		std::stable_sort(processes.begin(), processes.end(), TotalCpuTimeAscPred());
-	else
-		std::stable_sort(processes.begin(), processes.end(), TotalCpuTimeDescPred());
-}
-
-void ProcessList::sortByPID()
-{
-	if (sort_dir == SORT_UP)
-		std::stable_sort(processes.begin(), processes.end(), PIDAscPred());
-	else
-		std::stable_sort(processes.begin(), processes.end(), PIDDescPred());
-}
-
-#ifdef _WIN64
-void ProcessList::sortByType()
-{
-	if (sort_dir == SORT_UP)
-		std::stable_sort(processes.begin(), processes.end(), TypeAscPred());
-	else
-		std::stable_sort(processes.begin(), processes.end(), TypeDescPred());
-}
-#endif
 void ProcessList::OnSort(wxListEvent& event)
 {
-	// SetSortImage(sort_column, SORT_NONE);
-
-	if (sort_column == event.m_col)
+	bool ascending;
+	if (GetSortIndicator() == event.GetColumn())
 	{
 		// toggle if we clicked on the same column as last time
-		sort_dir = (SortType)((SORT_UP+SORT_DOWN) - sort_dir);
+		ascending = GetUpdatedAscendingSortIndicator(event.GetColumn());
 	} else {
 		// if switching columns, start with the default sort for that column type
-		sort_column = event.m_col;
-		sort_dir = (sort_column >= 1 && sort_column <= 4) ? SORT_DOWN : SORT_UP;
+		ascending = event.GetColumn() < 1 || event.GetColumn() > 4;
 	}
 
-	// SetSortImage(sort_column, sort_dir);
-	updateSorting();
-}
-
-void ProcessList::updateSorting()
-{
-	switch(sort_column) {
-		case COL_NAME: sortByName(); break;
-		case COL_CPUUSAGE: sortByCpuUsage(); break;
-		case COL_TOTALCPU: sortByTotalCpuTime(); break;
-		case COL_PID: sortByPID(); break;
-#ifdef _WIN64
-		case COL_TYPE: sortByType(); break;
-#endif
-	}
-	fillList();
+	ShowSortIndicator(event.GetColumn(), ascending);
+	SortItems(ProcessComparator, (wxIntPtr)this);
 }
 
 void ProcessList::fillList()
 {
 	Freeze();
-	for(int i=0; i<(int)processes.size(); ++i)
+	for (int i = 0; i < GetItemCount(); ++i)
 	{
-		this->SetItem(i, COL_NAME, processes[i].getName().c_str());
+		ProcessInfo *process = (ProcessInfo *)GetItemData(i);
+
+		this->SetItem(i, COL_NAME, process->getName().c_str());
 
 		char str[32];
-		if (processes[i].cpuUsage >= 0)
-			sprintf(str, "%i%%", processes[i].cpuUsage);
+		if (process->cpuUsage >= 0)
+			sprintf(str, "%i%%", process->cpuUsage);
 		else
 			strcpy(str, "-");
 		this->SetItem(i, COL_CPUUSAGE, str);
 
-		if (processes[i].totalCpuTimeMs >= 0)
-			sprintf(str, "%0.1f s", (double) (processes[i].totalCpuTimeMs) / 1000);
+		if (process->totalCpuTimeMs >= 0)
+			sprintf(str, "%0.1f s", (double)(process->totalCpuTimeMs) / 1000);
 		else
 			strcpy(str, "-");
 		this->SetItem(i, COL_TOTALCPU, str);
 
-		sprintf(str, "%li", processes[i].getID());
+		sprintf(str, "%li", process->getID());
 		this->SetItem(i, COL_PID, str);
 #ifdef _WIN64
-		if(Is64BitProcess(processes[i].getProcessHandle())) {
+		if (Is64BitProcess(process->getProcessHandle()))
+		{
 			SetItem(i,COL_TYPE,"64-bit");
-		} else {
+		}
+		else
+		{
 			SetItem(i,COL_TYPE,"32-bit");
 		}
 #endif
@@ -362,8 +293,8 @@ void ProcessList::updateProcesses()
 	ProcessInfo::enumProcesses(this->processes);
 	for(int i=0; i<(int)processes.size(); ++i)
 	{
-		long tmp = this->InsertItem(i, "", -1);
-		SetItemData(tmp, i);
+		this->InsertItem(i, "", -1);
+		SetItemPtrData(i, (wxUIntPtr)&processes[i]);
 	}
 
 	// Select the selected process last time the program was run..
@@ -390,8 +321,8 @@ void ProcessList::updateProcesses()
 	Sleep(200);
 	updateTimes();
 
-	updateSorting();
 	fillList();
+	SortItems(ProcessComparator, (wxIntPtr)this);
 	if(processWasSelected){
 		int index = 0;
 		for (auto it = this->processes.begin(); it != this->processes.end(); ++it)
@@ -416,14 +347,15 @@ void ProcessList::updateTimes()
 	int sampleTimeDiff = (now - lastTime).ToLong();
 	lastTime = now;
 
-	for(int i=0; i<(int)processes.size(); ++i)
+	for (int i = 0; i < GetItemCount(); ++i)
 	{
-		processes[i].cpuUsage = -1;
-		processes[i].totalCpuTimeMs = -1;
+		ProcessInfo *process = (ProcessInfo *)GetItemData(i);
+		process->cpuUsage = -1;
+		process->totalCpuTimeMs = -1;
 
 		__int64 coreCount = 0;
 
-		HANDLE process_handle = processes[i].getProcessHandle();
+		HANDLE process_handle = process->getProcessHandle();
 		if (!process_handle)
 			continue;
 
@@ -440,15 +372,16 @@ void ProcessList::updateTimes()
 
 		coreCount = GetCoresForProcess(process_handle);
 
-		__int64 kernel_diff = getDiff(processes[i].prevKernelTime, KernelTime);
-		__int64 user_diff = getDiff(processes[i].prevUserTime, UserTime);
-		processes[i].prevKernelTime = KernelTime;
-		processes[i].prevUserTime = UserTime;
+		__int64 kernel_diff = getDiff(process->prevKernelTime, KernelTime);
+		__int64 user_diff = getDiff(process->prevUserTime, UserTime);
+		process->prevKernelTime = KernelTime;
+		process->prevUserTime = UserTime;
 
 		if (sampleTimeDiff > 0)
-			processes[i].cpuUsage = (((kernel_diff + user_diff) / 10000) * 100 / sampleTimeDiff) / coreCount;
+			process->cpuUsage =
+				(((kernel_diff + user_diff) / 10000) * 100 / sampleTimeDiff) / coreCount;
 
-		processes[i].totalCpuTimeMs = (getTotal(KernelTime) + getTotal(UserTime)) / 10000;
+		process->totalCpuTimeMs = (getTotal(KernelTime) + getTotal(UserTime)) / 10000;
 	}
 
 	fillList();

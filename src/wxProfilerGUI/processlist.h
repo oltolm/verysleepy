@@ -58,27 +58,10 @@ public:
 	void updateProcesses();
 	void updateTimes();
 	void updateThreadList();
-	void updateSorting();
-	void sortByName();
-	void sortByCpuUsage();
-	void sortByTotalCpuTime();
-	void sortByPID();
-#ifdef _WIN64
-	void sortByType();
-#endif
 	void reloadSymbols(bool download);
 
 	const ProcessInfo* getSelectedProcess();
-	SymbolInfo* takeSymbolInfo();
-private:
-	DECLARE_EVENT_TABLE()
-
-	enum SortType
-	{
-		SORT_NONE,
-		SORT_UP,
-		SORT_DOWN
-	};
+	SymbolInfo *takeSymbolInfo();
 
 	enum {
 		COL_NAME,
@@ -91,6 +74,9 @@ private:
 		NUM_COLUMNS
 	};
 
+private:
+	DECLARE_EVENT_TABLE()
+
 	std::vector<ProcessInfo> processes;
 	// DE: 20090325 ProcessList knows about threadlist and updates it based on process selection
 	ThreadList* threadList;
@@ -99,8 +85,6 @@ private:
 	int selected_process;
 	wxTimer timer;
 	wxLongLong lastTime;
-	int sort_column;
-	SortType sort_dir;
 	// DE: 20090325 Update thread list on process selection change, but do it on idle
 	bool selectionChanged;
 	bool firstUpdate;
