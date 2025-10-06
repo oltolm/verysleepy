@@ -28,6 +28,7 @@ http://www.gnu.org/copyleft/gpl.html..
 #include "debugger.h"
 #include "threadinfo.h"
 #include <random>
+#include <set>
 #include <wx/txtstrm.h>
 #include <wx/wfstream.h>
 #include <wx/zipstrm.h>
@@ -222,16 +223,16 @@ void ProfilerThread::saveData()
 	//------------------------------------------------------------------------
 	beginProgress(L"Summarizing results");
 
-	std::map<PROFILER_ADDR, bool> used_addresses;
-	std::map<DWORD, bool> used_thread_ids;
+	std::set<PROFILER_ADDR> used_addresses;
+	std::set<DWORD> used_thread_ids;
 
 	for (auto i = callstacks.begin(); i != callstacks.end(); ++i)
 	{
 		const CallStack &callstack = i->first;
-		used_thread_ids[callstack.thread_id] = true;
+		used_thread_ids.insert(callstack.thread_id);
 		for (size_t n=0;n<callstack.depth;n++)
 		{
-			used_addresses[callstack.addr[n]] = true;
+			used_addresses.insert(callstack.addr[n]);
 		}
 	}
 
@@ -243,7 +244,7 @@ void ProfilerThread::saveData()
 	{
 		int proclinenum;
 		std::wstring procfile;
-		PROFILER_ADDR addr = i->first;
+		PROFILER_ADDR addr = *i;
 
 		const std::wstring proc_name = sym_info->getProcForAddr(addr, procfile, proclinenum);
 		txt <<  wxString::Format("%#llx", addr);
@@ -292,10 +293,10 @@ void ProfilerThread::saveData()
 	beginProgress(L"Saving threads", used_thread_ids.size());
 	zip.PutNextEntry(_T("Threads.txt"));
 
-	for (auto &tid : used_thread_ids)
+	for (auto tid : used_thread_ids)
 	{
-		txt << (unsigned)tid.first << "\n";
-		txt << thread_names[tid.first] << "\n";
+		txt << (unsigned)tid << "\n";
+		txt << thread_names[tid] << "\n";
 
 		if (updateProgress())
 			return;
