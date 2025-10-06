@@ -24,7 +24,7 @@ http://www.gnu.org/copyleft/gpl.html..
 
 #include <windows.h>
 #include <functional>
-#include <map>
+#include <set>
 
 class Debugger
 {
@@ -52,7 +52,7 @@ protected:
 	DWORD processId;
 	HANDLE processHandle;
 	std::function<void(NotifyData const &notification)> notifyFunc;
-	std::map<DWORD, bool> knownThreads;
+	std::set<DWORD> knownThreads;
 	bool debuggingActive;
 	bool attached;
 
