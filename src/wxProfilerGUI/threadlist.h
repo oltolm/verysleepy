@@ -56,18 +56,8 @@ public:
 
 	void updateThreads(const ProcessInfo* processInfo, SymbolInfo *symInfo);
 	void updateTimes();
-	void updateSorting();
-	void sortByLocation();
-	void sortByCpuUsage();
-	void sortByTotalCpuTime();
-	void sortByID();
-	void sortByName();
 
 	std::vector<const ThreadInfo*> getSelectedThreads(bool all=false);
-private:
-	DECLARE_EVENT_TABLE()
-
-	enum SortType { SORT_NONE, SORT_UP, SORT_DOWN };
 
 	enum {
 		COL_LOCATION,
@@ -78,12 +68,13 @@ private:
 		NUM_COLUMNS
 	};
 
+private:
+	DECLARE_EVENT_TABLE()
+
 	std::vector<ThreadInfo> threads;
 	std::set<int> selected_threads;
 	wxTimer timer;
 	wxLongLong lastTime;
-	int sort_column;
-	SortType sort_dir;
 	HANDLE process_handle;
 	SymbolInfo *syminfo;
 	wxButton *ok_button;
