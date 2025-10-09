@@ -295,7 +295,7 @@ void ProcList::OnSelected(wxListEvent& event)
 
 	assert(GetWindowStyle() & wxLC_REPORT);
 
-	const Database::Item *item = (const Database::Item *)GetItemData(event.m_itemIndex);
+	const Database::Item *item = (const Database::Item *)GetItemData(event.GetIndex());
 	auto *addrinfo = database->getAddrInfo(item->address);
 	if (isroot)
 		theMainWin->inspectSymbol(addrinfo);
@@ -309,7 +309,7 @@ void ProcList::OnActivated(wxListEvent& event)
 {
 	assert(GetWindowStyle() & wxLC_REPORT);
 
-	const Database::Item *item = (const Database::Item *)GetItemData(event.m_itemIndex);
+	const Database::Item *item = (const Database::Item *)GetItemData(event.GetIndex());
 	const Database::AddrInfo *addrinfo = database->getAddrInfo(item->address);
 	if (!isroot)
 		theMainWin->inspectSymbol(addrinfo);

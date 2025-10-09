@@ -89,13 +89,13 @@ ThreadList::~ThreadList()
 
 void ThreadList::OnSelected(wxListEvent& event)
 {
-	this->selected_threads.insert(event.m_itemIndex);
+	this->selected_threads.insert(event.GetIndex());
 	ok_button->Enable(true);
 }
 
 void ThreadList::OnDeSelected(wxListEvent& event)
 {
-	this->selected_threads.erase(event.m_itemIndex);
+	this->selected_threads.erase(event.GetIndex());
 	if (this->selected_threads.empty())
 		ok_button->Enable(false);
 }

@@ -114,9 +114,9 @@ void ProcessList::reloadSymbols(bool download)
 
 void ProcessList::OnSelected(wxListEvent& event)
 {
-	if(this->selected_process != event.m_itemIndex)
+	if (this->selected_process != event.GetIndex())
 	{
-		this->selected_process = event.m_itemIndex;
+		this->selected_process = event.GetIndex();
 		selectionChanged = true;
 
 		reloadSymbols(false);

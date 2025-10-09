@@ -68,7 +68,7 @@ CallstackView::CallstackView(wxWindow *parent,Database *_database)
 
 void CallstackView::OnSelected(wxListEvent& event)
 {
-	itemSelected = event.m_itemIndex;
+	itemSelected = event.GetIndex();
 	if (callstackActive < callstacks.size() && (size_t)itemSelected < callstacks[callstackActive]->symbols.size())
 	{
 		const Database::AddrInfo *addrinfo = database->getAddrInfo(callstacks[callstackActive]->addresses[itemSelected]);
