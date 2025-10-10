@@ -23,6 +23,7 @@ http://www.gnu.org/copyleft/gpl.html.
 =====================================================================*/
 #pragma once
 
+#include <algorithm>
 #include <wx/config.h>
 #include <wx/app.h>
 #include <wx/filehistory.h>
@@ -169,14 +170,7 @@ public:
 		}
 	}
 
-	static int ValidateThrottle( int value )
-	{
-		if (value < 1)
-			return 1;
-		if (value > 100)
-			return 100;
-		return value;
-	}
+	static int ValidateThrottle(int value) { return std::clamp(value, 1, 100); }
 };
 
 /*=====================================================================

@@ -22,6 +22,7 @@ http://www.gnu.org/copyleft/gpl.html.
 =====================================================================*/
 #include "capturewin.h"
 #include "../appinfo.h"
+#include <algorithm>
 #include <wx/button.h>
 #include <wx/gauge.h>
 #include <wx/stattext.h>
@@ -107,8 +108,7 @@ bool CaptureWin::UpdateProgress(std::wstring status, double progress)
 	}
 	else
 	{
-		if (progress < 0) progress = 0;
-		if (progress > 1) progress = 1;
+		progress = std::clamp(progress, 0., 1.);
 		int n = progress * MAX_RANGE;
 		progressBar->SetValue(n);
 	}
