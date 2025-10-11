@@ -87,16 +87,14 @@ ThreadList::~ThreadList()
 
 }
 
-void ThreadList::OnSelected(wxListEvent& event)
+void ThreadList::OnSelected(wxListEvent&)
 {
-	this->selected_threads.insert(event.GetIndex());
 	ok_button->Enable(true);
 }
 
-void ThreadList::OnDeSelected(wxListEvent& event)
+void ThreadList::OnDeSelected(wxListEvent&)
 {
-	this->selected_threads.erase(event.GetIndex());
-	if (this->selected_threads.empty())
+	if (GetFirstSelected() == wxNOT_FOUND)
 		ok_button->Enable(false);
 }
 
@@ -108,16 +106,11 @@ std::vector<const ThreadInfo*> ThreadList::getSelectedThreads(bool all)
 		for(size_t i=0;i<threads.size();i++) {
 			selectedThreads.push_back(&threads[i]);
 		}
-	} else {
-		selectedThreads.reserve(this->selected_threads.size());
-		for (auto it = this->selected_threads.begin(); it != this->selected_threads.end(); ++it)
-		{
-			int selected_thread = *it;
-			if(selected_thread >= 0 && selected_thread < (int)threads.size())
-			{
-				selectedThreads.push_back(&threads[selected_thread]);
-			}
-		}
+	}
+	else
+	{
+		for (auto i = GetFirstSelected(); i != wxNOT_FOUND; i = GetNextSelected(i))
+			selectedThreads.push_back((ThreadInfo *)GetItemData(i));
 	}
 	return selectedThreads;
 }
@@ -209,7 +202,6 @@ void ThreadList::fillList()
 
 void ThreadList::updateThreads(const ProcessInfo* processInfo, SymbolInfo *symInfo)
 {
-	this->selected_threads.clear();
 	DeleteAllItems();
 	this->threads.clear();
 	ok_button->Enable(false);

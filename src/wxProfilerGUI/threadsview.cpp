@@ -137,7 +137,6 @@ std::vector<Database::ThreadID> ThreadsView::getSelectedThreads()
 
 void ThreadsView::clearSelectedThreads()
 {
-	std::vector<Database::ThreadID> selected;
 	for (long i = GetFirstSelected(); i != wxNOT_FOUND; i = GetNextSelected(i))
 	{
 		Select(i, false);

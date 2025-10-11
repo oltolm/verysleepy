@@ -71,7 +71,6 @@ private:
 	DECLARE_EVENT_TABLE()
 
 	std::vector<ThreadInfo> threads;
-	std::set<int> selected_threads;
 	wxTimer timer;
 	wxLongLong lastTime;
 	HANDLE process_handle;

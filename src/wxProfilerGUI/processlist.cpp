@@ -43,7 +43,6 @@ ProcessList::ProcessList(wxWindow *parent, ThreadList *threadList_)
 	selectionChanged = false;
 	firstUpdate = true;
 
-	selected_process = -1;
 	syminfo = new SymbolInfo();
 
 	wxListItem itemCol;
@@ -125,9 +124,9 @@ void ProcessList::OnSelected(wxListEvent& event)
 
 const ProcessInfo* ProcessList::getSelectedProcess()
 {
-	if(selected_process >= 0 && selected_process < (int)processes.size())
+	if (GetFirstSelected() != wxNOT_FOUND)
 	{
-		return &processes[selected_process];
+		return (ProcessInfo *)GetItemData(GetFirstSelected());
 	}
 	else
 		return NULL;
@@ -154,9 +153,9 @@ static __int64 getTotal(FILETIME time)
 
 void ProcessList::updateThreadList()
 {
-	if (syminfo && selected_process >= 0 && selected_process < (int)processes.size())
+	if (syminfo && getSelectedProcess())
 	{
-		threadList->updateThreads(&processes[this->selected_process], syminfo);
+		threadList->updateThreads(getSelectedProcess(), syminfo);
 	} else {
 		threadList->updateThreads(NULL, NULL);
 	}
@@ -270,14 +269,7 @@ void ProcessList::fillList()
 
 void ProcessList::updateProcesses()
 {
-	DWORD selectedProcessId = 0xffffffff;
-	bool processWasSelected = false;
-	const ProcessInfo* selectedProcess = this->getSelectedProcess();
-	if(selectedProcess != NULL){
-		processWasSelected = true;
-		selectedProcessId = selectedProcess->getID();
-	}
-	this->selected_process = -1;
+	const ProcessInfo *selectedProcess = this->getSelectedProcess();
 	DeleteAllItems();
 
 	for(size_t i=0; i<processes.size(); ++i)
@@ -297,23 +289,6 @@ void ProcessList::updateProcesses()
 		SetItemPtrData(i, (wxUIntPtr)&processes[i]);
 	}
 
-	// Select the selected process last time the program was run..
-	if(selectedProcessId == (DWORD)~0) {
-		wxString prevProcess;
-		config.Read("PrevProcess", &prevProcess, "");
-		if(!prevProcess.IsEmpty()) {
-			for(int i=0; i<(int)processes.size(); ++i)
-			{
-				if(processes[i].getName() == prevProcess)
-				{
-					selectedProcessId = processes[i].getID();
-					processWasSelected = true;
-					break;
-				}
-			}
-		}
-	}
-
 	lastTime = wxGetLocalTimeMillis();
 
 	// We need to wait a bit before we can get any useful CPU usage data to sort on.
@@ -323,18 +298,25 @@ void ProcessList::updateProcesses()
 
 	fillList();
 	SortItems(ProcessComparator, (wxIntPtr)this);
-	if(processWasSelected){
-		int index = 0;
-		for (auto it = this->processes.begin(); it != this->processes.end(); ++it)
+
+	// Select the selected process last time the program was run..
+	if (!selectedProcess)
+	{
+		wxString prevProcess;
+		config.Read("PrevProcess", &prevProcess, "");
+		if (!prevProcess.IsEmpty())
 		{
-			const ProcessInfo& processInfo(*it);
-			if(processInfo.getID() == selectedProcessId){
-				this->SetFocus();
-				this->EnsureVisible(index);
-				this->Select(index);
-				break;
+			for (int i = 0; i < GetItemCount(); ++i)
+			{
+				auto *process = (ProcessInfo *)GetItemData(i);
+				if (process->getName() == prevProcess)
+				{
+					this->SetFocus();
+					this->EnsureVisible(i);
+					this->Select(i);
+					break;
+				}
 			}
-			++index;
 		}
 	}
 }
