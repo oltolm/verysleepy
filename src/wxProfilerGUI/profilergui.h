@@ -25,6 +25,7 @@ http://www.gnu.org/copyleft/gpl.html.
 
 #include <wx/config.h>
 #include <wx/app.h>
+#include <wx/filehistory.h>
 #include <wx/listctrl.h>
 #include <wx/splitter.h>
 #include <wx/notebook.h>
@@ -43,6 +44,7 @@ http://www.gnu.org/copyleft/gpl.html.
 extern wxIcon sleepy_icon;
 
 class SymbolInfo;
+class ThreadPicker;
 
 enum AttachMode
 {
@@ -74,7 +76,7 @@ public:
 	OverridableOption()
 		: is_overridden(false)
 	{}
-	
+
 	OverridableOption( const T& config_value )
 		: config_value(config_value), is_overridden(false)
 	{}
@@ -85,7 +87,7 @@ public:
 		is_overridden = false;
 		config_value = new_value;
 	}
-	
+
 	void Override( const T& ovr_value )
 	{
 		is_overridden = true;
@@ -190,6 +192,8 @@ public:
 
 	virtual wxAppTraits *CreateTraits();
 
+	wxFileHistory *getFileHistory();
+
 protected:
 	virtual void OnInitCmdLine(wxCmdLineParser& parser);
 	virtual bool OnCmdLineParsed(wxCmdLineParser& parser);
@@ -210,6 +214,7 @@ private:
 
 	class CaptureWin *captureWin;
 	bool initialized;
+	wxFileHistory m_fileHistory;
 };
 
 DECLARE_APP(ProfilerGUI)

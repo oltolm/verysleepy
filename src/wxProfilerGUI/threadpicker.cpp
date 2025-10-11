@@ -44,6 +44,7 @@ enum
 	ProcWin_TimeCheck,
 	ProcWin_Help_Documentation,
 	ProcWin_Help_Support,
+	ProcWin_Recent,
 
 	// it is important for the id corresponding to the "About" command to have
 	// this standard value as otherwise it won't be handled properly under Mac
@@ -69,6 +70,7 @@ EVT_BUTTON(ProcWin_Download, ThreadPicker::OnDownload)
 EVT_CLOSE(ThreadPicker::OnClose)
 EVT_BUTTON(ProcWin_Exit, ThreadPicker::OnQuit)
 EVT_CHECKBOX(ProcWin_TimeCheck, ThreadPicker::OnTimeCheck)
+EVT_MENU_RANGE(wxID_FILE1, wxID_FILE9, ThreadPicker::OnMRUFile)
 END_EVENT_TABLE()
 
 wxProgressDialog *g_symProgress = NULL;
@@ -93,6 +95,16 @@ ThreadPicker::ThreadPicker()
 	menuFile->Append(wxID_OPEN, _T("&Open...\tCtrl-O"), _T("Opens an existing profile"));
 	menuFile->Append(ProcWin_Launch, _T("&Launch...\tCtrl-N"), _T("Launches a new executable to profile"));
 	menuFile->AppendSeparator();
+
+	auto recent = m_recent = new wxMenu;
+	menuFile->Append(ProcWin_Recent, _T("&Recent files"), recent);
+	wxGetApp().getFileHistory()->UseMenu(recent);
+
+	if (wxGetApp().getFileHistory()->GetCount() == 0)
+		menuFile->Enable(ProcWin_Recent, false);
+
+	wxGetApp().getFileHistory()->AddFilesToMenu(recent);
+
 	menuFile->Append(ProcWin_Exit, _T("E&xit\tAlt-X"), _T("Quit this program"));
 
 	wxMenu *menuTools = new wxMenu;
@@ -210,29 +222,57 @@ ThreadPicker::ThreadPicker()
 	g_symLog = symLogCallback;
 }
 
+void ThreadPicker::OnMRUFile(wxCommandEvent& event)
+{
+	open_filename = wxGetApp().getFileHistory()->GetHistoryFile(event.GetId() - wxID_FILE1);
+	if (!open_filename.empty())
+	{
+		if (!wxFileExists(open_filename))
+		{
+			wxGetApp().getFileHistory()->RemoveFileFromHistory(event.GetId() - wxID_FILE1);
+			return;
+		}
+		wxGetApp().getFileHistory()->RemoveMenu(m_recent);
+		EndModal(OPEN);
+	}
+}
+
 void ThreadPicker::OnOpen(wxCommandEvent& WXUNUSED(event))
 {
 	open_filename = ProfilerGUI::PromptOpen(this);
 	if (!open_filename.empty())
+	{
+		wxGetApp().getFileHistory()->AddFileToHistory(open_filename);
+		wxGetApp().getFileHistory()->RemoveMenu(m_recent);
 		EndModal(OPEN);
+	}
 }
 
 void ThreadPicker::OnAttachProfiler(wxCommandEvent& WXUNUSED(event))
 {
 	if (TryAttachToProcess(false))
+	{
+		wxGetApp().getFileHistory()->RemoveMenu(m_recent);
 		EndModal(ATTACH);
+	}
 }
 
 void ThreadPicker::OnAttachProfilerAll(wxCommandEvent& WXUNUSED(event))
 {
 	if (TryAttachToProcess(true))
+	{
+		wxGetApp().getFileHistory()->RemoveMenu(m_recent);
 		EndModal(ATTACH);
+	}
 }
 
 void ThreadPicker::OnDoubleClicked(wxListEvent& WXUNUSED(event))
 {
 	if (TryAttachToProcess(false))
+	{
+		wxGetApp().getFileHistory()->RemoveMenu(m_recent);
 		EndModal(ATTACH);
+	}
 }
 
 void ThreadPicker::OnClose(wxCloseEvent& WXUNUSED(event))

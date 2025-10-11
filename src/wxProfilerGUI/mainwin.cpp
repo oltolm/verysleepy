@@ -58,6 +58,7 @@ enum
 	MainWin_ResetFilters,
 	MainWin_Help_Documentation,
 	MainWin_Help_Support,
+	MainWin_Recent,
 
 	// it is important for the id corresponding to the "About" command to have
 	// this standard value as otherwise it won't be handled properly under Mac
@@ -110,6 +111,16 @@ MainWin::MainWin(const wxString& title,
 	menuFile->AppendSeparator();
 	menuFile->Append(MainWin_LoadMinidumpSymbols,_T("Load symbols from &minidump"), _T("Loads symbols for modules recorded in the minidump included with this capture."))
 		->Enable(database->has_minidump);
+
+	auto recent = new wxMenu;
+	menuFile->Append(MainWin_Recent, _T("&Recent files"), recent);
+	wxGetApp().getFileHistory()->UseMenu(recent);
+
+	if (wxGetApp().getFileHistory()->GetCount() == 0)
+		menuFile->Enable(MainWin_Recent, false);
+
+	wxGetApp().getFileHistory()->AddFilesToMenu(recent);
+
 	menuFile->AppendSeparator();
 	menuFile->Append(MainWin_Quit, _T("E&xit\tAlt-X"), _T("Quit this program"));
 
@@ -382,6 +393,7 @@ EVT_MENU(MainWin_Help_Documentation, MainWin::OnDocumentation)
 EVT_MENU(MainWin_Help_Support, MainWin::OnSupport)
 EVT_MENU(MainWin_Help_About, MainWin::OnAbout)
 EVT_PG_CHANGED(MainWin_Filters, MainWin::OnFiltersChanged)
+EVT_MENU_RANGE(wxID_FILE1, wxID_FILE9, MainWin::OnMRUFile)
 END_EVENT_TABLE()
 
 void MainWin::OnClose(wxCloseEvent& WXUNUSED(event))
@@ -419,12 +431,33 @@ void MainWin::OnNew(wxCommandEvent& WXUNUSED(event))
 	ShellExecute(NULL, _T("open"), FileName, NULL, NULL, SW_SHOW);
 }
 
+void MainWin::OnMRUFile(wxCommandEvent& event)
+{
+	wxString filename = wxGetApp().getFileHistory()->GetHistoryFile(event.GetId() - wxID_FILE1);
+	if (!filename.empty())
+	{
+		if (!wxFileExists(filename))
+		{
+			wxGetApp().getFileHistory()->RemoveFileFromHistory(event.GetId() - wxID_FILE1);
+			return;
+		}
+		open(filename);
+	}
+}
+
 void MainWin::OnOpen(wxCommandEvent& WXUNUSED(event))
 {
 	wxString filename = ProfilerGUI::PromptOpen(this);
 	if (filename.empty())
 		return;
+	wxGetApp().getFileHistory()->AddFileToHistory(filename);
+	GetMenuBar()->FindItem(MainWin_Recent)->Enable();
 
+	open(filename);
+}
+
+void MainWin::open(const wxString& filename)
+{
 	try
 	{
 		database->loadFromPath(filename.wc_str(), collapseOSCalls->IsChecked(), false);

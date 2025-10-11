@@ -183,6 +183,9 @@ private:
 	void showSource(const Database::AddrInfo *addrinfo);
 
 	void updateStatusBar();
+
+	void open(const wxString& filename);
+	void OnMRUFile(wxCommandEvent& event);
 };
 
 extern MainWin *theMainWin;

@@ -70,8 +70,8 @@ static const wxCmdLineEntryDesc g_cmdLineDesc[] =
 	{ wxCMD_LINE_OPTION, "d", "", "Waits N seconds before beginning capture.",              wxCMD_LINE_VAL_NUMBER, wxCMD_LINE_PARAM_OPTIONAL },
 	{ wxCMD_LINE_OPTION, "t", "", "Stops capturing automatically after N seconds time.",    wxCMD_LINE_VAL_NUMBER, wxCMD_LINE_PARAM_OPTIONAL },
 	{ wxCMD_LINE_SWITCH, "q", "", "Quiet mode (no error messages will be shown).",          wxCMD_LINE_VAL_NONE },
-	{ wxCMD_LINE_SWITCH, "", "wine", "Use Wine DbgHelp.",                                   wxCMD_LINE_VAL_NONE },
-	{ wxCMD_LINE_SWITCH, "", "mingw", "Use Dr. MinGW DbgHelp.",                             wxCMD_LINE_VAL_NONE },
+	{wxCMD_LINE_SWITCH, "", "wine", "Use Wine DbgHelp.", wxCMD_LINE_VAL_NONE},
+	{wxCMD_LINE_SWITCH, "", "mingw", "Use Dr. MinGW DbgHelp.", wxCMD_LINE_VAL_NONE},
 	{ wxCMD_LINE_SWITCH, "mt", "", "When attaching a process, profiles only main thread.",  wxCMD_LINE_VAL_NONE },
 	{ wxCMD_LINE_SWITCH, "mbt", "", "When attaching a process, profiles only most busy thread.",    wxCMD_LINE_VAL_NONE },
 	{ wxCMD_LINE_OPTION, "thread", "", "Profiles the specified thread(s) in the process, multiple threads must be in a comma-delimited list without spaces (See /a for specifying the process ID). Examples: `/thread:2124` or `/thread:8086,24601,42`",    wxCMD_LINE_VAL_STRING, wxCMD_LINE_PARAM_OPTIONAL|wxCMD_LINE_NEEDS_SEPARATOR },
@@ -517,7 +517,7 @@ std::wstring ProfilerGUI::ObtainProfileData()
 
 		case ThreadPicker::ATTACH:
 			{
-				std::unique_ptr<AttachInfo> ai(threadpicker->attach_info);
+				std::unique_ptr<AttachInfo> ai(threadpicker->attach_info);
 				threadpicker->attach_info = NULL;
 				threadpicker.reset();
 				return LaunchProfiler(ai.get());
@@ -575,6 +575,8 @@ bool ProfilerGUI::OnInit()
 		prefs.useWinePref = config.Read("UseWine", (long)0) != 0;
 		prefs.saveMinidump.SetConfigValue(config.Read("SaveMinidump", -1));
 		prefs.throttle.SetConfigValue(prefs.ValidateThrottle(config.Read("SpeedThrottle", 100)));
+
+		m_fileHistory.Load(config);
 
 		if (!wxApp::OnInit())
 			return false;
@@ -693,6 +695,8 @@ int ProfilerGUI::OnExit()
 	config.Write("SaveMinidump", prefs.saveMinidump.GetConfigValue());
 	config.Write("SpeedThrottle", prefs.throttle.GetConfigValue());
 
+	m_fileHistory.Save(config);
+
 	return wxApp::OnExit();
 }
 
@@ -774,4 +778,9 @@ bool ProfilerGUI::OnCmdLineParsed(wxCmdLineParser& parser)
 		prefs.symServer.Override(param);
 
 	return true;
+}
+
+wxFileHistory *ProfilerGUI::getFileHistory()
+{
+	return &m_fileHistory;
 }

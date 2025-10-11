@@ -121,6 +121,9 @@ private:
 	// DE: 20090325 Include for list to pick thread(s)
 	ThreadList* threadlist;
 	wxBitmap* bitmap;
+	wxMenu *m_recent;
+
+	void OnMRUFile(wxCommandEvent& event);
 
 	DECLARE_EVENT_TABLE()
 };
