@@ -26,6 +26,7 @@ http://www.gnu.org/copyleft/gpl.html.
 
 #include "../utils/stringutils.h"
 #include "CallstackView.h"
+#include <algorithm>
 #include <shellapi.h>
 #include <wx/aui/auibook.h>
 #include <wx/hashset.h>
@@ -627,7 +628,7 @@ void MainWin::OnExportAsCallgrind(wxCommandEvent& WXUNUSED(event))
 				static __forceinline std::wstring ConvertFilename(std::wstring str)
 				{
 					// Convert \ path separators to / for QCachegrind
-					for (auto i = str.find('\\'); i != std::wstring::npos; i = str.find('\\', i + 1)) str[i] = '/';
+					std::replace(str.begin(), str.end(), '\\', '/');
 					return str;
 				}
 				static __forceinline void WriteName(wxTextOutputStream& txt, std::map<std::wstring, size_t>& map, const char* key, const std::wstring& str, bool isFilename = false)
