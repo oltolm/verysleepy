@@ -137,8 +137,8 @@ void SymbolInfo::loadSymbolsUsing(DbgHelp* dbgHelp, const std::wstring& sympath)
 		dbgHelp->SymRegisterCallbackW64(process_handle, symCallback, 0);
 
 		// Add our PDB search paths.
-		if (dbgHelp == &dbgHelpMs)
-			wenforce(dbgHelp->SymSetSearchPathW(process_handle, sympath.c_str()), "SymSetSearchPathW");
+		// if (dbgHelp == &dbgHelpMs)
+		wenforce(dbgHelp->SymSetSearchPathW(process_handle, sympath.c_str()), "SymSetSearchPathW");
 
 		if (modules.empty())
 		{
@@ -238,7 +238,7 @@ void SymbolInfo::loadSymbols(HANDLE process_handle_, bool download)
 		prefs.AdjustSymbolPath(sympath, download);
 	}
 
-	loadSymbolsUsing(&dbgHelpMs, sympath);
+	// loadSymbolsUsing(&dbgHelpMs, sympath);
 	loadSymbolsUsing(getGccDbgHelp(), sympath);
 
 	if (g_symLog)
@@ -335,7 +335,8 @@ const std::wstring SymbolInfo::getProcForAddr(PROFILER_ADDR addr,
 	proclinenum_out = 0;
 
 	Module *mod = getModuleForAddr(addr);
-	DbgHelp *dbgHelp = mod ? mod->dbghelp : &dbgHelpMs;
+
+	DbgHelp *dbgHelp = mod ? mod->dbghelp : &dbgHelpDrMingw;
 
 	unsigned char buffer[1024];
 
@@ -370,7 +371,7 @@ const std::wstring SymbolInfo::getProcForAddr(PROFILER_ADDR addr,
 void SymbolInfo::getLineForAddr(PROFILER_ADDR addr, std::wstring& filepath_out, int& linenum_out)
 {
 	Module *mod = getModuleForAddr(addr);
-	DbgHelp *dbgHelp = mod ? mod->dbghelp : &dbgHelpMs;
+	DbgHelp *dbgHelp = mod ? mod->dbghelp : &dbgHelpDrMingw;
 
 	DWORD displacement;
 	IMAGEHLP_LINEW64 lineinfo;
@@ -404,9 +405,9 @@ std::wstring SymbolInfo::saveMinidump()
 
 	wxFile f;
 	std::wstring dumppath = wxFileName::CreateTempFileName(wxEmptyString, &f).wc_string();
-	wenforce(dbgHelpMs.MiniDumpWriteDump(process_handle, GetProcessId(process_handle),
-										 (HANDLE)_get_osfhandle(f.fd()), MiniDumpNormal, NULL, NULL,
-										 NULL),
+	wenforce(dbgHelpDrMingw.MiniDumpWriteDump(process_handle, GetProcessId(process_handle),
+											  (HANDLE)_get_osfhandle(f.fd()), MiniDumpNormal, NULL,
+											  NULL, NULL),
 			 "MiniDumpWriteDump");
 	f.Close();
 	return dumppath;
