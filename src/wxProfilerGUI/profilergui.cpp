@@ -152,19 +152,6 @@ wxString ProfilerGUI::PromptOpen(wxWindow *parent)
 		return wxEmptyString;
 }
 
-void ProfilerGUI::CreateProgressWindow()
-{
-	captureWin = new CaptureWin();
-	captureWin->Show();
-	captureWin->Update();
-}
-
-void ProfilerGUI::DestroyProgressWindow()
-{
-	delete captureWin;
-	captureWin = NULL;
-}
-
 /// Returns the path to the profile archive, or an empty string
 /// if profiling was aborted by the user.
 std::wstring ProfilerGUI::LaunchProfiler(const AttachInfo *info)
@@ -194,8 +181,7 @@ std::wstring ProfilerGUI::LaunchProfiler(const AttachInfo *info)
 	//------------------------------------------------------------------------
 	bool aborted = false;
 	{
-		if (!captureWin)
-			CreateProgressWindow();
+		captureWin->Show();
 
 		profilerthread->launch(THREAD_PRIORITY_TIME_CRITICAL);
 
@@ -253,7 +239,7 @@ std::wstring ProfilerGUI::LaunchProfiler(const AttachInfo *info)
 			WaitMessage(); // in lieu of a wxWaitForEvent
 		}
 		aborted = captureWin->Cancelled();
-		DestroyProgressWindow();
+		captureWin->Hide();
 	}
 
 	profilerthread->commitSuicide();
@@ -515,7 +501,7 @@ std::wstring ProfilerGUI::ObtainProfileData()
 		case ThreadPicker::RUN:
 			// Create the window before we create the process,
 			// so we don't steal focus from it.
-			CreateProgressWindow();
+			captureWin->Show();
 
 			std::unique_ptr<AttachInfo> info;
 			try
@@ -524,7 +510,7 @@ std::wstring ProfilerGUI::ObtainProfileData()
 			}
 			catch (SleepyException &e)
 			{
-				DestroyProgressWindow();
+				captureWin->Hide();
 				wxLogError("%ls\n", e.wwhat());
 				MessageBox(threadpicker->GetHWND(), std::wstring(L"Error: " + e.wwhat()).c_str(), L"Profiler Error", MB_OK);
 				continue;
@@ -584,6 +570,8 @@ bool ProfilerGUI::OnInit()
 #endif
 
 		m_fileHistory.Load(config);
+
+		captureWin = new CaptureWin();
 
 		if (!wxApp::OnInit())
 			return false;

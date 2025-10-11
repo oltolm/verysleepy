@@ -202,9 +202,6 @@ private:
 	void HandleInit();
 	bool Run();
 
-	void CreateProgressWindow();
-	void DestroyProgressWindow();
-
 	std::wstring LaunchProfiler(const AttachInfo *info);
 	AttachInfo *RunProcess(const std::wstring &run_cmd, const std::wstring &run_cwd);
 	AttachInfo *AttachToProcess(const std::wstring& processId);
