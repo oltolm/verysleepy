@@ -49,6 +49,7 @@ enum
 	MainWin_SaveAs,
 	MainWin_ExportAsCsv,
 	MainWin_ExportAsCallgrind,
+	MainWin_ExportAsSpeedscope,
 	MainWin_LoadMinidumpSymbols,
 	MainWin_View_Back,
 	MainWin_View_Forward,
@@ -109,6 +110,8 @@ MainWin::MainWin(const wxString& title,
 	menuFile->Append(MainWin_SaveAs, _T("Save &As...\tCtrl-S"), _T("Saves the profile data to a file"));
 	menuFile->Append(MainWin_ExportAsCsv, _T("&Export as CSV..."), _T("Export the profile data to a CSV file"));
 	menuFile->Append(MainWin_ExportAsCallgrind, _T("&Export as Callgrind..."), _T("Export the profile data to a Callgrind file"));
+	menuFile->Append(MainWin_ExportAsSpeedscope, _T("&Export as speedscope..."),
+					 _T("Export the profile data to a speedscope file"));
 	menuFile->AppendSeparator();
 	menuFile->Append(MainWin_LoadMinidumpSymbols,_T("Load symbols from &minidump"), _T("Loads symbols for modules recorded in the minidump included with this capture."))
 		->Enable(database->has_minidump);
@@ -391,6 +394,7 @@ EVT_MENU(MainWin_Open,  MainWin::OnOpen)
 EVT_MENU(MainWin_SaveAs,  MainWin::OnSaveAs)
 EVT_MENU(MainWin_ExportAsCsv,  MainWin::OnExportAsCsv)
 EVT_MENU(MainWin_ExportAsCallgrind,  MainWin::OnExportAsCallgrind)
+EVT_MENU(MainWin_ExportAsSpeedscope, MainWin::OnExportAsSpeedscope)
 EVT_MENU(MainWin_LoadMinidumpSymbols,  MainWin::OnLoadMinidumpSymbols)
 EVT_MENU(MainWin_View_Back, MainWin::OnBack)
 EVT_UPDATE_UI(MainWin_View_Back, MainWin::OnBackUpdate)
@@ -676,6 +680,123 @@ void MainWin::OnExportAsCallgrind(wxCommandEvent& WXUNUSED(event))
 				CallgrindHelper::WriteEvents(txt, key.first, childcall_samplecount.second, statsDuration);
 			}
 		}
+	}
+}
+
+static inline std::string pad(int indent)
+{
+	return std::string(indent * 4, ' ');
+}
+
+void MainWin::OnExportAsSpeedscope(wxCommandEvent& WXUNUSED(event))
+{
+	wxFileDialog dlg(this, "Export File As", wxEmptyString, "capture.json",
+					 "JSON Files (*.json)|*.json", wxFD_SAVE | wxFD_OVERWRITE_PROMPT);
+	if (dlg.ShowModal() != wxID_CANCEL)
+	{
+		wxFileOutputStream file(dlg.GetPath());
+		if (!file.IsOk())
+			wxLogSysError("Could not export profile data.\n");
+		int indent = 0;
+		wxTextOutputStream txt(file);
+		txt << "{\n";
+		indent++;
+		txt << pad(indent)
+			<< "\"$schema\": \"https://www.speedscope.app/file-format-schema.json\",\n";
+		txt << pad(indent) << "\"name\": ";
+		writeQuote(txt, database->filename);
+		txt << ",\n";
+		txt << pad(indent) << "\"exporter\": \"" << APPNAME << "@" << VERSION_MAJOR << "."
+			<< VERSION_MINOR << "\",\n";
+		txt << pad(indent) << "\"shared\": {\n";
+		indent++;
+		txt << pad(indent) << "\"frames\": [\n";
+		indent++;
+		auto& list = database->getMainList();
+		bool firstItem = true;
+		for (const Database::Item& item : list.items)
+		{
+			if (firstItem)
+				firstItem = false;
+			else
+				txt << ",\n";
+			auto *addrInfo = database->getAddrInfo(item.symbol->address);
+			txt << pad(indent) << "{\n";
+			indent++;
+			txt << pad(indent) << "\"name\": ";
+			writeQuote(txt, item.symbol->procname, '\\');
+			txt << ",\n";
+			txt << pad(indent) << "\"file\": ";
+			writeQuote(txt, database->getFileName(item.symbol->sourcefile), '\\');
+			txt << ",\n";
+			txt << pad(indent) << "\"line\": " << addrInfo->sourceline << "\n";
+			indent--;
+			txt << pad(indent) << "}"; // end of frame
+		}
+		txt << "\n";
+		indent--;
+		txt << pad(indent) << "]\n"; // end of frames
+		indent--;
+		txt << pad(indent) << "},\n"; // end of shared
+		txt << pad(indent) << "\"profiles\": [\n";
+		indent++;
+		txt << pad(indent) << "{\n";
+		indent++;
+		txt << pad(indent) << "\"type\": \"sampled\",\n";
+		txt << pad(indent) << "\"name\": ";
+		writeQuote(txt, database->filename);
+		txt << ",\n";
+		txt << pad(indent) << "\"unit\": \"seconds\",\n";
+		txt << pad(indent) << "\"startValue\": 0,\n";
+		txt << pad(indent) << "\"endValue\": " << database->duration << ",\n";
+		txt << pad(indent) << "\"samples\": [\n";
+		indent++;
+		bool firstCstk = true;
+		for (auto& callstack : database->callstacks)
+		{
+			if (firstCstk)
+				firstCstk = false;
+			else
+				txt << ",\n";
+			txt << pad(indent) << "[\n";
+			indent++;
+			bool firstSym = true;
+			for (const auto sym : callstack.symbols)
+			{
+				if (firstSym)
+					firstSym = false;
+				else
+					txt << ",\n";
+				txt << pad(indent) << sym->id;
+			}
+			txt << "\n";
+			indent--;
+			txt << pad(indent) << "]"; // end of sample
+		}
+		txt << "\n";
+		indent--;
+		txt << pad(indent) << "],\n"; // end of samples
+		txt << pad(indent) << "\"weights\": [\n";
+		indent++;
+		firstCstk = true;
+		for (auto& callstack : database->callstacks)
+		{
+			if (firstCstk)
+				firstCstk = false;
+			else
+				txt << ",\n";
+			txt << pad(indent) << database->getFilteredSampleCount(callstack.samples);
+		}
+		txt << "\n";
+		indent--;
+		txt << pad(indent) << "]\n"; // end of weights
+		indent--;
+		txt << pad(indent) << "}\n"; // end of profile
+		indent--;
+		txt << pad(indent) << "]\n"; // end of profiles
+		indent--;
+		txt << pad(indent) << "}\n"; // end of file
+		txt.Flush();
 	}
 }
 

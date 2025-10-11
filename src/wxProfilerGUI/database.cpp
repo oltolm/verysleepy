@@ -480,6 +480,11 @@ void Database::loadStats(wxInputStream &file)
 		if (line.IsEmpty())
 			break;
 
+		if (line.starts_with("Filename:"))
+			filename = line.AfterFirst(' ');
+		else if (line.starts_with("Duration:"))
+			line.AfterFirst(' ').ToDouble(&duration);
+
 		stats.push_back(line.wc_str());
 	}
 }

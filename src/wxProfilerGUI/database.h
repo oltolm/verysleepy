@@ -25,6 +25,7 @@ http://www.gnu.org/copyleft/gpl.html.
 
 #include "profilergui.h"
 #include "../utils/container.h"
+#include <string>
 
 bool IsOsFunction(wxString proc);
 void AddOsFunction(wxString proc);
@@ -157,6 +158,10 @@ public:
 	std::vector<ThreadID> const &getFilterThreads() { return filterThreads; }
 	void setFilterThreads(std::vector<ThreadID> const &threads);
 
+	std::wstring filename;
+	double duration;
+	std::vector<CallStack> callstacks;
+
 private:
 	/// Symbol::ID -> Symbol*
 	std::vector<Symbol *> symbols;
@@ -174,7 +179,6 @@ private:
 
 	std::unordered_map<ThreadID, std::wstring> threadNames;
 
-	std::vector<CallStack> callstacks;
 	List mainList;
 	std::wstring profilepath;
 	const Symbol *currentRoot;
