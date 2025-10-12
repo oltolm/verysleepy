@@ -217,7 +217,7 @@ void Database::loadSymbols(wxInputStream &file)
 		std::wistringstream stream(line.wc_str());
 
 		Address addr;
-		stream >> std::hex >> addr;
+		stream >> std::hex >> addr >> std::dec;
 
 		std::wstring sourcefilename, modulename, procname;
 
