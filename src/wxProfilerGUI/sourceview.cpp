@@ -213,7 +213,7 @@ void SourceView::showFile(std::wstring path, int proclinenum, const std::vector<
 	GotoLine(proclinenum);
 	SetYCaretPolicy(wxSTC_CARET_EVEN, 0);
 
-	MarkerDefine(1, wxSTC_MARK_BACKGROUND, wxNullColour, *wxYELLOW);
+	MarkerDefine(1, wxSTC_MARK_BACKGROUND, wxNullColour, lightOrDark(*wxYELLOW));
 	MarkerAdd(proclinenum-1, 1);
 }
 void SourceView::reset()
