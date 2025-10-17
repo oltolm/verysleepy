@@ -76,7 +76,6 @@ public:
 	void OnTool(wxCommandEvent &event);
 	void OnSelected(wxListEvent& event);
 	void OnContextMenu(wxContextMenuEvent& event);
-public:
 	void showCallStack(const Database::Symbol *symbol);
 	void reset();
 	DECLARE_EVENT_TABLE()

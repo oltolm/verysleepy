@@ -155,7 +155,6 @@ public:
 
 	std::unordered_map<ThreadID, std::wstring> const &getThreadNames() const { return threadNames; }
 
-	std::vector<ThreadID> const &getFilterThreads() { return filterThreads; }
 	void setFilterThreads(std::vector<ThreadID> const &threads);
 
 	std::wstring filename;
