@@ -514,8 +514,11 @@ void MainWin::OnExportAsCsv(wxCommandEvent& WXUNUSED(event))
 	if (dlg.ShowModal() != wxID_CANCEL)
 	{
 		wxFileOutputStream file(dlg.GetPath());
-		if(!file.IsOk())
+		if (!file.IsOk())
+		{
 			wxLogSysError("Could not export profile data.\n");
+			return;
+		}
 		wxTextOutputStream txt(file);
 		txt << L"Name,";
 		txt << L"Exclusive secs,";
@@ -696,7 +699,10 @@ void MainWin::OnExportAsSpeedscope(wxCommandEvent& WXUNUSED(event))
 	{
 		wxFileOutputStream file(dlg.GetPath());
 		if (!file.IsOk())
+		{
 			wxLogSysError("Could not export profile data.\n");
+			return;
+		}
 		int indent = 0;
 		wxTextOutputStream txt(file);
 		txt << "{\n";
