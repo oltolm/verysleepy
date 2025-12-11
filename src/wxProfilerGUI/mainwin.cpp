@@ -476,7 +476,7 @@ void MainWin::open(const wxString& filename)
 {
 	try
 	{
-		database->loadFromPath(filename.wc_str(), collapseOSCalls->IsChecked(), false);
+		database->loadFromPath(filename.wc_string(), collapseOSCalls->IsChecked(), false);
 
 		SetTitle(wxString::Format("%s - %s", APPNAME, filename));
 	}

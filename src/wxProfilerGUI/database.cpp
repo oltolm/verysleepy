@@ -214,7 +214,7 @@ void Database::loadSymbols(wxInputStream &file)
 		if (line.IsEmpty())
 			break;
 
-		std::wistringstream stream(line.wc_str());
+		std::wistringstream stream(line.wc_string());
 
 		Address addr;
 		stream >> std::hex >> addr >> std::dec;
@@ -333,7 +333,7 @@ void Database::loadCallstacks(wxInputStream &file,bool collapseKernelCalls)
 		if (lineAddr.IsEmpty() || lineSamples.IsEmpty())
 			break;
 
-		std::wistringstream streamAddr(lineAddr.wc_str());
+		std::wistringstream streamAddr(lineAddr.wc_string());
 
 		CallStack callstack;
 		AddrInfo *topAddrInfo = NULL;
@@ -342,7 +342,7 @@ void Database::loadCallstacks(wxInputStream &file,bool collapseKernelCalls)
 		while (true)
 		{
 			Address addr;
-			streamAddr >> std::hex >> addr;
+			streamAddr >> std::hex >> addr >> std::dec;
 			if (!streamAddr)
 				break;
 
@@ -359,7 +359,7 @@ void Database::loadCallstacks(wxInputStream &file,bool collapseKernelCalls)
 			++depth;
 		}
 
-		std::wistringstream streamSamples(lineSamples.wc_str());
+		std::wistringstream streamSamples(lineSamples.wc_string());
 		while (true)
 		{
 			ThreadID tid;
@@ -455,7 +455,7 @@ void Database::loadThreads(wxInputStream &file)
 		if (lineTid.IsEmpty() || lineName.IsEmpty())
 			break;
 
-		std::wistringstream streamTid(lineTid.wc_str());
+		std::wistringstream streamTid(lineTid.wc_string());
 
 		ThreadID tid;
 		streamTid >> tid;
@@ -485,7 +485,7 @@ void Database::loadStats(wxInputStream &file)
 		else if (line.starts_with("Duration:"))
 			line.AfterFirst(' ').ToDouble(&duration);
 
-		stats.push_back(line.wc_str());
+		stats.push_back(line.wc_string());
 	}
 }
 
