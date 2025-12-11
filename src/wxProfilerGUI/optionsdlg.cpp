@@ -28,34 +28,6 @@ http://www.gnu.org/copyleft/gpl.html.
 #include <wx/statbox.h>
 #include <wx/stattext.h>
 
-class wxPercentSlider : public wxSlider
-{
-public:
-	wxPercentSlider(wxWindow *parent,
-			wxWindowID id,
-			int value,
-			int minValue,
-			int maxValue,
-			const wxPoint& pos = wxDefaultPosition,
-			const wxSize& size = wxDefaultSize,
-			long style = wxSL_HORIZONTAL,
-			const wxValidator& validator = wxDefaultValidator,
-			const wxString& name = wxSliderNameStr)
-	{
-		Init();
-
-		Create(parent, id, value, minValue, maxValue, pos, size, style, validator, name);
-	}
-
-protected:
-
-	// RJM- had to modify the wxWidgets source slightly to get this to work :-/
-	// Just go into include/wx/msw/slider.h, and change the definition of this
-	// from 'static' to 'virtual', and add a const modifier. Then you have to do
-	// a full 'make clean' and rebuild for it to take.
-	virtual wxString Format(int n) const { return wxString::Format(wxT("%d%%"), n); }
-};
-
 enum OptionsId
 {
 	Options_UseSymServer = 1,
@@ -217,9 +189,9 @@ OptionsDlg::OptionsDlg()
 	symsizer->Add(saveMinidumpSizer, 0, wxALL, FromDIP(5));
 
 	wxStaticBoxSizer *throttlesizer = new wxStaticBoxSizer(wxVERTICAL, this, "Sample rate control");
-	throttle = new wxPercentSlider(
-		throttlesizer->GetStaticBox(), Options_Throttle, prefs.throttle.GetValue(), 1, 100,
-		wxDefaultPosition, wxDefaultSize, wxSL_HORIZONTAL | wxSL_TICKS | wxSL_TOP | wxSL_LABELS);
+	throttle = new wxSlider(throttlesizer->GetStaticBox(), Options_Throttle,
+							prefs.throttle.GetValue(), 1, 100, wxDefaultPosition, wxDefaultSize,
+							wxSL_HORIZONTAL | wxSL_TICKS | wxSL_TOP | wxSL_LABELS);
 	throttle->SetTickFreq(10);
 	throttlesizer->Add(
 		new wxStaticText(throttlesizer->GetStaticBox(), wxID_ANY,
