@@ -373,15 +373,11 @@ void MainWin::buildFilterAutocomplete()
 
 MainWin::~MainWin()
 {
-	auiFilter->UnInit();
-	auiTab1->UnInit();
-	aui->UnInit();
 	delete database;
 	delete auiFilter;
 	delete auiTab1;
 	delete aui;
 }
-
 
 // the event tables connect the wxWindows events with the functions (event
 // handlers) which process them. It can be also done at run-time, but for the
