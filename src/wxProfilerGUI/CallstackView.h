@@ -78,6 +78,6 @@ public:
 	void OnContextMenu(wxContextMenuEvent& event);
 	void showCallStack(const Database::Symbol *symbol);
 	void reset();
-	DECLARE_EVENT_TABLE()
 
+	DECLARE_EVENT_TABLE()
 };

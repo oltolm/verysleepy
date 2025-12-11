@@ -58,7 +58,6 @@ private:
 	std::wstring currentfile;
 
 	DECLARE_EVENT_TABLE()
-
 };
 
 enum

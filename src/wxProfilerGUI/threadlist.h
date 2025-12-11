@@ -68,8 +68,6 @@ public:
 	};
 
 private:
-	DECLARE_EVENT_TABLE()
-
 	std::vector<ThreadInfo> threads;
 	wxTimer timer;
 	wxLongLong lastTime;
@@ -81,6 +79,8 @@ private:
 	void fillList();
 	int getNumDisplayedThreads();
 	std::wstring getLocation(HANDLE thread_handle, DWORD thread_id);
+
+	DECLARE_EVENT_TABLE()
 };
 
 

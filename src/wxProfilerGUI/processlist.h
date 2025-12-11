@@ -74,8 +74,6 @@ public:
 	};
 
 private:
-	DECLARE_EVENT_TABLE()
-
 	std::vector<ProcessInfo> processes;
 	// DE: 20090325 ProcessList knows about threadlist and updates it based on process selection
 	ThreadList* threadList;
@@ -89,6 +87,8 @@ private:
 	bool firstUpdate;
 
 	void fillList();
+
+	DECLARE_EVENT_TABLE()
 };
 
 

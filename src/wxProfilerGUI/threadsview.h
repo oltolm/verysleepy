@@ -56,8 +56,6 @@ public:
 	};
 
 private:
-	DECLARE_EVENT_TABLE()
-
 	std::vector<ThreadRow> threads;
 
 	Database *database;
@@ -66,6 +64,8 @@ private:
 	void startSelectionTimer();
 	void getThreadsFromDatabase();
 	void fillList();
+
+	DECLARE_EVENT_TABLE()
 };
 
 class ThreadSamplesView : public wxListView
@@ -97,14 +97,14 @@ public:
 	};
 
 private:
-	DECLARE_EVENT_TABLE()
-
 	double totalCount;
 	std::vector<ThreadRow> threads;
 
 	Database *database;
 
 	void fillList();
+
+	DECLARE_EVENT_TABLE()
 };
 
 enum {

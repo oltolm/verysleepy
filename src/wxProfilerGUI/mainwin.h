@@ -129,9 +129,6 @@ public:
 	void updateProgress(int pos);
 
 private:
-	// any class wishing to process wxWindows events must use this macro
-	DECLARE_EVENT_TABLE()
-
 	wxPanel* panel;
 	ProcList* proclist;
 	ProcList* callers;
@@ -187,6 +184,9 @@ private:
 
 	void open(const wxString& filename);
 	void OnMRUFile(wxCommandEvent& event);
+
+	// any class wishing to process wxWindows events must use this macro
+	DECLARE_EVENT_TABLE()
 };
 
 extern MainWin *theMainWin;

@@ -78,8 +78,6 @@ public:
 private:
 	Database::List list;
 
-	DECLARE_EVENT_TABLE()
-
 	bool isroot; // Are we the main proc list?
 	bool updating; // Is a selection update in progress? (ignore selection events)
 
@@ -93,4 +91,6 @@ private:
 
 	/// Displays our in-memory list. Preserves selection.
 	void displayList();
+
+	DECLARE_EVENT_TABLE()
 };
