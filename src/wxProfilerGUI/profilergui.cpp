@@ -419,7 +419,7 @@ AttachInfo * ProfilerGUI::AttachToProcess(const std::wstring& processId)
 	DWORD processId_dw;
 	try
 	{
-		processId_dw = std::stoi(processId);
+		processId_dw = std::stoul(processId);
 	}
 	catch (const std::exception&)
 	{
