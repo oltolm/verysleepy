@@ -26,6 +26,7 @@ http://www.gnu.org/copyleft/gpl.html.
 
 #include "../utils/stringutils.h"
 #include "sourceview.h"
+#include <memory>
 #include <wx/mstream.h>
 #include <fstream>
 #include <set>
@@ -90,10 +91,6 @@ Database::~Database()
 
 void Database::clear()
 {
-	for (auto i = symbols.begin(); i != symbols.end(); ++i)
-		if (*i)
-			delete *i;
-
 	symbols.clear();
 	files.clear();
 	filemap.clear();
@@ -259,9 +256,8 @@ void Database::loadSymbols(wxInputStream &file)
 			newsym->sourcefile         = fileid;
 			newsym->module             = moduleid;
 			newsym->isCollapseFunction = osFunctions.Contains(procname  .c_str());
-			newsym->isCollapseModule   = osModules  .Contains(modulename.c_str());
-			symbols.push_back(newsym);
-			sym = newsym;
+			newsym->isCollapseModule = osModules.Contains(modulename.c_str());
+			sym = symbols.emplace_back(newsym).get();
 		}
 
 		info.symbol = sym;
@@ -554,7 +550,7 @@ void Database::scanMainList()
 	for (Symbol::ID id = 0; id < symbols.size(); ++id)
 	{
 		Item item;
-		item.symbol = symbols[id];
+		item.symbol = symbols[id].get();
 		item.address = item.symbol->address;
 		item.exclusive = exclusive[id];
 		item.inclusive = inclusive[id];

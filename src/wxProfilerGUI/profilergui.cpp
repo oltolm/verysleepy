@@ -154,7 +154,7 @@ wxString ProfilerGUI::PromptOpen(wxWindow *parent)
 
 /// Returns the path to the profile archive, or an empty string
 /// if profiling was aborted by the user.
-std::wstring ProfilerGUI::LaunchProfiler(const AttachInfo *info)
+std::wstring ProfilerGUI::LaunchProfiler(std::unique_ptr<AttachInfo> info)
 {
 	// AA: 20210822 if we're attaching to all threads, launch a debugger to update the threads
 	Debugger *debugger = NULL;
@@ -169,12 +169,10 @@ std::wstring ProfilerGUI::LaunchProfiler(const AttachInfo *info)
 	//create the profiler thread
 	//------------------------------------------------------------------------
 	// DE: 20090325 attaches to a specific list of threads
-	ProfilerThread* profilerthread = new ProfilerThread(
-		info->process_handle,
-		info->thread_handles,
-		info->sym_info,
-		debugger
-		);
+	auto process_handle = info->process_handle;
+	info->process_handle = NULL;
+	auto profilerthread = std::make_unique<ProfilerThread>(process_handle, info->thread_handles,
+														   info->sym_info.get(), debugger);
 
 	//------------------------------------------------------------------------
 	//start the profiler thread
@@ -249,7 +247,6 @@ std::wstring ProfilerGUI::LaunchProfiler(const AttachInfo *info)
 	{
 		profilerthread->cancel();
 		profilerthread->join();
-		delete profilerthread;
 		return std::wstring();
 	}
 
@@ -274,9 +271,6 @@ std::wstring ProfilerGUI::LaunchProfiler(const AttachInfo *info)
 	bool failed = profilerthread->getFailed();
 	std::wstring output_filename = profilerthread->getFilename();
 
-	delete profilerthread;
-	profilerthread = NULL;
-
 	if (failed)
 		return std::wstring();
 
@@ -300,8 +294,6 @@ AttachInfo::~AttachInfo()
 {
 	if (process_handle)
 		CloseHandle(process_handle);
-	if (sym_info)
-		delete sym_info;
 }
 
 static HANDLE getMostBusyThread(ProcessInfo& process_info)
@@ -357,7 +349,8 @@ static std::vector<HANDLE> getThreadsByAttachMode(ProcessInfo& process_info)
 	}
 }
 
-AttachInfo *ProfilerGUI::RunProcess(const std::wstring &run_cmd, const std::wstring &run_cwd)
+std::unique_ptr<AttachInfo> ProfilerGUI::RunProcess(const std::wstring& run_cmd,
+													const std::wstring& run_cwd)
 {
 	STARTUPINFO si = {sizeof(si)};
 	PROCESS_INFORMATION pi = {};
@@ -409,12 +402,12 @@ AttachInfo *ProfilerGUI::RunProcess(const std::wstring &run_cmd, const std::wstr
 		output->attach_all_threads = getAttachToAllThreads();
 	}
 
-	output->sym_info = new SymbolInfo;
+	output->sym_info = std::make_unique<SymbolInfo>();
 	TryLoadSymbols(output.get());
-	return output.release();
+	return output;
 }
 
-AttachInfo * ProfilerGUI::AttachToProcess(const std::wstring& processId)
+std::unique_ptr<AttachInfo> ProfilerGUI::AttachToProcess(const std::wstring& processId)
 {
 	DWORD processId_dw;
 	try
@@ -426,13 +419,13 @@ AttachInfo * ProfilerGUI::AttachToProcess(const std::wstring& processId)
 		throw SleepyException(L"Not valid process id: " + processId);
 	}
 	ProcessInfo process_info = ProcessInfo::FindProcessById(processId_dw);
-	AttachInfo* attach_info = new AttachInfo();
+	auto attach_info = std::make_unique<AttachInfo>();
 	attach_info->process_handle = process_info.getProcessHandle();
 	attach_info->thread_handles = getThreadsByAttachMode(process_info);
 	attach_info->attach_all_threads = getAttachToAllThreads();
-	attach_info->sym_info = new SymbolInfo();
+	attach_info->sym_info = std::make_unique<SymbolInfo>();
 
-	TryLoadSymbols(attach_info);
+	TryLoadSymbols(attach_info.get());
 	return attach_info;
 }
 
@@ -492,10 +485,7 @@ std::wstring ProfilerGUI::ObtainProfileData()
 
 		case ThreadPicker::ATTACH:
 			{
-				std::unique_ptr<AttachInfo> ai(threadpicker->attach_info);
-				threadpicker->attach_info = NULL;
-				threadpicker.reset();
-				return LaunchProfiler(ai.get());
+			return LaunchProfiler(std::move(threadpicker->attach_info));
 			}
 
 		case ThreadPicker::RUN:
@@ -506,7 +496,7 @@ std::wstring ProfilerGUI::ObtainProfileData()
 			std::unique_ptr<AttachInfo> info;
 			try
 			{
-				info.reset(RunProcess(threadpicker->run_filename, threadpicker->run_cwd));
+				info = RunProcess(threadpicker->run_filename, threadpicker->run_cwd);
 			}
 			catch (SleepyException &e)
 			{
@@ -516,9 +506,9 @@ std::wstring ProfilerGUI::ObtainProfileData()
 				continue;
 			}
 
-			wxScopeGuard sgTerm = wxMakeGuard(TerminateProcess, info->process_handle, 0); wxUnusedVar(sgTerm);
-			threadpicker.reset();
-			return LaunchProfiler(info.get());
+			wxScopeGuard sgTerm = wxMakeGuard(TerminateProcess, info->process_handle, 0);
+			wxUnusedVar(sgTerm);
+			return LaunchProfiler(std::move(info));
 		}
 	}
 }
@@ -641,7 +631,7 @@ bool ProfilerGUI::Run()
 	{
 		std::unique_ptr<AttachInfo> info(RunProcess(cmdline_run, L""));
 		wxScopeGuard sgTerm = wxMakeGuard(TerminateProcess, info->process_handle, 0); wxUnusedVar(sgTerm);
-		filename = LaunchProfiler(info.get());
+		filename = LaunchProfiler(std::move(info));
 	}
 	else if (!cmdline_attach.empty())
 	{
@@ -659,7 +649,7 @@ bool ProfilerGUI::Run()
 			// Do not attach to any new threads created after this point in time.
 			info->attach_all_threads = false;
 		}
-		filename = LaunchProfiler(info.get());
+		filename = LaunchProfiler(std::move(info));
 	}
 	else if (!cmdline_load.empty())
 		filename = cmdline_load;

@@ -26,6 +26,7 @@ http://www.gnu.org/copyleft/gpl.html.
 #include "../profiler/symbolinfo.h"
 #include "../utils/osutils.h"
 #include <algorithm>
+#include <memory>
 #include "../utils/except.h"
 
 BEGIN_EVENT_TABLE(ProcessList, wxListCtrl)
@@ -43,7 +44,7 @@ ProcessList::ProcessList(wxWindow *parent, ThreadList *threadList_)
 	selectionChanged = false;
 	firstUpdate = true;
 
-	syminfo = new SymbolInfo();
+	syminfo = std::make_unique<SymbolInfo>();
 
 	wxListItem itemCol;
 	itemCol.SetMask(wxLIST_MASK_TEXT /* | wxLIST_MASK_IMAGE*/);
@@ -74,17 +75,11 @@ ProcessList::ProcessList(wxWindow *parent, ThreadList *threadList_)
 	timer.Start(1000); // 1 second interval
 }
 
-
-ProcessList::~ProcessList()
-{
-	if (syminfo)
-		delete syminfo;
-}
+ProcessList::~ProcessList() {}
 
 void ProcessList::reloadSymbols(bool download)
 {
-	delete syminfo;
-	syminfo = new SymbolInfo;
+	syminfo = std::make_unique<SymbolInfo>();
 
 	//------------------------------------------------------------------------
 	//load up the debug info for it
@@ -104,8 +99,7 @@ void ProcessList::reloadSymbols(bool download)
 	catch (SleepyException &e)
 	{
 		::MessageBox(NULL, std::wstring(L"Error: " + e.wwhat()).c_str(), L"Profiler Error", MB_OK);
-		delete syminfo;
-		syminfo = NULL;
+		syminfo = nullptr;
 	}
 
 	updateThreadList();
@@ -132,11 +126,9 @@ const ProcessInfo* ProcessList::getSelectedProcess()
 		return NULL;
 }
 
-SymbolInfo *ProcessList::takeSymbolInfo()
+std::unique_ptr<SymbolInfo> ProcessList::takeSymbolInfo()
 {
-	SymbolInfo *sym = syminfo;
-	syminfo = NULL;
-	return sym;
+	return std::move(syminfo);
 }
 
 static __int64 getDiff(FILETIME before, FILETIME after)
@@ -155,7 +147,7 @@ void ProcessList::updateThreadList()
 {
 	if (syminfo && getSelectedProcess())
 	{
-		threadList->updateThreads(getSelectedProcess(), syminfo);
+		threadList->updateThreads(getSelectedProcess(), syminfo.get());
 	} else {
 		threadList->updateThreads(NULL, NULL);
 	}

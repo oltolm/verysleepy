@@ -25,6 +25,7 @@ http://www.gnu.org/copyleft/gpl.html.
 
 #include "../profiler/processinfo.h"
 #include "profilergui.h"
+#include <memory>
 #include <wx/listctrl.h>
 
 // DE: 20090325 ProcessList knows about threadlist and updates it based on process selection
@@ -59,7 +60,7 @@ public:
 	void reloadSymbols(bool download);
 
 	const ProcessInfo* getSelectedProcess();
-	SymbolInfo *takeSymbolInfo();
+	std::unique_ptr<SymbolInfo> takeSymbolInfo();
 
 	enum {
 		COL_NAME,
@@ -78,7 +79,7 @@ private:
 	std::vector<ProcessInfo> processes;
 	// DE: 20090325 ProcessList knows about threadlist and updates it based on process selection
 	ThreadList* threadList;
-	SymbolInfo *syminfo;
+	std::unique_ptr<SymbolInfo> syminfo;
 
 	int selected_process;
 	wxTimer timer;

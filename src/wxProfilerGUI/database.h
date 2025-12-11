@@ -25,6 +25,7 @@ http://www.gnu.org/copyleft/gpl.html.
 
 #include "profilergui.h"
 #include "../utils/container.h"
+#include <memory>
 #include <string>
 
 bool IsOsFunction(wxString proc);
@@ -126,7 +127,7 @@ public:
 	void loadFromPath(const std::wstring& profilepath,bool collapseOSCalls,bool loadMinidump);
 	void reload(bool collapseOSCalls, bool loadMinidump);
 
-	const Symbol *getSymbol(Symbol::ID id) const { return symbols[id]; }
+	const Symbol *getSymbol(Symbol::ID id) const { return symbols[id].get(); }
 	Symbol::ID getSymbolCount() const { return symbols.size(); }
 	const std::wstring &getFileName(FileID id) const { return files[id]; }
 	FileID getFileCount() const { return files.size(); }
@@ -163,7 +164,7 @@ public:
 
 private:
 	/// Symbol::ID -> Symbol*
-	std::vector<Symbol *> symbols;
+	std::vector<std::unique_ptr<Symbol>> symbols;
 
 	/// filename <-> FileID
 	std::vector<std::wstring> files;

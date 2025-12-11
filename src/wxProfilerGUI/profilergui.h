@@ -24,6 +24,7 @@ http://www.gnu.org/copyleft/gpl.html.
 #pragma once
 
 #include <algorithm>
+#include <memory>
 #include <wx/config.h>
 #include <wx/app.h>
 #include <wx/filehistory.h>
@@ -69,7 +70,7 @@ struct AttachInfo
 	HANDLE process_handle;
 	std::vector<HANDLE> thread_handles;
 	bool attach_all_threads;
-	SymbolInfo *sym_info;
+	std::unique_ptr<SymbolInfo> sym_info;
 	int limit_profile_time;
 };
 
@@ -202,9 +203,10 @@ private:
 	void HandleInit();
 	bool Run();
 
-	std::wstring LaunchProfiler(const AttachInfo *info);
-	AttachInfo *RunProcess(const std::wstring &run_cmd, const std::wstring &run_cwd);
-	AttachInfo *AttachToProcess(const std::wstring& processId);
+	std::wstring LaunchProfiler(std::unique_ptr<AttachInfo> info);
+	std::unique_ptr<AttachInfo> RunProcess(const std::wstring& run_cmd,
+										   const std::wstring& run_cwd);
+	std::unique_ptr<AttachInfo> AttachToProcess(const std::wstring& processId);
 	static void TryLoadSymbols(AttachInfo* output);
 	void LoadProfileData(const std::wstring &filename);
 	std::wstring ObtainProfileData();

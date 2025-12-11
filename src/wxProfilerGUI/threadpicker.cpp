@@ -87,7 +87,7 @@ void symLogCallback(const wchar_t *text)
 
 ThreadPicker::ThreadPicker()
 	: wxModalFrame(NULL, wxID_ANY, APPNAME),
-	  attach_info(NULL)
+	  attach_info()
 {
 	SetIcon(sleepy_icon);
 
@@ -356,8 +356,6 @@ ThreadPicker::~ThreadPicker()
 {
 	g_symLog = NULL;
 	delete log;
-	if (attach_info)
-		delete attach_info;
 }
 
 bool ThreadPicker::TryAttachToProcess(bool allThreads)
@@ -379,7 +377,7 @@ void ThreadPicker::AttachToProcess(bool allThreads)
 {
 	assert(IsModal());
 
-	attach_info = new AttachInfo;
+	attach_info.reset(new AttachInfo);
 	attach_info->attach_all_threads = allThreads;
 
 	const ProcessInfo* processInfo = processlist->getSelectedProcess();
@@ -400,7 +398,7 @@ void ThreadPicker::AttachToProcess(bool allThreads)
 	//------------------------------------------------------------------------
 	attach_info->process_handle = processInfo->getProcessHandle();
 	attach_info->sym_info = processlist->takeSymbolInfo();
-	enforce(attach_info->sym_info, "No symbol info");
+	enforce(!!attach_info->sym_info, "No symbol info");
 
 	// Check it didn't exit.
 	if (WaitForSingleObject(attach_info->process_handle, 0) == WAIT_OBJECT_0)

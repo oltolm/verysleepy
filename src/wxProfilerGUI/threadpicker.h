@@ -28,6 +28,7 @@ http://www.gnu.org/copyleft/gpl.html.
 #include "logview.h"
 #include <vector>
 
+#include <memory>
 #include <wx/checkbox.h>
 #include <wx/valnum.h>
 
@@ -101,7 +102,7 @@ public:
 	void OnDoubleClicked(wxListEvent& event);
 	void OnTimeCheck(wxCommandEvent& event);
 
-	AttachInfo *attach_info;
+	std::unique_ptr<AttachInfo> attach_info;
 	std::wstring run_filename, run_cwd, open_filename;
 	LogView *log;
 	wxCheckBox *time_check;
