@@ -119,8 +119,8 @@ OptionsDlg::OptionsDlg()
 	symPathButtonSizer->Add(symPathMoveDown, 1);
 	UpdateSymPathButtons();
 
-	symdirsizer->Add(symPaths, FromDIP(100), wxEXPAND);
-	symdirsizer->Add(symPathButtonSizer, FromDIP(1), wxSHRINK);
+	symdirsizer->Add(symPaths, 100, wxEXPAND);
+	symdirsizer->Add(symPathButtonSizer, 1, wxSHRINK);
 
 	useSymServer =
 		new wxCheckBox(symsrvsizer->GetStaticBox(), Options_UseSymServer, "Use symbol server");
@@ -202,9 +202,9 @@ OptionsDlg::OptionsDlg()
 		0, wxALL, FromDIP(5));
 	throttlesizer->Add(throttle, 0, wxEXPAND | wxLEFT | wxTOP, FromDIP(5));
 
-	topsizer->Add(symsizer, 0, wxEXPAND|wxALL, 0);
+	topsizer->Add(symsizer, 0, wxEXPAND | wxALL);
 	topsizer->AddSpacer(FromDIP(5));
-	topsizer->Add(throttlesizer, 0, wxEXPAND|wxALL, FromDIP(0));
+	topsizer->Add(throttlesizer, 0, wxEXPAND | wxALL);
 	rootsizer->Add(topsizer, 1, wxEXPAND|wxLEFT|wxTOP|wxRIGHT, FromDIP(10));
 	rootsizer->Add(CreateButtonSizer(wxOK|wxCANCEL), 0, wxEXPAND|wxALL, FromDIP(10));
 	SetSizer(rootsizer);

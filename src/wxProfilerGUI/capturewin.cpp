@@ -71,7 +71,7 @@ CaptureWin::CaptureWin()
 	cancelButton->SetToolTip("Stop profiling, discard collected results, and exit.");
 
 	wxSizer *buttons = new wxBoxSizer(wxHORIZONTAL);
-	buttons->Add(pauseButton,				0, wxALIGN_LEFT,	FromDIP(5));
+	buttons->Add(pauseButton, 0, 0, FromDIP(5));
 	buttons->AddStretchSpacer();
 	buttons->Add(okButton,					0, wxLEFT|wxRIGHT,	FromDIP(5));
 	buttons->Add(cancelButton,				0, wxLEFT,			FromDIP(5));

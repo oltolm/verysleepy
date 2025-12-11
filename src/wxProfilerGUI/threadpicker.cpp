@@ -185,14 +185,14 @@ ThreadPicker::ThreadPicker()
 	downloadButton->SetToolTip("Downloads symbols from a remote symbol server.");
 
 	wxSizer *buttons = new wxBoxSizer(wxHORIZONTAL);
-	buttons->Add(refreshButton,										0, wxALIGN_LEFT  | wxRIGHT,					FromDIP(5));
-	buttons->Add(downloadButton,									0, wxALIGN_LEFT,							0);
+	buttons->Add(refreshButton, 0, wxRIGHT, FromDIP(5));
+	buttons->Add(downloadButton);
 	buttons->AddStretchSpacer();
-	buttons->Add(time_check,										0, wxALIGN_LEFT | wxALIGN_CENTER_VERTICAL,	0);
-	buttons->Add(time_ctrl,											0, wxALIGN_LEFT | wxALIGN_CENTER_VERTICAL,	0);
+	buttons->Add(time_check, 0, wxALIGN_CENTER_VERTICAL);
+	buttons->Add(time_ctrl, 0, wxALIGN_CENTER_VERTICAL);
 	buttons->AddStretchSpacer();
-	buttons->Add(all_button,										0, 0,										0);
-	buttons->Add(ok_button,											0, wxLEFT,									FromDIP(5));
+	buttons->Add(all_button);
+	buttons->Add(ok_button, 0, wxLEFT, FromDIP(5));
 
 	bottomsizer->Add(buttons, 0, wxLEFT|wxRIGHT|wxEXPAND, FromDIP(10));
 	bottomsizer->AddSpacer(FromDIP(8));
