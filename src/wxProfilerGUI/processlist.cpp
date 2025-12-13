@@ -22,6 +22,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 http://www.gnu.org/copyleft/gpl.html.
 =====================================================================*/
 #include "processlist.h"
+#include "profilergui.h"
 #include "threadlist.h"
 #include "../profiler/symbolinfo.h"
 #include "../utils/osutils.h"

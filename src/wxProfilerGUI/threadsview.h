@@ -24,6 +24,7 @@ http://www.gnu.org/copyleft/gpl.html.
 
 #include "database.h"
 #include <wx/listctrl.h>
+#include <wx/timer.h>
 
 class ThreadsView : public wxListView
 {

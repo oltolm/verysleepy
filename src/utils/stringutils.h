@@ -27,9 +27,7 @@ http://www.gnu.org/copyleft/gpl.html.
 //Your mileage may vary; test the code before you use it!!!!
 
 #include <string>
-#include <assert.h>
 #include <vector>
-#include <sstream>
 
 void readQuote(std::wistream& stream, std::wstring& str_out);//reads string from between double quotes.
 

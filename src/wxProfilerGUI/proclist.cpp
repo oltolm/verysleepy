@@ -23,10 +23,8 @@ http://www.gnu.org/copyleft/gpl.html.
 =====================================================================*/
 #include "proclist.h"
 
-#include "../utils/stringutils.h"
-#include "sourceview.h"
+#include "../utils/container.h"
 #include "database.h"
-#include <fstream>
 #include <algorithm>
 #include "contextmenu.h"
 #include "guiutils.h"

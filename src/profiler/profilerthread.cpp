@@ -24,7 +24,7 @@ http://www.gnu.org/copyleft/gpl.html..
 =====================================================================*/
 
 #include "profilerthread.h"
-#include "../wxprofilergui/profilergui.h"
+#include "../wxProfilerGUI/profilergui.h"
 #include "debugger.h"
 #include "threadinfo.h"
 #include <random>
@@ -34,8 +34,7 @@ http://www.gnu.org/copyleft/gpl.html..
 #include <wx/zipstrm.h>
 
 #include "../utils/stringutils.h"
-#include <fstream>
-#include <assert.h>
+#include <cassert>
 #include <algorithm>
 #include <Psapi.h>
 #include <timeapi.h>

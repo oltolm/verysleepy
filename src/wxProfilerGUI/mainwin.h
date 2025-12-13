@@ -23,15 +23,24 @@ http://www.gnu.org/copyleft/gpl.html.
 =====================================================================*/
 #pragma once
 
-#include "profilergui.h"
-#include "proclist.h"
-#include "sourceview.h"
-#include "CallstackView.h"
-#include "logview.h"
-#include "threadsview.h"
+#include "database.h"
 
-#include <wx/propgrid/propgrid.h>
 #include <deque>
+#include <unordered_set>
+#include <wx/frame.h>
+
+class CallstackView;
+class LogView;
+class ProcList;
+class SourceView;
+class ThreadSamplesView;
+class ThreadsView;
+class wxAuiManager;
+class wxAuiNotebook;
+class wxGauge;
+class wxPanel;
+class wxPropertyGrid;
+class wxPropertyGridEvent;
 
 /// Cache per-symbol view settings so we don't
 /// have to compute them on every refresh.

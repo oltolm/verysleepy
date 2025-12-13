@@ -24,18 +24,27 @@ http://www.gnu.org/copyleft/gpl.html.
 #include "mainwin.h"
 #include "database.h"
 
+#include "../utils/container.h"
 #include "../utils/stringutils.h"
 #include "CallstackView.h"
 #include <algorithm>
-#include <shellapi.h>
 #include <wx/aui/auibook.h>
 #include <wx/hashset.h>
 #include <wx/menu.h>
 #include <wx/filedlg.h>
 #include <wx/gauge.h>
-#include <set>
+#include <wx/progdlg.h>
+#include <wx/propgrid/propgrid.h>
 #include "../utils/except.h"
 #include "../appinfo.h"
+#include "logview.h"
+#include "proclist.h"
+#include "profilergui.h"
+#include "sourceview.h"
+#include "threadsview.h"
+#include <shellapi.h>
+#include <wx/txtstrm.h>
+#include <wx/wfstream.h>
 
 MainWin *theMainWin;
 

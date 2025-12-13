@@ -22,7 +22,7 @@ http://www.gnu.org/copyleft/gpl.html.
 =====================================================================*/
 #include "mythread.h"
 
-#include <assert.h>
+#include <cassert>
 #include <process.h>
 
 MyThread::~MyThread()

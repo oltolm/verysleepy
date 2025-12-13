@@ -28,9 +28,7 @@ http://www.gnu.org/copyleft/gpl.html..
 #include <winsock2.h>
 #include <windows.h>
 #include <map>
-#include <iostream>
 #include <string>
-#include <vector>
 
 //64 bit mode:
 #if defined(_WIN64)

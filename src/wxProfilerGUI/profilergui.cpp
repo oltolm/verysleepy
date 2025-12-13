@@ -23,6 +23,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 http://www.gnu.org/copyleft/gpl.html.
 =====================================================================*/
 #include "profilergui.h"
+#include <wx/cmdline.h>
+#include <wx/image.h>
 #include <wx/mstream.h>
 #include <wx/apptrait.h>
 #include <wx/msw/apptrait.h>
@@ -33,13 +35,16 @@ http://www.gnu.org/copyleft/gpl.html.
 #include "capturewin.h"
 #include "mainwin.h"
 #include "../utils/dbginterface.h"
+#include "../profiler/processinfo.h"
 #include "../profiler/profilerthread.h"
 #include "../profiler/debugger.h"
-#include "../utils/stringutils.h"
 #include "../utils/osutils.h"
+#include <wx/progdlg.h>
 #include <wx/stdpaths.h>
 #include <wx/filedlg.h>
 #include <wx/scopeguard.h>
+#include <wx/stopwatch.h>
+#include <wx/timer.h>
 #ifdef _MSC_VER
 #include "../crashback/client/crashback.h"
 #endif

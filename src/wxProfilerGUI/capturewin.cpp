@@ -25,6 +25,7 @@ http://www.gnu.org/copyleft/gpl.html.
 #include <algorithm>
 #include <wx/button.h>
 #include <wx/gauge.h>
+#include <wx/sizer.h>
 #include <wx/stattext.h>
 #include <wx/tglbtn.h>
 

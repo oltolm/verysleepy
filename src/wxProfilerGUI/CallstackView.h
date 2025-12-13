@@ -23,12 +23,16 @@ http://www.gnu.org/copyleft/gpl.html.
 =====================================================================*/
 #pragma once
 
-class CallstackView;
-
-#include "profilergui.h"
+#include <wx/window.h>
 #include "database.h"
 
+class CallstackView;
+class wxAuiToolBar;
+class wxListView;
 class wxStaticTextTransparent;
+class wxCommandEvent;
+class wxListEvent;
+class wxFileOutputStream;
 
 class CallstackView : public wxWindow
 {

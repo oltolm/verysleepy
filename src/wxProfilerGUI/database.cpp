@@ -25,15 +25,18 @@ http://www.gnu.org/copyleft/gpl.html.
 #include "database.h"
 
 #include "../utils/stringutils.h"
-#include "sourceview.h"
-#include <memory>
-#include <wx/mstream.h>
-#include <fstream>
+#include <wx/ffile.h>
+#include <wx/log.h>
+#include <wx/progdlg.h>
+#include <wx/stream.h>
 #include <set>
 #include "mainwin.h"
-#include "../profiler/symbolinfo.h"
 #include <algorithm>
+#include <wx/txtstrm.h>
+#include <wx/wfstream.h>
+#include <wx/zipstrm.h>
 #include "../appinfo.h"
+#include "../utils/container.h"
 #include "../utils/except.h"
 #include "latesymbolinfo.h"
 

@@ -24,15 +24,15 @@ http://www.gnu.org/copyleft/gpl.html..
 #include "symbolinfo.h"
 #include "../wxProfilerGUI/profilergui.h"
 
-#include "../utils/stringutils.h"
 #include "../utils/osutils.h"
 #include <utility>
 #include <windows.h>
 #include <psapi.h>
 #include "../utils/dbginterface.h"
-#include <iostream>
 #include <algorithm>
 #include <shlwapi.h>
+#include <wx/file.h>
+#include <wx/filename.h>
 #include "../utils/except.h"
 #include "../appinfo.h"
 

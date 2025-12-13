@@ -24,6 +24,8 @@ http://www.gnu.org/copyleft/gpl.html.
 
 #include "aboutdlg.h"
 #include <wx/aboutdlg.h>
+#include <wx/hyperlink.h>
+#include <wx/sizer.h>
 #include <wx/statbmp.h>
 #include <wx/stattext.h>
 #include <wx/statline.h>

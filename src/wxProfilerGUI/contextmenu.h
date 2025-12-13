@@ -1,7 +1,7 @@
 #pragma once
 
-#include "database.h"
-#include "proclist.h"
+class Database;
+class wxListView;
 
 /// Show a right-click menu for a given wxListCtrl.
 /// We assume that the selected items are the actionable ones,

@@ -29,7 +29,7 @@ static bool is64BitOS = false;
 static bool is64BitProfiler = false;
 static int totalCpuCount = 1;
 
-typedef BOOL WINAPI IsWow64Process_t(__in HANDLE hProcess, __out PBOOL Wow64Process);
+typedef BOOL WINAPI IsWow64Process_t(HANDLE hProcess, PBOOL Wow64Process);
 static IsWow64Process_t *IsWow64ProcessPtr = NULL;
 
 void InitSysInfo()

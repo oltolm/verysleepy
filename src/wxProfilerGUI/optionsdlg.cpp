@@ -21,7 +21,12 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 http://www.gnu.org/copyleft/gpl.html.
 =====================================================================*/
 #include "optionsdlg.h"
+#include "profilergui.h"
 #include <wx/filepicker.h>
+#include <wx/listbox.h>
+#include <wx/checkbox.h>
+#include <wx/textctrl.h>
+#include <wx/radiobut.h>
 #include <wx/msw/wrapcctl.h> // include <commctrl.h> "properly"
 #include <wx/valnum.h>
 #include <wx/slider.h>

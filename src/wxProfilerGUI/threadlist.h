@@ -23,12 +23,12 @@ http://www.gnu.org/copyleft/gpl.html.
 =====================================================================*/
 #pragma once
 
-#include "profilergui.h"
 #include "../profiler/threadinfo.h"
-#include "../profiler/processinfo.h"
 
-#include <set>
 #include <wx/listctrl.h>
+#include <wx/timer.h>
+
+class ProcessInfo;
 class SymbolInfo;
 
 /*=====================================================================

@@ -27,9 +27,14 @@ http://www.gnu.org/copyleft/gpl.html.
 #include <wx/filedlg.h>
 #include <wx/dcclient.h>
 #include <wx/gdicmn.h>
+#include <wx/log.h>
 #include <wx/sizer.h>
+#include <wx/txtstrm.h>
+#include <wx/wfstream.h>
+#include <wx/listctrl.h>
 #include "contextmenu.h"
 #include "mainwin.h"
+#include "../utils/container.h"
 #include "../utils/stringutils.h"
 #include "guiutils.h"
 

@@ -21,8 +21,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 http://www.gnu.org/copyleft/gpl.html..
 =====================================================================*/
 #include "debugger.h"
-#include "../utils/mythread.h"
-#include <assert.h>
+#include <cassert>
 #include <tlhelp32.h>
 #include <set>
 

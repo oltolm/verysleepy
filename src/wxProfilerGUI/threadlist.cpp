@@ -21,11 +21,11 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 http://www.gnu.org/copyleft/gpl.html.
 =====================================================================*/
-#include "threadList.h"
+#include "threadlist.h"
 #include "database.h"
+#include "../profiler/processinfo.h"
 #include "../profiler/profiler.h"
 #include "../profiler/symbolinfo.h"
-#include "../utils/osutils.h"
 #include <algorithm>
 #include <wx/button.h>
 

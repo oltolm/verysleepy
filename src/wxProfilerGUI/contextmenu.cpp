@@ -24,8 +24,10 @@ http://www.gnu.org/copyleft/gpl.html.
 #include "CallstackView.h"
 #include "contextmenu.h"
 #include "mainwin.h"
+#include "../utils/container.h"
 #include <wx/menu.h>
 #include <wx/clipbrd.h>
+#include <wx/listctrl.h>
 #include <sstream>
 
 enum {

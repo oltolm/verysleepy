@@ -22,7 +22,9 @@ http://www.gnu.org/copyleft/gpl.html.
 =====================================================================*/
 #pragma once
 
-#include "profilergui.h"
+#include <wx/dialog.h>
+
+class wxTextCtrl;
 
 #define ID_CMD_CHOOSE 1
 #define ID_CWD_CHOOSE 2

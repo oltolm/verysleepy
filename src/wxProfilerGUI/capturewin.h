@@ -22,7 +22,10 @@ http://www.gnu.org/copyleft/gpl.html.
 =====================================================================*/
 #pragma once
 
-#include "profilergui.h"
+#include <wx/dialog.h>
+
+class wxGauge;
+class wxStaticText;
 
 class CaptureWin : public wxDialog
 {

@@ -22,7 +22,6 @@ http://www.gnu.org/copyleft/gpl.html.
 =====================================================================*/
 #include "dbginterface.h"
 #include <wx/log.h>
-#include "except.h"
 
 DbgHelp dbgHelpMs;
 DbgHelp dbgHelpDrMingw;

@@ -25,13 +25,10 @@ http://www.gnu.org/copyleft/gpl.html..
 
 #include "profiler.h"
 
-
-#include "../utils/stringutils.h"
 #include "../utils/osutils.h"
 #include "symbolinfo.h"
 #include <process.h>
-#include <iostream>
-#include <assert.h>
+#include <cassert>
 #include <winnt.h>
 #include "../utils/dbginterface.h"
 #include "../utils/WoW64.h"

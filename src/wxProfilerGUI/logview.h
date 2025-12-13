@@ -22,7 +22,6 @@ http://www.gnu.org/copyleft/gpl.html.
 =====================================================================*/
 #pragma once
 
-#include <wx/config.h>
 #include <wx/textctrl.h>
 
 class LogViewLog;

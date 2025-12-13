@@ -22,7 +22,7 @@ http://www.gnu.org/copyleft/gpl.html..
 
 #include "latesymbolinfo.h"
 #include <Dbgeng.h>
-#include "../utils/dbginterface.h"
+#include <dbghelp.h>
 #include <comdef.h>
 #include <sstream>
 #include <wrl/client.h>

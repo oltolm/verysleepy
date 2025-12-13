@@ -23,6 +23,7 @@ http://www.gnu.org/copyleft/gpl.html..
 #pragma once
 
 #include <unordered_map>
+#include <vector>
 
 /// Find an entry with the specified key and return its value,
 /// or, failing that, return a default value.
@@ -60,8 +61,6 @@ static ID map_string(std::vector<std::wstring> &list, std::unordered_map<std::ws
 	else // existing entry
 		return id;
 }
-
-#include <unordered_set>
 
 /// Nicer wrapper around set::count.
 template<typename SET>

@@ -23,14 +23,23 @@ http://www.gnu.org/copyleft/gpl.html.
 =====================================================================*/
 #include "threadpicker.h"
 #include "launchdlg.h"
+#include "logview.h"
 #include "optionsdlg.h"
 #include "../profiler/symbolinfo.h"
 #include <climits>
+#include <wx/log.h>
 #include <wx/menu.h>
 #include <wx/button.h>
+#include <wx/checkbox.h>
+#include <wx/progdlg.h>
+#include <wx/sizer.h>
 #include <wx/stattext.h>
+#include <wx/valnum.h>
 #include "../utils/except.h"
 #include "../appinfo.h"
+#include "processlist.h"
+#include "profilergui.h"
+#include "threadlist.h"
 
 // IDs for the controls and the menu commands
 enum

@@ -22,13 +22,14 @@ http://www.gnu.org/copyleft/gpl.html.
 =====================================================================*/
 #pragma once
 
-#include "profilergui.h"
-#include <wx/checkbox.h>
-#include <wx/listbox.h>
-#include <wx/radiobut.h>
-#include <wx/slider.h>
+#include <wx/dialog.h>
 
+class wxCheckBox;
 class wxDirPickerCtrl;
+class wxListBox;
+class wxRadioButton;
+class wxSlider;
+class wxTextCtrl;
 
 class OptionsDlg : public wxDialog
 {

@@ -24,7 +24,6 @@ http://www.gnu.org/copyleft/gpl.html.
 #pragma once
 
 #include "database.h"
-#include "profilergui.h"
 #include <wx/listctrl.h>
 
 /*=====================================================================

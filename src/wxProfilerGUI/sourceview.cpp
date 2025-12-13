@@ -23,7 +23,6 @@ http://www.gnu.org/copyleft/gpl.html.
 =====================================================================*/
 #include "sourceview.h"
 #include "guiutils.h"
-#include <wx/gdicmn.h>
 
 #define countof(_x) (sizeof(_x)/sizeof(_x[0]))
 

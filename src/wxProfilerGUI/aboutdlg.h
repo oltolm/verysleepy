@@ -23,9 +23,10 @@ http://www.gnu.org/copyleft/gpl.html.
 =====================================================================*/
 #pragma once
 
-#include <wx/hyperlink.h>
 #include <wx/dialog.h>
-#include <wx/sizer.h>
+
+class wxSizer;
+class wxSizerFlags;
 
 // ----------------------------------------------------------------------------
 // AboutDlg

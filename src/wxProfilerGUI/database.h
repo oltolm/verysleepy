@@ -23,10 +23,12 @@ http://www.gnu.org/copyleft/gpl.html.
 =====================================================================*/
 #pragma once
 
-#include "profilergui.h"
-#include "../utils/container.h"
 #include <memory>
 #include <string>
+#include <unordered_map>
+#include <vector>
+
+class wxInputStream;
 
 bool IsOsFunction(wxString proc);
 void AddOsFunction(wxString proc);

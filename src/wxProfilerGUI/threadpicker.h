@@ -23,17 +23,19 @@ http://www.gnu.org/copyleft/gpl.html.
 =====================================================================*/
 #pragma once
 
-#include "profilergui.h"
-#include "processlist.h"
-#include "logview.h"
-#include <vector>
-
 #include <memory>
-#include <wx/checkbox.h>
-#include <wx/valnum.h>
+#include <wx/evtloop.h>
+#include <wx/frame.h>
 
 // DE: 20090325 Include for list to pick thread(s)
-#include "threadlist.h"
+
+class AttachInfo;
+class LogView;
+class ProcessList;
+class wxCheckBox;
+class wxListEvent;
+class wxTextCtrl;
+class ThreadList;
 
 class wxModalFrame : public wxFrame
 {

@@ -24,13 +24,14 @@ http://www.gnu.org/copyleft/gpl.html.
 #pragma once
 
 #include "../profiler/processinfo.h"
-#include "profilergui.h"
 #include <memory>
 #include <wx/listctrl.h>
+#include <wx/timer.h>
 
 // DE: 20090325 ProcessList knows about threadlist and updates it based on process selection
 class ThreadList;
 class SymbolInfo;
+class wxTimerEvent;
 
 /*=====================================================================
 ProcessList
