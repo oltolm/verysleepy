@@ -46,8 +46,9 @@ ProcessInfo::~ProcessInfo()
 {
 }
 
-void ProcessInfo::enumProcesses(std::vector<ProcessInfo>& processes_out)
+std::vector<ProcessInfo> ProcessInfo::enumProcesses()
 {
+	std::vector<ProcessInfo> processes_out;
 	HANDLE snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS | TH32CS_SNAPTHREAD, 0);
 
 	PROCESSENTRY32 processinfo = {0};
@@ -120,12 +121,13 @@ void ProcessInfo::enumProcesses(std::vector<ProcessInfo>& processes_out)
 	}
 
 	CloseHandle(snapshot);
+	return processes_out;
 }
 
 ProcessInfo ProcessInfo::FindProcessById(DWORD process_id)
 {
 	std::vector<ProcessInfo> allProcesses;
-	enumProcesses(allProcesses);
+	allProcesses = enumProcesses();
 	for (size_t i=0; i < allProcesses.size(); i++)
 	{
 		auto process = allProcesses[i];

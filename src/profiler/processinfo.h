@@ -44,9 +44,7 @@ public:
 
 	~ProcessInfo();
 
-
-
-	static void enumProcesses(std::vector<ProcessInfo>& processes_out);
+	static std::vector<ProcessInfo> enumProcesses();
 	static ProcessInfo FindProcessById(DWORD process_id);
 
 	std::vector<ThreadInfo> threads;

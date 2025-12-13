@@ -275,7 +275,7 @@ void ProcessList::updateProcesses()
 	processes.clear();
 	threadList->updateThreads(NULL, NULL);
 
-	ProcessInfo::enumProcesses(this->processes);
+	this->processes = ProcessInfo::enumProcesses();
 	for(int i=0; i<(int)processes.size(); ++i)
 	{
 		this->InsertItem(i, "", -1);
