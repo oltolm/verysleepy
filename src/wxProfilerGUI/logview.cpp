@@ -114,16 +114,10 @@ void LogViewLog::DoLogRecord(wxLogLevel WXUNUSED(level), const wxString& msg, co
 // LogView
 //////////////////////////////////////////////////////////////////////////
 
-enum
-{
-	// menu items
-	LogView_Clear = 1,
-};
-
 BEGIN_EVENT_TABLE(LogView, wxTextCtrl)
 EVT_CONTEXT_MENU(LogView::OnContextMenu)
 EVT_MENU(wxID_COPY, LogView::OnCopy)
-EVT_MENU(LogView_Clear, LogView::OnClearLog)
+EVT_MENU(wxID_CLEAR, LogView::OnClearLog)
 EVT_MENU(wxID_SELECTALL, LogView::OnSelectAll)
 EVT_IDLE(LogView::OnIdle)
 END_EVENT_TABLE()
@@ -151,8 +145,8 @@ void LogView::OnContextMenu(wxContextMenuEvent& WXUNUSED(event))
 	wxMenu menu;
 	menu.Append(wxID_COPY, _("&Copy"));
 	menu.Append(wxID_SELECTALL, _("Select &All"));
-	menu.Append(LogView_Clear, _("Clear &Log"));
-	menu.Enable(LogView_Clear, !this->GetValue().empty());
+	menu.Append(wxID_CLEAR, _("Clear &Log"));
+	menu.Enable(wxID_CLEAR, !this->GetValue().empty());
 
 	PopupMenu(&menu);
 }
