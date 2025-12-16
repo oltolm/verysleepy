@@ -180,3 +180,23 @@ void StringList::Add(const wchar_t *str)
 	string.append(str);
 	string.append(L" ");
 }
+
+std::string wideToUtf8(const std::wstring& wideString)
+{
+	int len = WideCharToMultiByte(CP_UTF8, 0, wideString.c_str(), wideString.size(), nullptr, 0,
+								  nullptr, nullptr);
+	std::string utf8String;
+	utf8String.resize(len);
+	WideCharToMultiByte(CP_UTF8, 0, wideString.c_str(), wideString.size(), utf8String.data(), len,
+						nullptr, nullptr);
+	return utf8String;
+}
+
+std::wstring utf8ToWide(const std::string& utf8String)
+{
+	int len = MultiByteToWideChar(CP_UTF8, 0, utf8String.c_str(), utf8String.size(), nullptr, 0);
+	std::wstring wideString;
+	wideString.resize(len);
+	MultiByteToWideChar(CP_UTF8, 0, utf8String.c_str(), utf8String.size(), wideString.data(), len);
+	return wideString;
+}

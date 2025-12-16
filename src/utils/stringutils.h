@@ -26,6 +26,7 @@ http://www.gnu.org/copyleft/gpl.html.
 //NOTE: not all of this code has been used/tested for ages.
 //Your mileage may vary; test the code before you use it!!!!
 
+#include <windows.h>
 #include <string>
 #include <vector>
 
@@ -65,3 +66,6 @@ public:
 	void Add(const wchar_t *str);
 	const std::wstring& Get() const { return string; }
 };
+
+std::string wideToUtf8(const std::wstring& wideString);
+std::wstring utf8ToWide(const std::string& utf8tring);
