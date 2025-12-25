@@ -24,6 +24,7 @@ http://www.gnu.org/copyleft/gpl.html..
 #include <cassert>
 #include <tlhelp32.h>
 #include <set>
+#include "../utils/osutils.h"
 
 Debugger::Debugger(DWORD processId_)
 	: processId(processId_)
@@ -131,12 +132,12 @@ void Debugger::finishAttaching()
 
 void Debugger::updateFromSnapshot()
 {
-	HANDLE snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPTHREAD, 0);
+	handle_ptr snapshot(CreateToolhelp32Snapshot(TH32CS_SNAPTHREAD, 0));
 
 	THREADENTRY32 thread;
 	thread.dwSize = sizeof(THREADENTRY32);
 
-	if (Thread32First(snapshot, &thread))
+	if (Thread32First(snapshot.get(), &thread))
 	{
 		std::set<DWORD> threads;
 		do
@@ -152,12 +153,10 @@ void Debugger::updateFromSnapshot()
 			if (threadHandle)
 				notifyNewThread(thread.th32ThreadID, threadHandle);
 
-		} while (Thread32Next(snapshot, &thread));
+		} while (Thread32Next(snapshot.get(), &thread));
 
 		knownThreads = std::move(threads);
 	}
-
-	CloseHandle(snapshot);
 }
 
 void Debugger::updateDebugging()

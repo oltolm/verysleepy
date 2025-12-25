@@ -48,12 +48,12 @@ ProcessInfo::~ProcessInfo()
 std::vector<ProcessInfo> ProcessInfo::enumProcesses()
 {
 	std::vector<ProcessInfo> processes_out;
-	HANDLE snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS | TH32CS_SNAPTHREAD, 0);
+	handle_ptr snapshot(CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS | TH32CS_SNAPTHREAD, 0));
 
 	PROCESSENTRY32 processinfo = {0};
 	processinfo.dwSize = sizeof(PROCESSENTRY32);
 
-	if (Process32First(snapshot, &processinfo))
+	if (Process32First(snapshot.get(), &processinfo))
 	{
 		do
 		{
@@ -85,8 +85,7 @@ std::vector<ProcessInfo> ProcessInfo::enumProcesses()
 			processes_out.push_back(ProcessInfo(process_id, processname));
 
 			processinfo.dwSize = sizeof(PROCESSENTRY32);
-		}
-		while(Process32Next(snapshot, &processinfo));
+		} while (Process32Next(snapshot.get(), &processinfo));
 	}
 
 	//------------------------------------------------------------------------
@@ -95,7 +94,7 @@ std::vector<ProcessInfo> ProcessInfo::enumProcesses()
 	THREADENTRY32 threadinfo;
 	threadinfo.dwSize = sizeof(THREADENTRY32);
 
-	if(Thread32First(snapshot, &threadinfo))
+	if (Thread32First(snapshot.get(), &threadinfo))
 	{
 		do
 		{
@@ -111,11 +110,9 @@ std::vector<ProcessInfo> ProcessInfo::enumProcesses()
 			}
 
 			threadinfo.dwSize = sizeof(THREADENTRY32);
-		}
-		while(Thread32Next(snapshot, &threadinfo));
+		} while (Thread32Next(snapshot.get(), &threadinfo));
 	}
 
-	CloseHandle(snapshot);
 	return processes_out;
 }
 

@@ -351,14 +351,14 @@ std::unique_ptr<AttachInfo> ProfilerGUI::RunProcess(const std::wstring& run_cmd,
 {
 	STARTUPINFO si = {sizeof(si)};
 	PROCESS_INFORMATION pi = {};
+	handle_ptr thread_handle(pi.hThread);
+	handle_ptr process_handle(pi.hProcess);
 
 	std::wstring run_cmd_dup = run_cmd; // CreateProcess lpCommandLine must be mutable
 	wenforce(CreateProcess( NULL, &run_cmd_dup[0], NULL, NULL, FALSE, 0, NULL, run_cwd.size() ? run_cwd.c_str() : NULL, &si, &pi ), "CreateProcess");
 
 	if (!CanProfileProcess(pi.hProcess))
 	{
-		CloseHandle(pi.hThread);
-		CloseHandle(pi.hProcess);
 		throw SleepyException(L"Unsupported process. Cannot profile.");
 	}
 

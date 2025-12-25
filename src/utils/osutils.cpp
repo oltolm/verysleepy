@@ -78,6 +78,7 @@ void EnableDebugPrivilege()
 	TOKEN_PRIVILEGES tkp;
 
 	OpenProcessToken( GetCurrentProcess(), TOKEN_ADJUST_PRIVILEGES | TOKEN_QUERY, &hToken );
+	handle_ptr token_handle(hToken);
 
 	LookupPrivilegeValue( NULL, SE_DEBUG_NAME, &luid );
 
@@ -85,9 +86,7 @@ void EnableDebugPrivilege()
 	tkp.Privileges[0].Luid = luid;
 	tkp.Privileges[0].Attributes = SE_PRIVILEGE_ENABLED;
 
-	AdjustTokenPrivileges( hToken, false, &tkp, sizeof( tkp ), NULL, NULL );
-
-	CloseHandle( hToken );
+	AdjustTokenPrivileges(hToken, false, &tkp, sizeof(tkp), NULL, NULL);
 }
 
 /*

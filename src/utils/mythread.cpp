@@ -29,20 +29,19 @@ MyThread::~MyThread()
 {
 #ifndef NDEBUG
 	DWORD dwExitCode;
-	BOOL res = GetExitCodeThread(thread_handle, &dwExitCode);
+	BOOL res = GetExitCodeThread(thread_handle.get(), &dwExitCode);
 	assert(res != 0 && dwExitCode != STILL_ACTIVE);
-#endif//NDEBUG
-	CloseHandle(thread_handle);
+#endif // NDEBUG
 }
 
 HANDLE MyThread::launch(int priority_)
 {
 	assert(thread_handle == NULL);
 
-	thread_handle = (HANDLE)_beginthreadex(NULL, 0, threadFunction, this, 0, NULL);
-	SetThreadPriority( thread_handle, priority_ );
+	thread_handle.reset((HANDLE)_beginthreadex(NULL, 0, threadFunction, this, 0, NULL));
+	SetThreadPriority(thread_handle.get(), priority_);
 
-	return thread_handle;
+	return thread_handle.get();
 }
 
 

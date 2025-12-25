@@ -22,6 +22,7 @@ http://www.gnu.org/copyleft/gpl.html.
 =====================================================================*/
 #pragma once
 
+#include "osutils.h"
 #include <windows.h>
 
 /*=====================================================================
@@ -32,18 +33,18 @@ Thanks to someone from the COTD on flipcode for the code this is based on
 class MyThread
 {
 public:
-	MyThread() : thread_handle(NULL) {}
+	MyThread() {}
 	virtual ~MyThread();
 
 	virtual void run() = 0;
 	HANDLE launch(int priority);
 	bool launched() const { return !!thread_handle; }
-	void waitFor(DWORD dwMilliseconds) { WaitForSingleObject(thread_handle, dwMilliseconds); }
-	void join() { WaitForSingleObject(thread_handle, INFINITE); }
-	void setPriority(int priority) { SetThreadPriority(thread_handle, priority); }
+	void waitFor(DWORD dwMilliseconds) { WaitForSingleObject(thread_handle.get(), dwMilliseconds); }
+	void join() { WaitForSingleObject(thread_handle.get(), INFINITE); }
+	void setPriority(int priority) { SetThreadPriority(thread_handle.get(), priority); }
 
 private:
 	static unsigned __stdcall threadFunction(void* the_thread);
 
-	HANDLE thread_handle;
+	handle_ptr thread_handle;
 };

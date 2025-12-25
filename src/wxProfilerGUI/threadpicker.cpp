@@ -406,13 +406,13 @@ void ThreadPicker::AttachToProcess(bool allThreads)
 	//------------------------------------------------------------------------
 	//Get handle to target process
 	//------------------------------------------------------------------------
-	HANDLE process_handle = OpenProcess(PROCESS_ALL_ACCESS, FALSE, pid);
+	handle_ptr process_handle(OpenProcess(PROCESS_ALL_ACCESS, FALSE, pid));
 	attach_info->process_id = pid;
 	attach_info->sym_info = processlist->takeSymbolInfo();
 	enforce(!!attach_info->sym_info, "No symbol info");
 
 	// Check it didn't exit.
-	DWORD ret = WaitForSingleObject(process_handle, 0);
+	DWORD ret = WaitForSingleObject(process_handle.get(), 0);
 	if (ret == WAIT_OBJECT_0)
 		attach_info->process_id = 0;
 
