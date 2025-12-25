@@ -22,6 +22,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 http://www.gnu.org/copyleft/gpl.html..
 =====================================================================*/
 #include "threadinfo.h"
+#include "../utils/osutils.h"
 
 static __int64 getDiff(FILETIME before, FILETIME after)
 {
@@ -63,14 +64,15 @@ std::wstring getThreadDescriptorName(HANDLE thread_handle)
 }
 
 // DE: 20090325 Threads now have CPU usage
-ThreadInfo::ThreadInfo(DWORD id_, HANDLE thread_handle_)
-:	id(id_), thread_handle(thread_handle_)
+ThreadInfo::ThreadInfo(DWORD id_)
+	: id(id_)
 {
 	prevKernelTime.dwHighDateTime = prevKernelTime.dwLowDateTime = 0;
 	prevUserTime.dwHighDateTime = prevUserTime.dwLowDateTime = 0;
 	cpuUsage = -1;
 
-	name = getThreadDescriptorName(thread_handle);
+	handle_ptr thread_handle(OpenThread(THREAD_ALL_ACCESS, FALSE, id));
+	name = getThreadDescriptorName(thread_handle.get());
 }
 
 ThreadInfo::~ThreadInfo()
@@ -82,21 +84,15 @@ bool ThreadInfo::recalcUsage(int sampleTimeDiff)
 	cpuUsage = -1;
 	totalCpuTimeMs = -1;
 
-	HANDLE thread_handle_ = getThreadHandle();
-	if (thread_handle_ == NULL)
+	handle_ptr thread_handle(OpenThread(THREAD_ALL_ACCESS, FALSE, id));
+	if (!thread_handle)
 		return false;
 
 	FILETIME CreationTime, ExitTime, KernelTime, UserTime;
 
-	if (!GetThreadTimes(
-		thread_handle_,
-		&CreationTime,
-		&ExitTime,
-		&KernelTime,
-		&UserTime
-	))
+	if (!GetThreadTimes(thread_handle.get(), &CreationTime, &ExitTime, &KernelTime, &UserTime))
 		return false;
-	
+
 	__int64 kernel_diff = getDiff(prevKernelTime, KernelTime);
 	__int64 user_diff = getDiff(prevUserTime, UserTime);
 	prevKernelTime = KernelTime;

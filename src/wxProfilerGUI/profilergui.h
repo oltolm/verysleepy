@@ -56,7 +56,7 @@ struct AttachInfo
 	~AttachInfo();
 
 	DWORD process_id;
-	std::vector<HANDLE> thread_handles;
+	std::vector<DWORD> thread_ids;
 	bool attach_all_threads;
 	std::unique_ptr<SymbolInfo> sym_info;
 	int limit_profile_time;

@@ -433,9 +433,9 @@ void ThreadPicker::AttachToProcess(bool allThreads)
 		{
 			const ThreadInfo* threadInfo(*it);
 
-			HANDLE threadHandle = threadInfo->getThreadHandle();
-			wenforce(threadHandle, "Attaching to selected thread");
-			attach_info->thread_handles.push_back(threadHandle);
+			DWORD thread_id = threadInfo->getID();
+			wenforce(thread_id, "Attaching to selected thread");
+			attach_info->thread_ids.push_back(thread_id);
 		}
 		catch (SleepyException &e)
 		{
@@ -444,5 +444,5 @@ void ThreadPicker::AttachToProcess(bool allThreads)
 	}
 
 	// DE: 20090325 attaches to specific a list of threads
-	enforce(attach_info->thread_handles.size(), "Cannot attach to any threads");
+	enforce(attach_info->thread_ids.size(), "Cannot attach to any threads");
 }

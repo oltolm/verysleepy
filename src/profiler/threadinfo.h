@@ -43,12 +43,11 @@ public:
 	----------
 
 	=====================================================================*/
-	ThreadInfo(DWORD id, HANDLE thread_handle);
+	ThreadInfo(DWORD id);
 
 	~ThreadInfo();
 
 	DWORD getID() const { return id; }
-	HANDLE getThreadHandle() const { return thread_handle; }
 
 	const std::wstring& getLocation() const { return location; }
 	void setLocation(const std::wstring &loc) { location = loc; }
@@ -65,5 +64,4 @@ private:
 	std::wstring location;
 	std::wstring name;
 	DWORD id;
-	HANDLE thread_handle;
 };

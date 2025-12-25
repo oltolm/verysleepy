@@ -173,7 +173,7 @@ std::wstring ProfilerGUI::LaunchProfiler(std::unique_ptr<AttachInfo> info)
 	// create the profiler thread
 	//------------------------------------------------------------------------
 	// DE: 20090325 attaches to a specific list of threads
-	auto profilerthread = std::make_unique<ProfilerThread>(info->process_id, info->thread_handles,
+	auto profilerthread = std::make_unique<ProfilerThread>(info->process_id, info->thread_ids,
 														   info->sym_info.get(), debugger);
 
 	//------------------------------------------------------------------------
@@ -293,17 +293,17 @@ AttachInfo::AttachInfo()
 
 AttachInfo::~AttachInfo() {}
 
-static HANDLE getMostBusyThread(ProcessInfo& process_info)
+static DWORD getMostBusyThread(ProcessInfo& process_info)
 {
 	int max = -1;
-	HANDLE mostBusy = NULL;
+	DWORD mostBusy = 0;
 	for (auto thread_info = process_info.threads.begin(); thread_info != process_info.threads.end(); ++thread_info)
 	{
 		thread_info->recalcUsage(0);
 		if (max < thread_info->totalCpuTimeMs)
 		{
 			max = thread_info->totalCpuTimeMs;
-			mostBusy = thread_info->getThreadHandle();
+			mostBusy = thread_info->getID();
 		}
 	}
 
@@ -315,34 +315,34 @@ static bool getAttachToAllThreads()
 	return prefs.attachMode == ATTACH_ALL_THREAD;
 }
 
-static std::vector<HANDLE> getThreadsByAttachMode(ProcessInfo& process_info)
+static std::vector<DWORD> getThreadsByAttachMode(ProcessInfo& process_info)
 {
-	std::vector<HANDLE> threadHandles;
+	std::vector<DWORD> thread_ids;
 
 	if (process_info.threads.empty())
-		return threadHandles;
+		return thread_ids;
 
 	switch (prefs.attachMode)
 	{
 	case ATTACH_MAIN_THREAD:
-		threadHandles.push_back(process_info.threads.front().getThreadHandle());
-		return threadHandles;
+		thread_ids.push_back(process_info.threads.front().getID());
+		return thread_ids;
 
 	case ATTACH_MOST_BUSY_THREAD:
 	{
-		HANDLE mostBusy = getMostBusyThread(process_info);
+		DWORD mostBusy = getMostBusyThread(process_info);
 		if (mostBusy)
-			threadHandles.push_back(mostBusy);
-		return threadHandles;
+			thread_ids.push_back(mostBusy);
+		return thread_ids;
 	}
 
 	default: // all thread
-		threadHandles.reserve(process_info.threads.size());
+		thread_ids.reserve(process_info.threads.size());
 		for (auto thread_info = process_info.threads.begin(); thread_info != process_info.threads.end(); ++thread_info)
 		{
-			threadHandles.push_back(thread_info->getThreadHandle());
+			thread_ids.push_back(thread_info->getID());
 		}
-		return threadHandles;
+		return thread_ids;
 	}
 }
 
@@ -367,7 +367,7 @@ std::unique_ptr<AttachInfo> ProfilerGUI::RunProcess(const std::wstring& run_cmd,
 
 	if (cmdline_delay == 0)
 	{
-		output->thread_handles.push_back(pi.hThread); // Main thread only
+		output->thread_ids.push_back(pi.dwThreadId); // Main thread only
 	}
 	else
 	{
@@ -395,7 +395,7 @@ std::unique_ptr<AttachInfo> ProfilerGUI::RunProcess(const std::wstring& run_cmd,
 
 		// Re-query process information to learn about new threads that have since spawned
 		ProcessInfo process_info = ProcessInfo::FindProcessById(pi.dwProcessId);
-		output->thread_handles = getThreadsByAttachMode(process_info);
+		output->thread_ids = getThreadsByAttachMode(process_info);
 		output->attach_all_threads = getAttachToAllThreads();
 	}
 
@@ -418,7 +418,7 @@ std::unique_ptr<AttachInfo> ProfilerGUI::AttachToProcess(const std::wstring& pro
 	ProcessInfo process_info = ProcessInfo::FindProcessById(processId_dw);
 	auto attach_info = std::make_unique<AttachInfo>();
 	attach_info->process_id = process_info.getID();
-	attach_info->thread_handles = getThreadsByAttachMode(process_info);
+	attach_info->thread_ids = getThreadsByAttachMode(process_info);
 	attach_info->attach_all_threads = getAttachToAllThreads();
 	attach_info->sym_info = std::make_unique<SymbolInfo>();
 
@@ -638,14 +638,13 @@ bool ProfilerGUI::Run()
 		std::unique_ptr<AttachInfo> info(AttachToProcess(cmdline_attach));
 		if (!cmdline_thread_ids.empty())
 		{
-			auto pred = [&](HANDLE hThread) -> bool {
-				DWORD dwThreadId = GetThreadId(hThread);
+			auto pred = [&](DWORD dwThreadId) -> bool {
 				return std::find(cmdline_thread_ids.begin(), cmdline_thread_ids.end(),
 								 dwThreadId) == cmdline_thread_ids.end();
 			};
-			info->thread_handles.erase(
-				std::remove_if(info->thread_handles.begin(), info->thread_handles.end(), pred),
-				info->thread_handles.end());
+			info->thread_ids.erase(
+				std::remove_if(info->thread_ids.begin(), info->thread_ids.end(), pred),
+				info->thread_ids.end());
 			// Do not attach to any new threads created after this point in time.
 			info->attach_all_threads = false;
 		}

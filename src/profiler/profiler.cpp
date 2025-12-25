@@ -46,12 +46,11 @@ typedef CONTEXT CONTEXT32;
 
 // DE: 20090325: Profiler no longer owns callstack and flatcounts since it is shared between multipler profilers
 
-Profiler::Profiler(DWORD target_process_id_, HANDLE target_thread_, DWORD target_thread_id_,
+Profiler::Profiler(DWORD target_process_id_, DWORD target_thread_id_,
 				   std::map<CallStack, SAMPLE_TYPE>& callstacks_)
 	: callstacks(&callstacks_),
 	  is64BitProcess(Is64BitProcess(target_process_id_)),
 	  target_process_id(target_process_id_),
-	  target_thread(target_thread_),
 	  target_thread_id(target_thread_id_)
 {
 }
@@ -62,7 +61,6 @@ Profiler::Profiler(const Profiler& iOther)
 	: callstacks(iOther.callstacks),
 	  is64BitProcess(iOther.is64BitProcess),
 	  target_process_id(iOther.target_process_id),
-	  target_thread(iOther.target_thread),
 	  target_thread_id(iOther.target_thread_id)
 {
 }
@@ -72,7 +70,6 @@ Profiler::Profiler(const Profiler& iOther)
 Profiler& Profiler::operator=(const Profiler& iOther)
 {
 	target_process_id = iOther.target_process_id;
-	target_thread = iOther.target_thread;
 	target_thread_id = iOther.target_thread_id;
 	callstacks = iOther.callstacks;
 	assert(is64BitProcess == iOther.is64BitProcess);
@@ -160,6 +157,8 @@ bool Profiler::sampleTarget(SAMPLE_TYPE timeSpent, SymbolInfo *syminfo)
 	void *context;
 	DWORD machine;
 
+	handle_ptr target_thread(OpenThread(THREAD_ALL_ACCESS, FALSE, target_thread_id));
+
 #if defined(_WIN64)
 	CONTEXT64 threadcontext64;
 	CONTEXT32 threadcontext32;
@@ -170,18 +169,18 @@ bool Profiler::sampleTarget(SAMPLE_TYPE timeSpent, SymbolInfo *syminfo)
 		machine = IMAGE_FILE_MACHINE_AMD64;
 
 		// Can fail occasionally, for example if you have a debugger attached to the process.
-		DWORD result = SuspendThread(target_thread);
+		DWORD result = SuspendThread(target_thread.get());
 		if(result == 0xffffffff)
 			return false;
 
-		int prev_priority = GetThreadPriority(target_thread);
-		SetThreadPriority(target_thread, THREAD_PRIORITY_TIME_CRITICAL);
-		result = GetThreadContext(target_thread, &threadcontext64);
-		SetThreadPriority(target_thread, prev_priority);
+		int prev_priority = GetThreadPriority(target_thread.get());
+		SetThreadPriority(target_thread.get(), THREAD_PRIORITY_TIME_CRITICAL);
+		result = GetThreadContext(target_thread.get(), &threadcontext64);
+		SetThreadPriority(target_thread.get(), prev_priority);
 
 		if(!result){
 			// DE: 20090325: If GetThreadContext fails we must be sure to resume thread again
-			ResumeThread(target_thread);
+			ResumeThread(target_thread.get());
 			return false;
 		}
 
@@ -194,18 +193,18 @@ bool Profiler::sampleTarget(SAMPLE_TYPE timeSpent, SymbolInfo *syminfo)
 		machine = IMAGE_FILE_MACHINE_I386;
 
 		// Can fail occasionally, for example if you have a debugger attached to the process.
-		DWORD result = fn_Wow64SuspendThread(target_thread);
+		DWORD result = fn_Wow64SuspendThread(target_thread.get());
 		if(result == 0xffffffff)
 			return false;
 
-		int prev_priority = GetThreadPriority(target_thread);
-		SetThreadPriority(target_thread, THREAD_PRIORITY_TIME_CRITICAL);
-		result = fn_Wow64GetThreadContext(target_thread, &threadcontext32);
-		SetThreadPriority(target_thread, prev_priority);
+		int prev_priority = GetThreadPriority(target_thread.get());
+		SetThreadPriority(target_thread.get(), THREAD_PRIORITY_TIME_CRITICAL);
+		result = fn_Wow64GetThreadContext(target_thread.get(), &threadcontext32);
+		SetThreadPriority(target_thread.get(), prev_priority);
 
 		if(!result){
 			// DE: 20090325: If GetThreadContext fails we must be sure to resume thread again
-			ResumeThread(target_thread);
+			ResumeThread(target_thread.get());
 			return false;
 		}
 
@@ -220,18 +219,18 @@ bool Profiler::sampleTarget(SAMPLE_TYPE timeSpent, SymbolInfo *syminfo)
 	machine = IMAGE_FILE_MACHINE_I386;
 
 	// Can fail occasionally, for example if you have a debugger attached to the process.
-	HRESULT hresult = SuspendThread(target_thread);
+	HRESULT hresult = SuspendThread(target_thread.get());
 	if(hresult == 0xffffffff)
 		return false;
 
-	int prev_priority = GetThreadPriority(target_thread);
-	SetThreadPriority(target_thread, THREAD_PRIORITY_TIME_CRITICAL);
-	hresult = GetThreadContext(target_thread, &threadcontext32);
-	SetThreadPriority(target_thread, prev_priority);
+	int prev_priority = GetThreadPriority(target_thread.get());
+	SetThreadPriority(target_thread.get(), THREAD_PRIORITY_TIME_CRITICAL);
+	hresult = GetThreadContext(target_thread.get(), &threadcontext32);
+	SetThreadPriority(target_thread.get(), prev_priority);
 
 	if(!hresult){
 		// DE: 20090325: If GetThreadContext fails we must be sure to resume thread again
-		ResumeThread(target_thread);
+		ResumeThread(target_thread.get());
 		return false;
 	}
 
@@ -277,8 +276,8 @@ bool Profiler::sampleTarget(SAMPLE_TYPE timeSpent, SymbolInfo *syminfo)
 		first = false;
 
 		handle_ptr target_process(OpenProcess(PROCESS_ALL_ACCESS, FALSE, target_process_id));
-		BOOL result = dbgHelp->StackWalk64(machine, target_process.get(), target_thread, &frame,
-										   context, NULL, dbgHelp->SymFunctionTableAccess64,
+		BOOL result = dbgHelp->StackWalk64(machine, target_process.get(), target_thread.get(),
+										   &frame, context, NULL, dbgHelp->SymFunctionTableAccess64,
 										   dbgHelp->SymGetModuleBase64, NULL);
 
 		if (!result || stack.depth >= MAX_CALLSTACK_LEVELS)
@@ -298,7 +297,7 @@ bool Profiler::sampleTarget(SAMPLE_TYPE timeSpent, SymbolInfo *syminfo)
 
 	// TODO: Don't count samples for suspended threads
 
-	if (ResumeThread(target_thread) == 0xffffffff)
+	if (ResumeThread(target_thread.get()) == 0xffffffff)
 		throw ProfilerExcep(L"ResumeThread failed.");
 
 	//NOTE: this has to go after ResumeThread.  Otherwise mem allocation needed by std::map
@@ -313,6 +312,7 @@ bool Profiler::sampleTarget(SAMPLE_TYPE timeSpent, SymbolInfo *syminfo)
 // returns true if the target thread has finished
 bool Profiler::targetExited() const
 {
-	DWORD code = WaitForSingleObject(target_thread, 0);
+	handle_ptr target_thread(OpenThread(THREAD_ALL_ACCESS, FALSE, target_thread_id));
+	DWORD code = WaitForSingleObject(target_thread.get(), 0);
 	return code != WAIT_TIMEOUT;
 }

@@ -100,7 +100,7 @@ public:
 
 	=====================================================================*/
 	// DE: 20090325: Profiler no longer owns callstack since it is shared between multipler profilers
-	Profiler(DWORD target_process_id, HANDLE target_thread, DWORD target_thread_id,
+	Profiler(DWORD target_process_id, DWORD target_thread_id,
 			 std::map<CallStack, SAMPLE_TYPE>& callstacks);
 
 	// DE: 20090325: Need copy constructor since it is put in a std::vector
@@ -121,9 +121,9 @@ public:
 
 	//void saveIPs(std::ostream& stream);//write IP values to a stream
 
-	HANDLE getTarget(){ return target_thread; }
+	DWORD getTarget() { return target_thread_id; }
+
 private:
 	DWORD target_process_id;
-	HANDLE target_thread;
 	DWORD target_thread_id;
 };

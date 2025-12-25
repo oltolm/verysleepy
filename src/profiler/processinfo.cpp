@@ -105,10 +105,7 @@ std::vector<ProcessInfo> ProcessInfo::enumProcesses()
 			{
 				if(processes_out[i].getID() == owner_process_id)
 				{
-					DWORD threadID = threadinfo.th32ThreadID;
-					HANDLE threadHandle = OpenThread( THREAD_ALL_ACCESS, FALSE, threadID );
-
-					processes_out[i].threads.push_back(ThreadInfo(threadID, threadHandle));
+					processes_out[i].threads.push_back(ThreadInfo(threadinfo.th32ThreadID));
 					break;
 				}
 			}

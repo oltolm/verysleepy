@@ -241,15 +241,13 @@ void ThreadList::updateTimes()
 		if (!thread->recalcUsage(sampleTimeDiff))
 			continue;
 
-		HANDLE thread_handle = thread->getThreadHandle();
-		if (thread_handle == NULL)
-			continue;
-
 		DWORD thread_id = thread->getID();
+		if (!thread_id)
+			return;
 
 		thread->setLocation(L"-");
 		if (i < MAX_NUM_THREAD_LOCATIONS) {
-			std::wstring loc = getLocation(thread_handle, thread_id);
+			std::wstring loc = getLocation(thread_id);
 			thread->setLocation(loc);
 		}
 	}
@@ -257,11 +255,12 @@ void ThreadList::updateTimes()
 	fillList();
 }
 
-std::wstring ThreadList::getLocation(HANDLE thread_handle, DWORD thread_id) {
+std::wstring ThreadList::getLocation(DWORD thread_id)
+{
 	PROFILER_ADDR profaddr = 0;
 	try {
 		std::map<CallStack, SAMPLE_TYPE> callstacks;
-		Profiler profiler(pid, thread_handle, thread_id, callstacks);
+		Profiler profiler(pid, thread_id, callstacks);
 		bool ok = profiler.sampleTarget(0, syminfo);
 		if (ok && !profiler.targetExited() && callstacks.size() > 0)
 		{

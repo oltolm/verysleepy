@@ -45,7 +45,7 @@ http://www.gnu.org/copyleft/gpl.html..
 
 // DE: 20090325: Profiler has a list of threads to profile
 // RM: 20130614: Profiler time can now be limited (-1 = until cancelled)
-ProfilerThread::ProfilerThread(DWORD target_process_id_, const std::vector<HANDLE>& target_threads,
+ProfilerThread::ProfilerThread(DWORD target_process_id_, const std::vector<DWORD>& target_threads,
 							   SymbolInfo *sym_info_, Debugger *debugger_)
 	: profilers(),
 	  debugger(debugger_),
@@ -58,11 +58,11 @@ ProfilerThread::ProfilerThread(DWORD target_process_id_, const std::vector<HANDL
 	{
 		// DE: 20090325: Profiler has a list of threads to profile, one Profiler instance per thread
 		profilers.reserve(target_threads.size());
-		for (HANDLE thread_h : target_threads)
+		for (DWORD thread_id : target_threads)
 		{
-			DWORD thread_id = GetThreadId(thread_h);
-			profilers.push_back(Profiler(target_process_id_, thread_h, thread_id, callstacks));
-			thread_names[thread_id] = getThreadDescriptorName(thread_h);
+			profilers.push_back(Profiler(target_process_id_, thread_id, callstacks));
+			handle_ptr target_thread(OpenThread(THREAD_ALL_ACCESS, FALSE, thread_id));
+			thread_names[thread_id] = getThreadDescriptorName(target_thread.get());
 		}
 	}
 
@@ -326,8 +326,7 @@ void ProfilerThread::run()
 		debugger->attach([this](Debugger::NotifyData const &notification) {
 			if (notification.eventType != Debugger::NOTIFY_NEW_THREAD)
 				return;
-			profilers.push_back(Profiler(target_process_id, notification.threadHandle,
-										 notification.threadId, callstacks));
+			profilers.push_back(Profiler(target_process_id, notification.threadId, callstacks));
 			thread_names[notification.threadId] = getThreadDescriptorName(notification.threadHandle);
 		});
 
