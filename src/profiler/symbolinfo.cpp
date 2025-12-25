@@ -112,11 +112,9 @@ void SymbolInfo::loadSymbolsUsing(DbgHelp* dbgHelp, const std::wstring& sympath)
 
 	DWORD options = dbgHelp->SymGetOptions();
 
-#ifdef _WIN64
 	if(!is64BitProcess) {
 		options |= SYMOPT_INCLUDE_32BIT_MODULES;
 	}
-#endif
 
 	options |= SYMOPT_LOAD_LINES | SYMOPT_DEBUG;
 
@@ -211,7 +209,6 @@ void SymbolInfo::loadSymbols(DWORD process_id, bool download)
 		wchar_t szExePath[MAX_PATH] = L"";
 		DWORD pathsize = MAX_PATH;
 		BOOL gotImageName = FALSE;
-#ifdef _WIN64
 		// GetModuleFileNameEx doesn't always work across 64->32 bit boundaries.
 		// Use QueryFullProcessImageName if we have it.
 		{
@@ -221,7 +218,6 @@ void SymbolInfo::loadSymbols(DWORD process_id, bool download)
 			if (fn)
 				gotImageName = fn(process_handle.get(), 0, szExePath, &pathsize);
 		}
-#endif
 
 		if (!gotImageName)
 			gotImageName = GetModuleFileNameEx(process_handle.get(), NULL, szExePath, pathsize);
@@ -251,7 +247,6 @@ DbgHelp* SymbolInfo::getGccDbgHelp()
 {
 	if (prefs.UseWine())
 	{
-#ifdef _WIN64
 		// We can't use the regular dbghelpw to profile 32-bit applications,
 		// as it's got compiled-in things that assume 64-bit. So we instead have
 		// a special Wow64 build, which is compiled as 64-bit code but using 32-bit
@@ -259,7 +254,6 @@ DbgHelp* SymbolInfo::getGccDbgHelp()
 		if (!is64BitProcess)
 			return &dbgHelpWineWow64;
 		else
-#endif
 			return &dbgHelpWine;
 	}
 	else
@@ -376,14 +370,10 @@ const std::wstring SymbolInfo::getProcForAddr(PROFILER_ADDR addr,
 
 	if(!result)
 	{
-#if defined(_WIN64)
 		if(is64BitProcess)
 			return wxString::Format(L"[%016llX]", addr).wc_string();
 		else
 			return wxString::Format(L"[%08X]", (unsigned __int32)(addr)).wc_string();
-#else
-		return wxString::Format(L"[%08X]", addr).wc_string();
-#endif
 	}
 
 	//------------------------------------------------------------------------
@@ -432,7 +422,6 @@ void SymbolInfo::getLineForAddr(PROFILER_ADDR addr, std::wstring& filepath_out, 
 
 std::wstring SymbolInfo::saveMinidump()
 {
-#ifdef _WIN64
 	if (!Is64BitProcess(process_handle.get()))
 	{
 		wxLogWarning(
@@ -440,7 +429,6 @@ std::wstring SymbolInfo::saveMinidump()
 			L"Use the 32-bit version of " _T(APPNAME) L" to profile 32-bit processes if a minidump needs to be included."
 		);
 	}
-#endif
 
 	wxFile f;
 	std::wstring dumppath = wxFileName::CreateTempFileName(wxEmptyString, &f).wc_string();

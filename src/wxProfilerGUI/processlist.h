@@ -65,9 +65,7 @@ public:
 
 	enum {
 		COL_NAME,
-#ifdef _WIN64
 		COL_TYPE,
-#endif
 		COL_CPUUSAGE,
 		COL_TOTALCPU,
 		COL_PID,

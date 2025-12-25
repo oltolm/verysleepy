@@ -52,10 +52,8 @@ ProcessList::ProcessList(wxWindow *parent, ThreadList *threadList_)
 	itemCol.SetText(_T("Process"));
 	itemCol.SetImage(-1);
 	InsertColumn(COL_NAME, itemCol);
-#ifdef _WIN64
 	itemCol.SetText(_T("Type"));
 	InsertColumn(COL_TYPE, itemCol);
-#endif
 	itemCol.SetText(_T("CPU"));
 	InsertColumn(COL_CPUUSAGE, itemCol);
 	itemCol.SetText(_T("Total CPU"));
@@ -64,9 +62,7 @@ ProcessList::ProcessList(wxWindow *parent, ThreadList *threadList_)
 	InsertColumn(COL_PID, itemCol);
 
 	SetColumnWidth(COL_NAME, FromDIP(270));
-#ifdef _WIN64
 	SetColumnWidth(COL_TYPE, FromDIP(45));
-#endif
 	SetColumnWidth(COL_CPUUSAGE, FromDIP(50));
 	SetColumnWidth(COL_TOTALCPU, FromDIP(70));
 	SetColumnWidth(COL_PID, FromDIP(50));
@@ -188,7 +184,6 @@ static int ProcessComparator(wxIntPtr item1, wxIntPtr item2, wxIntPtr data)
 	{
 	case ProcessList::COL_NAME:
 		return wcsicmp(a->getName().c_str(), b->getName().c_str());
-#ifdef _WIN64
 	case ProcessList::COL_TYPE: {
 		if (a->getIs64Bits() == b->getIs64Bits())
 			return a->cpuUsage < b->cpuUsage ? -1 : a->cpuUsage > b->cpuUsage ? 1 : 0;
@@ -196,7 +191,6 @@ static int ProcessComparator(wxIntPtr item1, wxIntPtr item2, wxIntPtr data)
 			   : a->getIs64Bits() > b->getIs64Bits() ? 1
 													 : 0;
 	}
-#endif
 	case ProcessList::COL_CPUUSAGE:
 		return a->cpuUsage < b->cpuUsage ? -1 : a->cpuUsage > b->cpuUsage ? 1 : 0;
 	case ProcessList::COL_TOTALCPU:
@@ -251,7 +245,6 @@ void ProcessList::fillList()
 
 		str = wxString::Format("%li", process->getID());
 		this->SetItem(i, COL_PID, str);
-#ifdef _WIN64
 		if (Is64BitProcess(process->getID()))
 		{
 			SetItem(i,COL_TYPE,"64-bit");
@@ -260,7 +253,6 @@ void ProcessList::fillList()
 		{
 			SetItem(i,COL_TYPE,"32-bit");
 		}
-#endif
 	}
 	Thaw();
 }

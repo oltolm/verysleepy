@@ -51,17 +51,13 @@ public:
 
 	const std::wstring& getName() const { return name; }
 	DWORD getID() const { return id; }
-#ifdef _WIN64
 	bool getIs64Bits() const { return is64Bits; }
-#endif
-  FILETIME prevKernelTime, prevUserTime;
-  int cpuUsage;
-  __int64 totalCpuTimeMs;
+	FILETIME prevKernelTime, prevUserTime;
+	int cpuUsage;
+	__int64 totalCpuTimeMs;
 
 private:
 	std::wstring name;
 	DWORD id;
-#ifdef _WIN64
 	bool is64Bits;
-#endif
 };

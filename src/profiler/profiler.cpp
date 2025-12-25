@@ -33,16 +33,10 @@ http://www.gnu.org/copyleft/gpl.html..
 #include "../utils/dbginterface.h"
 #include "../utils/WoW64.h"
 
-#ifdef _WIN64
 #define CONTEXT64_FLAGS		(CONTEXT_AMD64 | CONTEXT_FULL)
 #define CONTEXT32_FLAGS		(WOW64_CONTEXT_i386 | WOW64_CONTEXT_FULL)
 typedef CONTEXT CONTEXT64;
 typedef WOW64_CONTEXT CONTEXT32;
-#else
-#define CONTEXT32_FLAGS		(CONTEXT_i386 | CONTEXT_FULL)
-typedef CONTEXT CONTEXT32;
-#endif
-
 
 // DE: 20090325: Profiler no longer owns callstack and flatcounts since it is shared between multipler profilers
 
@@ -159,7 +153,6 @@ bool Profiler::sampleTarget(SAMPLE_TYPE timeSpent, SymbolInfo *syminfo)
 
 	handle_ptr target_thread(OpenThread(THREAD_ALL_ACCESS, FALSE, target_thread_id));
 
-#if defined(_WIN64)
 	CONTEXT64 threadcontext64;
 	CONTEXT32 threadcontext32;
 	if (is64BitProcess)
@@ -212,34 +205,6 @@ bool Profiler::sampleTarget(SAMPLE_TYPE timeSpent, SymbolInfo *syminfo)
 		sp = threadcontext32.Esp;
 		bp = threadcontext32.Ebp;
 	}
-#else
-	CONTEXT32 threadcontext32;
-	context = &threadcontext32;
-	threadcontext32.ContextFlags = CONTEXT32_FLAGS;
-	machine = IMAGE_FILE_MACHINE_I386;
-
-	// Can fail occasionally, for example if you have a debugger attached to the process.
-	HRESULT hresult = SuspendThread(target_thread.get());
-	if(hresult == 0xffffffff)
-		return false;
-
-	int prev_priority = GetThreadPriority(target_thread.get());
-	SetThreadPriority(target_thread.get(), THREAD_PRIORITY_TIME_CRITICAL);
-	hresult = GetThreadContext(target_thread.get(), &threadcontext32);
-	SetThreadPriority(target_thread.get(), prev_priority);
-
-	if(!hresult){
-		// DE: 20090325: If GetThreadContext fails we must be sure to resume thread again
-		ResumeThread(target_thread.get());
-		return false;
-	}
-
-	applyHacks(target_process, threadcontext32);
-
-	ip = threadcontext32.Eip;
-	sp = threadcontext32.Esp;
-	bp = threadcontext32.Ebp;
-#endif
 
 	DbgHelp *prevDbgHelp = NULL;
 	bool first = true;

@@ -112,13 +112,11 @@ bool CanProfileProcess(HANDLE hProcess)
 
 	//TODO: Check security permissions?
 
-#ifdef _WIN64
 	if (fn_Wow64SuspendThread == NULL || fn_Wow64GetThreadContext == NULL)
 	{
 		// Skip 32 bit processes on system that does not have the needed functions (Windows XP 64).
 		return false;
 	}
-#endif
 
 	// Any 32-bit profilee is supported.
 	return true;

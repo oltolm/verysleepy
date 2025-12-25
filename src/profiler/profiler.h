@@ -30,13 +30,8 @@ http://www.gnu.org/copyleft/gpl.html..
 #include <map>
 #include <string>
 
-//64 bit mode:
-#if defined(_WIN64)
+// 64 bit mode:
 typedef unsigned long long PROFILER_ADDR;
-#else
-//32 bit mode:
-typedef unsigned int PROFILER_ADDR;
-#endif
 
 typedef double SAMPLE_TYPE;
 class SymbolInfo;
