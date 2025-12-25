@@ -196,6 +196,8 @@ void SymbolInfo::loadSymbolsUsing(DbgHelp* dbgHelp, const std::wstring& sympath)
 
 void SymbolInfo::loadSymbols(DWORD process_id, bool download)
 {
+	assert(!process_handle);
+
 	process_handle.reset(OpenProcess(PROCESS_ALL_ACCESS, FALSE, process_id));
 
 	wxBusyCursor busy;
