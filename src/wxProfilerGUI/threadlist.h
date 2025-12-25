@@ -71,7 +71,7 @@ private:
 	std::vector<ThreadInfo> threads;
 	wxTimer timer;
 	wxLongLong lastTime;
-	HANDLE process_handle;
+	DWORD pid;
 	SymbolInfo *syminfo;
 	wxButton *ok_button;
 	wxButton *all_button;

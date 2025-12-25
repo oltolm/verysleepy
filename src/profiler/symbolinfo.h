@@ -30,6 +30,7 @@ http://www.gnu.org/copyleft/gpl.html..
 #include <windows.h>
 #include <vector>
 #include "profiler.h"
+#include "../utils/osutils.h"
 
 typedef void SymLogFn(const wchar_t *text);
 
@@ -62,7 +63,7 @@ public:
 	SymbolInfo();
 	~SymbolInfo();
 
-	void loadSymbols(HANDLE process_handle, bool download);//throws SymbolInfoExcep
+	void loadSymbols(DWORD process_id, bool download); // throws SymbolInfoExcep
 	std::wstring saveMinidump();
 
 	Module *getModuleForAddr(PROFILER_ADDR addr);
@@ -71,7 +72,7 @@ public:
 
 	void getLineForAddr(PROFILER_ADDR addr, std::wstring& filepath_out, int& linenum_out);
 
-	HANDLE process_handle;
+	handle_ptr process_handle;
 
 private:
 	std::vector<Module> modules;

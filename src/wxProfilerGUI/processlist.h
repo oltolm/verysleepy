@@ -60,7 +60,7 @@ public:
 	void updateThreadList();
 	void reloadSymbols(bool download);
 
-	const ProcessInfo* getSelectedProcess();
+	DWORD getSelectedProcessId();
 	std::unique_ptr<SymbolInfo> takeSymbolInfo();
 
 	enum {
@@ -75,6 +75,7 @@ public:
 	};
 
 private:
+	const ProcessInfo *getSelectedProcessInfo();
 	std::vector<ProcessInfo> processes;
 	// DE: 20090325 ProcessList knows about threadlist and updates it based on process selection
 	ThreadList* threadList;

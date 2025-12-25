@@ -45,7 +45,7 @@ enum Theme
 
 enum AttachMode
 {
-	ATTACH_ALL_THREAD,	// default
+	ATTACH_ALL_THREAD, // default
 	ATTACH_MAIN_THREAD,
 	ATTACH_MOST_BUSY_THREAD,
 };
@@ -55,7 +55,7 @@ struct AttachInfo
 	AttachInfo();
 	~AttachInfo();
 
-	HANDLE process_handle;
+	DWORD process_id;
 	std::vector<HANDLE> thread_handles;
 	bool attach_all_threads;
 	std::unique_ptr<SymbolInfo> sym_info;
@@ -70,38 +70,33 @@ class OverridableOption
 public:
 	OverridableOption()
 		: is_overridden(false)
-	{}
+	{
+	}
 
-	OverridableOption( const T& config_value )
-		: config_value(config_value), is_overridden(false)
-	{}
+	OverridableOption(const T& config_value)
+		: config_value(config_value),
+		  is_overridden(false)
+	{
+	}
 
 	// setters
-	void SetConfigValue( const T& new_value )
+	void SetConfigValue(const T& new_value)
 	{
 		is_overridden = false;
 		config_value = new_value;
 	}
 
-	void Override( const T& ovr_value )
+	void Override(const T& ovr_value)
 	{
 		is_overridden = true;
 		override_value = ovr_value;
 	}
 
-	T GetValue() const
-	{
-		return is_overridden ? override_value : config_value;
-	}
+	T GetValue() const { return is_overridden ? override_value : config_value; }
 
-	T GetConfigValue() const
-	{
-		return config_value;
-	}
+	T GetConfigValue() const { return config_value; }
 
-	bool IsOverridden() const {
-		return is_overridden;
-	}
+	bool IsOverridden() const { return is_overridden; }
 
 protected:
 	T config_value;
@@ -113,7 +108,9 @@ class Prefs
 {
 public:
 	Prefs()
-		: useSymServer(false), saveMinidump(-1), throttle(100)
+		: useSymServer(false),
+		  saveMinidump(-1),
+		  throttle(100)
 	{
 		useWinePref = useWineSwitch = useMingwSwitch = false;
 		attachMode = ATTACH_ALL_THREAD;
@@ -130,16 +127,10 @@ public:
 	Theme appearance;
 	AttachMode attachMode;
 
-	bool UseWine()
-	{
-		return
-			useMingwSwitch ? false :
-			useWineSwitch ? true :
-			useWinePref;
-	}
+	bool UseWine() { return useMingwSwitch ? false : useWineSwitch ? true : useWinePref; }
 
 	// Add any configured search paths, and the symbol server if enabled.
-	void AdjustSymbolPath(std::wstring &sympath, bool download)
+	void AdjustSymbolPath(std::wstring& sympath, bool download)
 	{
 		if (!symSearchPath.GetValue().empty())
 		{
@@ -154,7 +145,7 @@ public:
 				sympath += L";";
 			sympath += L"SRV*";
 			sympath += symCacheDir.GetValue();
-			if ( download )
+			if (download)
 				sympath += L"*" + symServer.GetValue();
 		}
 	}
@@ -195,8 +186,8 @@ private:
 	std::unique_ptr<AttachInfo> RunProcess(const std::wstring& run_cmd,
 										   const std::wstring& run_cwd);
 	std::unique_ptr<AttachInfo> AttachToProcess(const std::wstring& processId);
-	static void TryLoadSymbols(AttachInfo* output);
-	void LoadProfileData(const std::wstring &filename);
+	static void TryLoadSymbols(AttachInfo *output);
+	void LoadProfileData(const std::wstring& filename);
 	std::wstring ObtainProfileData();
 
 	class CaptureWin *captureWin;

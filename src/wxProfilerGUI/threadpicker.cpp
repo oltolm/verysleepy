@@ -28,6 +28,7 @@ http://www.gnu.org/copyleft/gpl.html.
 #include "../profiler/symbolinfo.h"
 #include <climits>
 #include <wx/log.h>
+#include <windows.h>
 #include <wx/menu.h>
 #include <wx/button.h>
 #include <wx/checkbox.h>
@@ -389,8 +390,8 @@ void ThreadPicker::AttachToProcess(bool allThreads)
 	attach_info.reset(new AttachInfo);
 	attach_info->attach_all_threads = allThreads;
 
-	const ProcessInfo* processInfo = processlist->getSelectedProcess();
-	enforce(processInfo, "No process selected");
+	DWORD pid = processlist->getSelectedProcessId();
+	enforce(pid, "No process selected");
 
 	// RM: 20130614 Check if the user wants the profile to run for a set time period
 	if (time_check->IsChecked() && time_ctrl->GetValidator()->TransferFromWindow())
@@ -405,15 +406,17 @@ void ThreadPicker::AttachToProcess(bool allThreads)
 	//------------------------------------------------------------------------
 	//Get handle to target process
 	//------------------------------------------------------------------------
-	attach_info->process_handle = processInfo->getProcessHandle();
+	HANDLE process_handle = OpenProcess(PROCESS_ALL_ACCESS, FALSE, pid);
+	attach_info->process_id = pid;
 	attach_info->sym_info = processlist->takeSymbolInfo();
 	enforce(!!attach_info->sym_info, "No symbol info");
 
 	// Check it didn't exit.
-	if (WaitForSingleObject(attach_info->process_handle, 0) == WAIT_OBJECT_0)
-		attach_info->process_handle = NULL;
+	DWORD ret = WaitForSingleObject(process_handle, 0);
+	if (ret == WAIT_OBJECT_0)
+		attach_info->process_id = 0;
 
-	enforce(attach_info->process_handle, "Cannot attach to running process");
+	enforce(attach_info->process_id, "Cannot attach to running process");
 
 	// DE: 20090325 attaches to specific a list of threads
 	std::vector<const ThreadInfo*> selectedThreads = threadlist->getSelectedThreads(allThreads);

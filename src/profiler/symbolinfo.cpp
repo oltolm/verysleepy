@@ -60,11 +60,7 @@ BOOL CALLBACK EnumModules(
 	return TRUE;
 }
 
-
-SymbolInfo::SymbolInfo()
-:	process_handle(NULL)
-{
-}
+SymbolInfo::SymbolInfo() {}
 
 BOOL CALLBACK symCallback(HANDLE WXUNUSED(hProcess), ULONG ActionCode, ULONG64 CallbackData, ULONG64 WXUNUSED(UserContext))
 {
@@ -131,28 +127,30 @@ void SymbolInfo::loadSymbolsUsing(DbgHelp* dbgHelp, const std::wstring& sympath)
 
 	for( int n=0;n<4;n++ )
 	{
-		wenforce(dbgHelp->SymInitializeW(process_handle, L"", FALSE), "SymInitialize");
+		wenforce(dbgHelp->SymInitializeW(process_handle.get(), L"", FALSE), "SymInitialize");
 
 		// Hook the debug output, so we actually can provide a clue as to
 		// what's happening.
-		dbgHelp->SymRegisterCallbackW64(process_handle, symCallback, 0);
+		dbgHelp->SymRegisterCallbackW64(process_handle.get(), symCallback, 0);
 
 		// Add our PDB search paths.
 		// if (dbgHelp == &dbgHelpMs)
-		wenforce(dbgHelp->SymSetSearchPathW(process_handle, sympath.c_str()), "SymSetSearchPathW");
+		wenforce(dbgHelp->SymSetSearchPathW(process_handle.get(), sympath.c_str()),
+				 "SymSetSearchPathW");
 
 		if (modules.empty())
 		{
 			// Load symbol information for all modules.
 			// Normally SymInitialize would do this, but we instead do it ourselves afterwards
 			// so that we can hook the debug output for it.
-			wenforce(dbgHelp->SymRefreshModuleList(process_handle), "SymRefreshModuleList");
+			wenforce(dbgHelp->SymRefreshModuleList(process_handle.get()), "SymRefreshModuleList");
 
 			SymbolInfoContext context;
 			context.syminfo = this;
 			context.dbgHelp = dbgHelp;
 
-			wenforce(dbgHelp->SymEnumerateModulesW64(process_handle, EnumModules, &context), "SymEnumerateModules64");
+			wenforce(dbgHelp->SymEnumerateModulesW64(process_handle.get(), EnumModules, &context),
+					 "SymEnumerateModules64");
 		}
 		else
 		{
@@ -165,16 +163,16 @@ void SymbolInfo::loadSymbolsUsing(DbgHelp* dbgHelp, const std::wstring& sympath)
 
 				IMAGEHLP_MODULEW64 info;
 				info.SizeOfStruct = sizeof(info);
-				if (!mod.dbghelp->SymGetModuleInfoW64(process_handle, mod.base_addr, &info))
+				if (!mod.dbghelp->SymGetModuleInfoW64(process_handle.get(), mod.base_addr, &info))
 					continue;
 
 				// If we have a module with no symbol information from the previous (MS) dbghelp,
 				// let the current one handle it instead.
 				if (info.SymType == SymNone)
 				{
-					DWORD64 ret = dbgHelp->SymLoadModuleExW(process_handle, NULL,
-						info.ImageName, info.ModuleName, info.BaseOfImage, info.ImageSize,
-						NULL, 0);
+					DWORD64 ret = dbgHelp->SymLoadModuleExW(
+						process_handle.get(), NULL, info.ImageName, info.ModuleName,
+						info.BaseOfImage, info.ImageSize, NULL, 0);
 					if (ret)
 						mod.dbghelp = dbgHelp;
 				}
@@ -192,17 +190,17 @@ void SymbolInfo::loadSymbolsUsing(DbgHelp* dbgHelp, const std::wstring& sympath)
 		// as each sample comes in? That'd also solve the problem of modules getting loaded/unloaded
 		// mid-profile. Yes, I'll probably do that some day.
 		Sleep(100);
-		dbgHelp->SymCleanup(process_handle);
+		dbgHelp->SymCleanup(process_handle.get());
 	}
 }
 
-void SymbolInfo::loadSymbols(HANDLE process_handle_, bool download)
+void SymbolInfo::loadSymbols(DWORD process_id, bool download)
 {
-	process_handle = process_handle_;
+	process_handle.reset(OpenProcess(PROCESS_ALL_ACCESS, FALSE, process_id));
 
 	wxBusyCursor busy;
 
-	is64BitProcess = Is64BitProcess(process_handle);
+	is64BitProcess = Is64BitProcess(process_handle.get());
 
 	std::wstring sympath;
 	{
@@ -219,12 +217,12 @@ void SymbolInfo::loadSymbols(HANDLE process_handle_, bool download)
 
 			QueryFullProcessImageNameFn *fn = (QueryFullProcessImageNameFn *)GetProcAddress(GetModuleHandle(L"kernel32"), "QueryFullProcessImageNameW");
 			if (fn)
-				gotImageName = fn(process_handle, 0, szExePath, &pathsize);
+				gotImageName = fn(process_handle.get(), 0, szExePath, &pathsize);
 		}
 #endif
 
 		if (!gotImageName)
-			gotImageName = GetModuleFileNameEx(process_handle, NULL, szExePath, pathsize);
+			gotImageName = GetModuleFileNameEx(process_handle.get(), NULL, szExePath, pathsize);
 
 		if (gotImageName)
 		{
@@ -271,20 +269,18 @@ SymbolInfo::~SymbolInfo()
 	//------------------------------------------------------------------------
 	//clean up
 	//------------------------------------------------------------------------
-	if ( process_handle )
+	if (process_handle)
 	{
 		DbgHelp *gcc = getGccDbgHelp();
-		if (gcc->Loaded && !gcc->SymCleanup(process_handle))
+		if (gcc->Loaded && !gcc->SymCleanup(process_handle.get()))
 		{
 			//error
 		}
 
-		if (dbgHelpMs.Loaded && !dbgHelpMs.SymCleanup(process_handle))
+		if (dbgHelpMs.Loaded && !dbgHelpMs.SymCleanup(process_handle.get()))
 		{
 			//error
 		}
-
-		process_handle = NULL;
 	}
 }
 
@@ -359,8 +355,8 @@ const std::wstring SymbolInfo::getProcForAddr(PROFILER_ADDR addr,
 		}
 		else
 		{
-			result =
-				dbgHelp->SymFromAddrW(process_handle, (DWORD64)addr, &displacement, symbol_info);
+			result = dbgHelp->SymFromAddrW(process_handle.get(), (DWORD64)addr, &displacement,
+										   symbol_info);
 			if (result)
 			{
 				name = symbol_info->Name;
@@ -370,7 +366,8 @@ const std::wstring SymbolInfo::getProcForAddr(PROFILER_ADDR addr,
 	}
 	else
 	{
-		result = dbgHelp->SymFromAddrW(process_handle, (DWORD64)addr, &displacement, symbol_info);
+		result =
+			dbgHelp->SymFromAddrW(process_handle.get(), (DWORD64)addr, &displacement, symbol_info);
 		if (result)
 			name = symbol_info->Name;
 	}
@@ -414,8 +411,8 @@ void SymbolInfo::getLineForAddr(PROFILER_ADDR addr, std::wstring& filepath_out, 
 	IMAGEHLP_LINEW64 lineinfo;
 	ZeroMemory(&lineinfo, sizeof(lineinfo));
 	lineinfo.SizeOfStruct = sizeof(IMAGEHLP_LINEW64);
-	BOOL result =
-		dbgHelp->SymGetLineFromAddrW64(process_handle, (DWORD64)addr, &displacement, &lineinfo);
+	BOOL result = dbgHelp->SymGetLineFromAddrW64(process_handle.get(), (DWORD64)addr, &displacement,
+												 &lineinfo);
 
 	if (result)
 	{
@@ -434,7 +431,7 @@ void SymbolInfo::getLineForAddr(PROFILER_ADDR addr, std::wstring& filepath_out, 
 std::wstring SymbolInfo::saveMinidump()
 {
 #ifdef _WIN64
-	if (!Is64BitProcess(process_handle))
+	if (!Is64BitProcess(process_handle.get()))
 	{
 		wxLogWarning(
 			L"Warning: minidumps of 32-bit processes saved by 64-bit processes will most likely not be saved correctly.\n"
@@ -445,9 +442,9 @@ std::wstring SymbolInfo::saveMinidump()
 
 	wxFile f;
 	std::wstring dumppath = wxFileName::CreateTempFileName(wxEmptyString, &f).wc_string();
-	wenforce(dbgHelpDrMingw.MiniDumpWriteDump(process_handle, GetProcessId(process_handle),
-											  (HANDLE)_get_osfhandle(f.fd()), MiniDumpNormal, NULL,
-											  NULL, NULL),
+	wenforce(dbgHelpDrMingw.MiniDumpWriteDump(
+				 process_handle.get(), GetProcessId(process_handle.get()),
+				 (HANDLE)_get_osfhandle(f.fd()), MiniDumpNormal, NULL, NULL, NULL),
 			 "MiniDumpWriteDump");
 	f.Close();
 	return dumppath;

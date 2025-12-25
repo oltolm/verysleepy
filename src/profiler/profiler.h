@@ -100,8 +100,8 @@ public:
 
 	=====================================================================*/
 	// DE: 20090325: Profiler no longer owns callstack since it is shared between multipler profilers
-	Profiler(HANDLE target_process, HANDLE target_thread, DWORD target_thread_id,
-		std::map<CallStack, SAMPLE_TYPE>& callstacks);
+	Profiler(DWORD target_process_id, HANDLE target_thread, DWORD target_thread_id,
+			 std::map<CallStack, SAMPLE_TYPE>& callstacks);
 
 	// DE: 20090325: Need copy constructor since it is put in a std::vector
 	Profiler(const Profiler& iOther);
@@ -123,6 +123,7 @@ public:
 
 	HANDLE getTarget(){ return target_thread; }
 private:
-	HANDLE target_process, target_thread;
+	DWORD target_process_id;
+	HANDLE target_thread;
 	DWORD target_thread_id;
 };

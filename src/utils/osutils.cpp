@@ -125,6 +125,12 @@ bool CanProfileProcess(HANDLE hProcess)
 	return true;
 }
 
+bool Is64BitProcess(DWORD pid)
+{
+	handle_ptr process(OpenProcess(PROCESS_ALL_ACCESS, FALSE, pid));
+	return Is64BitProcess(process.get());
+}
+
 bool Is64BitProcess(HANDLE hProcess)
 {
 	// If the process is running under 32-bit Windows, the value is set to FALSE.

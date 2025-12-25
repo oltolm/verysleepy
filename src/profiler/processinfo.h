@@ -40,7 +40,7 @@ public:
 	-----------
 
 	=====================================================================*/
-	ProcessInfo(DWORD id, const std::wstring& name, HANDLE process_handle);
+	ProcessInfo(DWORD id, const std::wstring& name);
 
 	~ProcessInfo();
 
@@ -51,7 +51,6 @@ public:
 
 	const std::wstring& getName() const { return name; }
 	DWORD getID() const { return id; }
-	HANDLE getProcessHandle() const { return process_handle; }
 #ifdef _WIN64
 	bool getIs64Bits() const { return is64Bits; }
 #endif
@@ -62,7 +61,6 @@ public:
 private:
 	std::wstring name;
 	DWORD id;
-	HANDLE process_handle;
 #ifdef _WIN64
 	bool is64Bits;
 #endif

@@ -87,14 +87,13 @@ void ProcessList::reloadSymbols(bool download)
 	//------------------------------------------------------------------------
 	try
 	{
-		const ProcessInfo* process_info = getSelectedProcess();
+		const ProcessInfo *process_info = getSelectedProcessInfo();
 		if (!process_info)
 			throw SleepyException(L"No process selected");
 
-		HANDLE process_handle = process_info->getProcessHandle();
-		if (process_handle)
+		if (process_info->getID())
 		{
-			syminfo->loadSymbols(process_handle, download);
+			syminfo->loadSymbols(process_info->getID(), download);
 		}
 	}
 	catch (SleepyException &e)
@@ -117,7 +116,13 @@ void ProcessList::OnSelected(wxListEvent& event)
 	}
 }
 
-const ProcessInfo* ProcessList::getSelectedProcess()
+DWORD ProcessList::getSelectedProcessId()
+{
+	auto pi = getSelectedProcessInfo();
+	return pi == nullptr ? 0 : pi->getID();
+}
+
+const ProcessInfo *ProcessList::getSelectedProcessInfo()
 {
 	if (GetFirstSelected() != wxNOT_FOUND)
 	{
@@ -146,9 +151,9 @@ static __int64 getTotal(FILETIME time)
 
 void ProcessList::updateThreadList()
 {
-	if (syminfo && getSelectedProcess())
+	if (syminfo && getSelectedProcessInfo())
 	{
-		threadList->updateThreads(getSelectedProcess(), syminfo.get());
+		threadList->updateThreads(getSelectedProcessInfo(), syminfo.get());
 	} else {
 		threadList->updateThreads(NULL, NULL);
 	}
@@ -247,7 +252,7 @@ void ProcessList::fillList()
 		str = wxString::Format("%li", process->getID());
 		this->SetItem(i, COL_PID, str);
 #ifdef _WIN64
-		if (Is64BitProcess(process->getProcessHandle()))
+		if (Is64BitProcess(process->getID()))
 		{
 			SetItem(i,COL_TYPE,"64-bit");
 		}
@@ -262,16 +267,9 @@ void ProcessList::fillList()
 
 void ProcessList::updateProcesses()
 {
-	const ProcessInfo *selectedProcess = this->getSelectedProcess();
+	const ProcessInfo *selectedProcess = this->getSelectedProcessInfo();
 	DeleteAllItems();
 
-	for(size_t i=0; i<processes.size(); ++i)
-	{
-		CloseHandle( processes[i].getProcessHandle() );
-
-		for(size_t j=0; j<processes[i].threads.size(); ++j)
-			CloseHandle( processes[i].threads[j].getThreadHandle() );
-	}
 	processes.clear();
 	threadList->updateThreads(NULL, NULL);
 
@@ -328,22 +326,18 @@ void ProcessList::updateTimes()
 
 		__int64 coreCount = 0;
 
-		HANDLE process_handle = process->getProcessHandle();
+		DWORD pid = process->getID();
+		handle_ptr process_handle(OpenProcess(PROCESS_ALL_ACCESS, FALSE, pid));
 		if (!process_handle)
 			continue;
 
 		FILETIME CreationTime, ExitTime, KernelTime, UserTime;
-		BOOL result = GetProcessTimes(
-			process_handle,
-			&CreationTime,
-			&ExitTime,
-			&KernelTime,
-			&UserTime
-		);
+		BOOL result =
+			GetProcessTimes(process_handle.get(), &CreationTime, &ExitTime, &KernelTime, &UserTime);
 		if (!result)
 			continue;
 
-		coreCount = GetCoresForProcess(process_handle);
+		coreCount = GetCoresForProcess(process_handle.get());
 
 		__int64 kernel_diff = getDiff(process->prevKernelTime, KernelTime);
 		__int64 user_diff = getDiff(process->prevUserTime, UserTime);

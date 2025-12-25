@@ -46,24 +46,24 @@ typedef CONTEXT CONTEXT32;
 
 // DE: 20090325: Profiler no longer owns callstack and flatcounts since it is shared between multipler profilers
 
-Profiler::Profiler(HANDLE target_process_, HANDLE target_thread_, DWORD target_thread_id_,
+Profiler::Profiler(DWORD target_process_id_, HANDLE target_thread_, DWORD target_thread_id_,
 				   std::map<CallStack, SAMPLE_TYPE>& callstacks_)
-:	callstacks(&callstacks_),
-	is64BitProcess(Is64BitProcess(target_process_)),
-	target_process(target_process_),
-	target_thread(target_thread_),
-	target_thread_id(target_thread_id_)
+	: callstacks(&callstacks_),
+	  is64BitProcess(Is64BitProcess(target_process_id_)),
+	  target_process_id(target_process_id_),
+	  target_thread(target_thread_),
+	  target_thread_id(target_thread_id_)
 {
 }
 
 // DE: 20090325: Need copy constructor since it is put in a std::vector
 
 Profiler::Profiler(const Profiler& iOther)
-:	callstacks(iOther.callstacks),
-	is64BitProcess(iOther.is64BitProcess),
-	target_process(iOther.target_process),
-	target_thread(iOther.target_thread),
-	target_thread_id(iOther.target_thread_id)
+	: callstacks(iOther.callstacks),
+	  is64BitProcess(iOther.is64BitProcess),
+	  target_process_id(iOther.target_process_id),
+	  target_thread(iOther.target_thread),
+	  target_thread_id(iOther.target_thread_id)
 {
 }
 
@@ -71,7 +71,7 @@ Profiler::Profiler(const Profiler& iOther)
 
 Profiler& Profiler::operator=(const Profiler& iOther)
 {
-	target_process = iOther.target_process;
+	target_process_id = iOther.target_process_id;
 	target_thread = iOther.target_thread;
 	target_thread_id = iOther.target_thread_id;
 	callstacks = iOther.callstacks;
@@ -276,17 +276,10 @@ bool Profiler::sampleTarget(SAMPLE_TYPE timeSpent, SymbolInfo *syminfo)
 			stack.addr[stack.depth++] = ip;
 		first = false;
 
-		BOOL result = dbgHelp->StackWalk64(
-			machine,
-			target_process,
-			target_thread,
-			&frame,
-			context,
-			NULL,
-			dbgHelp->SymFunctionTableAccess64,
-			dbgHelp->SymGetModuleBase64,
-			NULL
-		);
+		handle_ptr target_process(OpenProcess(PROCESS_ALL_ACCESS, FALSE, target_process_id));
+		BOOL result = dbgHelp->StackWalk64(machine, target_process.get(), target_thread, &frame,
+										   context, NULL, dbgHelp->SymFunctionTableAccess64,
+										   dbgHelp->SymGetModuleBase64, NULL);
 
 		if (!result || stack.depth >= MAX_CALLSTACK_LEVELS)
 			break;

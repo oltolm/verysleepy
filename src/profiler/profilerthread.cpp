@@ -33,6 +33,7 @@ http://www.gnu.org/copyleft/gpl.html..
 #include <wx/wfstream.h>
 #include <wx/zipstrm.h>
 
+#include "../utils/osutils.h"
 #include "../utils/stringutils.h"
 #include <cassert>
 #include <algorithm>
@@ -44,11 +45,12 @@ http://www.gnu.org/copyleft/gpl.html..
 
 // DE: 20090325: Profiler has a list of threads to profile
 // RM: 20130614: Profiler time can now be limited (-1 = until cancelled)
-ProfilerThread::ProfilerThread(HANDLE target_process_, const std::vector<HANDLE>& target_threads, SymbolInfo *sym_info_, Debugger *debugger_)
-:	profilers(),
-	debugger(debugger_),
-	target_process(target_process_),
-	sym_info(sym_info_)
+ProfilerThread::ProfilerThread(DWORD target_process_id_, const std::vector<HANDLE>& target_threads,
+							   SymbolInfo *sym_info_, Debugger *debugger_)
+	: profilers(),
+	  debugger(debugger_),
+	  target_process_id(target_process_id_),
+	  sym_info(sym_info_)
 {
 	// AA: 20210822: If we have a debugger, it will report all available threads
 	//               So, only use the passed vector when we have no debugger
@@ -59,7 +61,7 @@ ProfilerThread::ProfilerThread(HANDLE target_process_, const std::vector<HANDLE>
 		for (HANDLE thread_h : target_threads)
 		{
 			DWORD thread_id = GetThreadId(thread_h);
-			profilers.push_back(Profiler(target_process_, thread_h, thread_id, callstacks));
+			profilers.push_back(Profiler(target_process_id_, thread_h, thread_id, callstacks));
 			thread_names[thread_id] = getThreadDescriptorName(thread_h);
 		}
 	}
@@ -211,7 +213,8 @@ void ProfilerThread::saveData()
 	zip.PutNextEntry(_T("Stats.txt"));
 
 	wchar_t tmp[4096] = L"?";
-	GetModuleFileNameEx(target_process, NULL, tmp, 4096);
+	handle_ptr target_process(OpenProcess(PROCESS_ALL_ACCESS, FALSE, target_process_id));
+	GetModuleFileNameEx(target_process.get(), NULL, tmp, 4096);
 	time_t rawtime;
 	time(&rawtime);
 	txt << "Filename: " << tmp << "\n";
@@ -323,7 +326,8 @@ void ProfilerThread::run()
 		debugger->attach([this](Debugger::NotifyData const &notification) {
 			if (notification.eventType != Debugger::NOTIFY_NEW_THREAD)
 				return;
-			profilers.push_back(Profiler(target_process, notification.threadHandle, notification.threadId, callstacks));
+			profilers.push_back(Profiler(target_process_id, notification.threadHandle,
+										 notification.threadId, callstacks));
 			thread_names[notification.threadId] = getThreadDescriptorName(notification.threadHandle);
 		});
 

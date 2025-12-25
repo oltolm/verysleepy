@@ -26,10 +26,26 @@ http://www.gnu.org/copyleft/gpl.html.
 
 #include <windows.h>
 
+struct HandleDeleter
+{
+	using pointer = HANDLE;
+
+	void operator()(HANDLE h)
+	{
+		if (h != INVALID_HANDLE_VALUE && h != nullptr)
+		{
+			CloseHandle(h);
+		}
+	}
+};
+
+using handle_ptr = std::unique_ptr<HANDLE, HandleDeleter>;
+
 void InitSysInfo();
 int GetCPUCores();
 int GetCoresForProcess(HANDLE process);
 void EnableDebugPrivilege();
+bool Is64BitProcess(DWORD pid);
 bool Is64BitProcess(HANDLE hProcess);
 
 bool CanProfileProcess(HANDLE hProcess);

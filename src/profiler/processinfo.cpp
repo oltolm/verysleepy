@@ -29,16 +29,15 @@ http://www.gnu.org/copyleft/gpl.html..
 #include <windows.h>
 #include <tlhelp32.h>
 
-ProcessInfo::ProcessInfo(DWORD id_, const std::wstring& name_, HANDLE process_handle_)
-:	name(name_),
-	id(id_),
-	process_handle(process_handle_)
+ProcessInfo::ProcessInfo(DWORD id_, const std::wstring& name_)
+	: name(name_),
+	  id(id_)
 {
 	prevKernelTime.dwHighDateTime = prevKernelTime.dwLowDateTime = 0;
 	prevUserTime.dwHighDateTime = prevUserTime.dwLowDateTime = 0;
 	cpuUsage = -1;
 #ifdef _WIN64
-	is64Bits = Is64BitProcess(process_handle);
+	is64Bits = Is64BitProcess(id);
 #endif
 }
 
@@ -69,7 +68,7 @@ std::vector<ProcessInfo> ProcessInfo::enumProcesses()
 			//------------------------------------------------------------------------
 			//Get the actual handle of the process
 			//------------------------------------------------------------------------
-			const HANDLE process_handle = OpenProcess(PROCESS_ALL_ACCESS, FALSE, process_id);
+			handle_ptr process_handle(OpenProcess(PROCESS_ALL_ACCESS, FALSE, process_id));
 
 			// Skip processes we don't have permission to.
 			if (process_handle == NULL)
@@ -77,14 +76,13 @@ std::vector<ProcessInfo> ProcessInfo::enumProcesses()
 				continue;
 			}
 
-			if (!CanProfileProcess(process_handle))
+			if (!CanProfileProcess(process_handle.get()))
 			{
-				CloseHandle(process_handle);
 				continue;
 			}
 
 			const std::wstring processname = processinfo.szExeFile;
-			processes_out.push_back(ProcessInfo(process_id, processname, process_handle));
+			processes_out.push_back(ProcessInfo(process_id, processname));
 
 			processinfo.dwSize = sizeof(PROCESSENTRY32);
 		}
