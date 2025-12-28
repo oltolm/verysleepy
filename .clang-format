@@ -6,8 +6,9 @@ UseTab: Always
 IndentAccessModifiers: false
 AccessModifierOffset: -4
 AllowAllConstructorInitializersOnNextLine: false
-SortIncludes: Never
-PackConstructorInitializers: Never
+SortIncludes:
+  Enabled: false
+PackConstructorInitializers: NextLineOnly
 ReferenceAlignment: Left
 AllowShortFunctionsOnASingleLine: Inline
 AlwaysBreakTemplateDeclarations: Yes
