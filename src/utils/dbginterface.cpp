@@ -60,7 +60,8 @@ static bool dbgHelpTryLoad(LPCWSTR name, DbgHelp* dest)
 static void dbgHelpLoad(LPCWSTR name, DbgHelp* dest, const wxString& description)
 {
 	if (!dbgHelpTryLoad(name, dest))
-		wxLogWarning("Could not load " + wxString(name) + ": " + wxSysErrorMsg() + "\n" + description + " will be unavailable.");
+		wxLogWarning("Could not load %s: %s\n%s will be unavailable.", name, wxSysErrorMsg(),
+					 description);
 }
 
 bool dbgHelpInit()
