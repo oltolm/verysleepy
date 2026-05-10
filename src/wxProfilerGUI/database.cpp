@@ -315,6 +315,37 @@ static double getSampleCount(std::map<Database::ThreadID, double> const &samples
 	return count;
 }
 
+static Database::FlameGraphNode *findOrAppendChild(
+	Database::FlameGraphNode *parent, const Database::Symbol *symbol, Database::Address address)
+{
+	for (auto &child : parent->children)
+	{
+		if (child->symbol == symbol)
+			return child.get();
+	}
+
+	auto node = std::make_unique<Database::FlameGraphNode>();
+	node->symbol = symbol;
+	node->address = address;
+	parent->children.push_back(std::move(node));
+	return parent->children.back().get();
+}
+
+static void sortFlameGraphChildren(Database::FlameGraphNode *node)
+{
+	std::sort(node->children.begin(), node->children.end(),
+		[](std::unique_ptr<Database::FlameGraphNode> const &a,
+		   std::unique_ptr<Database::FlameGraphNode> const &b)
+		{
+			if (a->inclusive != b->inclusive)
+				return a->inclusive > b->inclusive;
+			return a->symbol->procname < b->symbol->procname;
+		});
+
+	for (auto &child : node->children)
+		sortFlameGraphChildren(child.get());
+}
+
 // read callstacks
 void Database::loadCallstacks(wxInputStream &file,bool collapseKernelCalls)
 {
@@ -725,6 +756,55 @@ std::vector<double> Database::getLineCounts(FileID sourcefile)
 		}
 
 	return linecounts;
+}
+
+std::unique_ptr<Database::FlameGraphNode> Database::buildFlameGraph() const
+{
+	auto root = std::make_unique<FlameGraphNode>();
+
+	for (const auto &callstack : callstacks)
+	{
+		if (!includeCallstack(callstack))
+			continue;
+
+		double count = getFilteredSampleCount(callstack.samples);
+		if (count <= 0.0 || callstack.symbols.empty())
+			continue;
+
+		size_t startIndex = callstack.symbols.size() - 1;
+		if (currentRoot)
+		{
+			bool foundRoot = false;
+			for (size_t i = callstack.symbols.size(); i-- > 0;)
+			{
+				if (callstack.symbols[i] == currentRoot)
+				{
+					startIndex = i;
+					foundRoot = true;
+					break;
+				}
+			}
+
+			if (!foundRoot)
+				continue;
+		}
+
+		root->inclusive += count;
+
+		FlameGraphNode *node = root.get();
+		for (size_t i = startIndex + 1; i-- > 0;)
+		{
+			const Symbol *symbol = callstack.symbols[i];
+			node = findOrAppendChild(node, symbol, symbol->address);
+			node->inclusive += count;
+
+			if (i == 0)
+				break;
+		}
+	}
+
+	sortFlameGraphChildren(root.get());
+	return root;
 }
 
 double Database::getFilteredSampleCount(std::map<ThreadID, double> const &samples) const

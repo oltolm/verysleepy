@@ -30,6 +30,7 @@ http://www.gnu.org/copyleft/gpl.html.
 #include <wx/frame.h>
 
 class CallstackView;
+class FlameGraphView;
 class LogView;
 class ProcList;
 class SourceView;
@@ -41,6 +42,7 @@ class wxGauge;
 class wxPanel;
 class wxPropertyGrid;
 class wxPropertyGridEvent;
+class wxSplitterWindow;
 
 /// Cache per-symbol view settings so we don't
 /// have to compute them on every refresh.
@@ -76,6 +78,7 @@ public:
 	void OnExportAsCsv(wxCommandEvent& event);
 	void OnExportAsCallgrind(wxCommandEvent& event);
 	void OnExportAsSpeedscope(wxCommandEvent& event);
+	void OnExportAsFlamegraph(wxCommandEvent& event);
 	void OnLoadMinidumpSymbols(wxCommandEvent& event);
 	void OnCollapseOS(wxCommandEvent& event);
 	void OnStats(wxCommandEvent& event);
@@ -132,6 +135,7 @@ public:
 	void setHighlight(const std::vector<Database::Address> &addresses, bool set);
 
 	void refreshSelectedThreads();
+	void invalidateFlameGraph();
 
 	/// Non-modal (status bar) progress display
 	void setProgress(const wchar_t *text, int max=0);
@@ -139,11 +143,14 @@ public:
 
 private:
 	wxPanel* panel;
+	wxSplitterWindow *mainSplitter;
+	wxSplitterWindow *primarySplitter;
 	ProcList* proclist;
 	ProcList* callers;
 	ProcList* callees;
 	ThreadSamplesView *threadSamples;
 	CallstackView* callStack;
+	FlameGraphView *flameGraphView;
 	SourceView* sourceview;
 	LogView* log;
 	Database *database;
@@ -183,6 +190,7 @@ private:
 	void resetFilters();
 
 	void updateThreads();
+	void restoreSplitterLayout();
 
 	/// Called when the symbol strings have changed in one way or another.
 	void symbolsChanged();

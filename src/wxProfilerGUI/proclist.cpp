@@ -43,7 +43,8 @@ EVT_CONTEXT_MENU(ProcList::OnContextMenu)
 END_EVENT_TABLE()
 
 ProcList::ProcList(wxWindow *parent, bool isroot, Database *database)
-	: wxListView(parent, ProcList_List),
+	: wxListView(parent, ProcList_List, wxDefaultPosition, wxDefaultSize,
+				 wxLC_REPORT | wxLC_SINGLE_SEL | wxFULL_REPAINT_ON_RESIZE),
 	  isroot(isroot),
 	  updating(false),
 	  database(database)
@@ -73,10 +74,7 @@ ProcList::ProcList(wxWindow *parent, bool isroot, Database *database)
 	ShowSortIndicator(columns[isroot ? COL_EXCLUSIVE : COL_SAMPLES].listctrl_column, false);
 }
 
-ProcList::~ProcList()
-{
-
-}
+ProcList::~ProcList() {}
 
 void ProcList::setupColumn(ColumnType id, int width, bool defsort, const wxString& name)
 {

@@ -27,6 +27,7 @@ http://www.gnu.org/copyleft/gpl.html.
 #include "../utils/container.h"
 #include "../utils/stringutils.h"
 #include "CallstackView.h"
+#include "flamegraphview.h"
 #include <algorithm>
 #include <wx/aui/auibook.h>
 #include <wx/hashset.h>
@@ -35,6 +36,7 @@ http://www.gnu.org/copyleft/gpl.html.
 #include <wx/gauge.h>
 #include <wx/progdlg.h>
 #include <wx/propgrid/propgrid.h>
+#include <wx/splitter.h>
 #include "../utils/except.h"
 #include "../appinfo.h"
 #include "logview.h"
@@ -59,6 +61,7 @@ enum
 	MainWin_ExportAsCsv,
 	MainWin_ExportAsCallgrind,
 	MainWin_ExportAsSpeedscope,
+	MainWin_ExportAsFlamegraph,
 	MainWin_LoadMinidumpSymbols,
 	MainWin_View_Back,
 	MainWin_View_Forward,
@@ -121,6 +124,8 @@ MainWin::MainWin(const wxString& title,
 	menuFile->Append(MainWin_ExportAsCallgrind, _T("&Export as Callgrind..."), _T("Export the profile data to a Callgrind file"));
 	menuFile->Append(MainWin_ExportAsSpeedscope, _T("&Export as speedscope..."),
 					 _T("Export the profile data to a speedscope file"));
+	menuFile->Append(MainWin_ExportAsFlamegraph, _T("&Export as Flamegraph..."),
+					 _T("Export the profile data to a folded stack file for flamegraph.pl"));
 	menuFile->AppendSeparator();
 	menuFile->Append(MainWin_LoadMinidumpSymbols,_T("Load symbols from &minidump"), _T("Loads symbols for modules recorded in the minidump included with this capture."))
 		->Enable(database->has_minidump);
@@ -173,24 +178,15 @@ MainWin::MainWin(const wxString& title,
 
 	aui = new wxAuiManager(this,wxAUI_MGR_RECTANGLE_HINT);
 
-	wxWindow *splitWindow = new wxWindow(this, wxID_ANY);
+	const long splitterStyle = wxSP_3D | wxSP_LIVE_UPDATE;
+	mainSplitter = new wxSplitterWindow(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, splitterStyle);
+	primarySplitter = new wxSplitterWindow(mainSplitter, wxID_ANY, wxDefaultPosition, wxDefaultSize, splitterStyle);
 
 	sourceview = new SourceView(this);
 
 	// Create the windows
-	proclist = new ProcList(this       , true , database);
-	callers  = new ProcList(splitWindow, false, database);
-	callees  = new ProcList(splitWindow, false, database);
-	threadSamples = new ThreadSamplesView(splitWindow, database);
-
-	callStack = new CallstackView(this, database);
-
-	aui->AddPane(proclist, wxAuiPaneInfo()
-		.Name(wxT("Functions"))
-		.CentrePane()
-		.Caption(wxT("Functions"))
-		.CaptionVisible(true)
-		);
+	proclist = new ProcList(primarySplitter, true, database);
+	flameGraphView = new FlameGraphView(primarySplitter, database);
 
 	sourceAndLog = new wxAuiNotebook(this,wxID_ANY,wxDefaultPosition,wxDefaultSize,wxAUI_NB_TOP|wxAUI_NB_TAB_SPLIT|wxAUI_NB_TAB_MOVE|wxAUI_NB_SCROLL_BUTTONS|wxNO_BORDER);
 	aui->AddPane(sourceAndLog, wxAuiPaneInfo()
@@ -202,7 +198,14 @@ MainWin::MainWin(const wxString& title,
 		.BestSize(clientSize.GetWidth() * 2/3, clientSize.GetHeight() * 1/3)
 		);
 
-	wxWindow *splitFilters = new wxWindow(this, wxID_ANY);
+	callViews = new wxAuiNotebook(mainSplitter,wxID_ANY,wxDefaultPosition,wxDefaultSize,wxAUI_NB_TOP|wxAUI_NB_TAB_SPLIT|wxAUI_NB_TAB_MOVE|wxAUI_NB_SCROLL_BUTTONS|wxNO_BORDER|wxNO_BORDER);
+	wxWindow *splitWindow = new wxWindow(callViews, wxID_ANY);
+	wxWindow *splitFilters = new wxWindow(callViews, wxID_ANY);
+
+	callers  = new ProcList(splitWindow, false, database);
+	callees  = new ProcList(splitWindow, false, database);
+	threadSamples = new ThreadSamplesView(splitWindow, database);
+	callStack = new CallstackView(callViews, database);
 
 	// Set up the filters (search) view
 	filters = new wxPropertyGrid(splitFilters, MainWin_Filters);
@@ -220,20 +223,24 @@ MainWin::MainWin(const wxString& title,
 	log = new LogView(sourceAndLog);
 	sourceAndLog->AddPage(log,wxT("Log"));
 
-	callViews = new wxAuiNotebook(this,wxID_ANY,wxDefaultPosition,wxDefaultSize,wxAUI_NB_TOP|wxAUI_NB_TAB_SPLIT|wxAUI_NB_TAB_MOVE|wxAUI_NB_SCROLL_BUTTONS|wxNO_BORDER|wxNO_BORDER);
-
 	callViews->AddPage(splitWindow,wxT("Averages"));
 	callViews->AddPage(callStack,wxT("Call Stacks"));
 	callViews->AddPage(splitFilters,wxT("Filters"));
 	//callViews->AddPage(threads, wxT("Threads"));
-	aui->AddPane(callViews,wxAuiPaneInfo()
-		.Name(wxT("CallInfo"))
+
+	primarySplitter->SplitVertically(proclist, flameGraphView, clientSize.GetWidth() * 2/5);
+	primarySplitter->SetMinimumPaneSize(FromDIP(200));
+	primarySplitter->SetSashGravity(0.4);
+
+	mainSplitter->SplitVertically(primarySplitter, callViews, clientSize.GetWidth() * 2/3);
+	mainSplitter->SetMinimumPaneSize(FromDIP(220));
+	mainSplitter->SetSashGravity(0.67);
+
+	aui->AddPane(mainSplitter, wxAuiPaneInfo()
+		.Name(wxT("MainContent"))
+		.CentrePane()
 		.CaptionVisible(false)
-		.CloseButton(false)
-		.Right()
-		.Layer(1)
 		.PaneBorder(false)
-		.BestSize(clientSize.GetWidth() * 1/3, clientSize.GetHeight() * 1/3)
 		);
 
 
@@ -302,6 +309,7 @@ MainWin::MainWin(const wxString& title,
 	}
 
 	aui->Update();
+	restoreSplitterLayout();
 	proclist->SetFocus();
 
 	filters->FitColumns();
@@ -400,6 +408,7 @@ EVT_MENU(MainWin_SaveAs,  MainWin::OnSaveAs)
 EVT_MENU(MainWin_ExportAsCsv,  MainWin::OnExportAsCsv)
 EVT_MENU(MainWin_ExportAsCallgrind,  MainWin::OnExportAsCallgrind)
 EVT_MENU(MainWin_ExportAsSpeedscope, MainWin::OnExportAsSpeedscope)
+EVT_MENU(MainWin_ExportAsFlamegraph, MainWin::OnExportAsFlamegraph)
 EVT_MENU(MainWin_LoadMinidumpSymbols,  MainWin::OnLoadMinidumpSymbols)
 EVT_MENU(MainWin_View_Back, MainWin::OnBack)
 EVT_UPDATE_UI(MainWin_View_Back, MainWin::OnBackUpdate)
@@ -434,6 +443,10 @@ void MainWin::OnClose(wxCloseEvent& WXUNUSED(event))
 	config.Write("MainWinFilterLayout", auiFilter->SavePerspective());
 	config.Write("MainWinContent",contentString);
 	config.Write("MainWinCollapseOS",collapseOSCalls->IsChecked());
+	if (primarySplitter && primarySplitter->IsSplit())
+		config.Write("MainWinPrimarySplitterSash", primarySplitter->GetSashPosition());
+	if (mainSplitter && mainSplitter->IsSplit())
+		config.Write("MainWinMainSplitterSash", mainSplitter->GetSashPosition());
 
 	wxExit();
 }
@@ -811,6 +824,52 @@ void MainWin::OnExportAsSpeedscope(wxCommandEvent& WXUNUSED(event))
 	}
 }
 
+void MainWin::OnExportAsFlamegraph(wxCommandEvent& WXUNUSED(event))
+{
+	wxFileDialog dlg(this, "Export File As", wxEmptyString, "flamegraph.txt",
+					 "Text Files (*.txt)|*.txt", wxFD_SAVE | wxFD_OVERWRITE_PROMPT);
+	if (dlg.ShowModal() != wxID_CANCEL)
+	{
+		wxFileOutputStream file(dlg.GetPath());
+		if (!file.IsOk())
+		{
+			wxLogSysError("Could not export profile data.\n");
+			return;
+		}
+		wxTextOutputStream txt(file, wxEOL_UNIX);
+
+		// flamegraph.pl expects "folded stack" format:
+		// root;mid;leaf count
+		// The stack is bottom-to-top, semicolon-separated.
+		for (const auto& callstack : database->callstacks)
+		{
+			double count = database->getFilteredSampleCount(callstack.samples);
+			if (count <= 0.0)
+				continue;
+
+			// callstack.symbols[0] is the leaf (top), last is root (bottom).
+			// flamegraph.pl expects root first, so iterate in reverse.
+			for (size_t i = callstack.symbols.size(); i > 0; --i)
+			{
+				if (i < callstack.symbols.size())
+					txt << ";";
+				// Sanitize: replace semicolons and spaces that would break the format
+				std::wstring name = callstack.symbols[i - 1]->procname;
+				for (auto& c : name)
+				{
+					if (c == L';')
+						c = L':';
+					else if (c == L'\n' || c == L'\r')
+						c = L' ';
+				}
+				txt << name;
+			}
+			txt << " " << count << "\n";
+		}
+		txt.Flush();
+	}
+}
+
 void MainWin::OnLoadMinidumpSymbols(wxCommandEvent& WXUNUSED(event))
 {
 	// Open the log tab, so the user sees output from the debug engine.
@@ -851,6 +910,7 @@ void MainWin::OnForwardUpdate(wxUpdateUIEvent& event)
 void MainWin::OnResetToRoot(wxCommandEvent& WXUNUSED(event))
 {
 	database->setRoot(NULL);
+	invalidateFlameGraph();
 	refresh();
 }
 
@@ -870,6 +930,7 @@ void MainWin::OnCollapseOS(wxCommandEvent& WXUNUSED(event))
 {
 	reload();
 	updateThreads();
+	invalidateFlameGraph();
 	refresh();
 }
 
@@ -969,6 +1030,7 @@ void MainWin::focusSymbol(const Database::AddrInfo *addrinfo)
 	proclist->focusSymbol(symbol);
 	callers->focusSymbol(symbol);
 	callees->focusSymbol(symbol);
+	flameGraphView->showChart(symbol);
 }
 
 void MainWin::inspectSymbol(const Database::AddrInfo *addrinfo, bool addtohistory/*=true*/)
@@ -980,6 +1042,7 @@ void MainWin::inspectSymbol(const Database::AddrInfo *addrinfo, bool addtohistor
 	callees->showList(database->getCallees(symbol));
 	threadSamples->showList(database->getSymbolSamples(symbol));
 	callStack->showCallStack(symbol);
+	flameGraphView->showChart(symbol);
 
 	if (addtohistory && addrinfo)
 	{
@@ -1014,6 +1077,7 @@ void MainWin::reset()
 	callees->DeleteAllItems();
 	threadSamples->reset();
 	callStack->reset();
+	flameGraphView->reset();
 	sourceview->reset();
 
 	resetFilters();
@@ -1035,6 +1099,7 @@ void MainWin::refresh()
 	callees->showList(database->getCallees(symbol));
 	threadSamples->showList(database->getSymbolSamples(symbol));
 	callStack->showCallStack(symbol);
+	flameGraphView->showChart(symbol);
 }
 
 void MainWin::setSourcePos(const std::wstring& currentfile_, int currentline_)
@@ -1102,13 +1167,40 @@ void MainWin::updateThreads()
 	threads->updateList();
 }
 
+void MainWin::restoreSplitterLayout()
+{
+	if (primarySplitter && primarySplitter->IsSplit())
+	{
+		const int minPrimary = FromDIP(200);
+		const int primaryWidth = std::max(minPrimary * 2, primarySplitter->GetClientSize().GetWidth());
+		const int defaultPrimary = primaryWidth * 2 / 5;
+		const int sash = config.Read("MainWinPrimarySplitterSash", (long)defaultPrimary);
+		primarySplitter->SetSashPosition(std::clamp(sash, minPrimary, primaryWidth - minPrimary));
+	}
+
+	if (mainSplitter && mainSplitter->IsSplit())
+	{
+		const int minMain = FromDIP(220);
+		const int mainWidth = std::max(minMain * 2, mainSplitter->GetClientSize().GetWidth());
+		const int defaultMain = mainWidth * 2 / 3;
+		const int sash = config.Read("MainWinMainSplitterSash", (long)defaultMain);
+		mainSplitter->SetSashPosition(std::clamp(sash, minMain, mainWidth - minMain));
+	}
+}
+
 void MainWin::refreshSelectedThreads()
 {
 	std::vector<Database::ThreadID> newFilterThreads = threads->getSelectedThreads();
 	database->setFilterThreads(newFilterThreads);
 	symbolsChanged();
 	callStack->reset();
+	invalidateFlameGraph();
 	refresh();
+}
+
+void MainWin::invalidateFlameGraph()
+{
+	flameGraphView->reset();
 }
 
 void MainWin::setProgress(const wchar_t *text, int max)

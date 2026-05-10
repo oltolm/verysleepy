@@ -60,6 +60,9 @@
     <ClCompile Include="src\wxProfilerGUI\database.cpp">
       <Filter>wxProfilerGUI</Filter>
     </ClCompile>
+    <ClCompile Include="src\wxProfilerGUI\flamegraphview.cpp">
+      <Filter>wxProfilerGUI</Filter>
+    </ClCompile>
     <ClCompile Include="src\wxProfilerGUI\launchdlg.cpp">
       <Filter>wxProfilerGUI</Filter>
     </ClCompile>
@@ -147,6 +150,9 @@
       <Filter>wxProfilerGUI</Filter>
     </ClInclude>
     <ClInclude Include="src\wxProfilerGUI\database.h">
+      <Filter>wxProfilerGUI</Filter>
+    </ClInclude>
+    <ClInclude Include="src\wxProfilerGUI\flamegraphview.h">
       <Filter>wxProfilerGUI</Filter>
     </ClInclude>
     <ClInclude Include="src\wxProfilerGUI\launchdlg.h">

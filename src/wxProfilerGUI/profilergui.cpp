@@ -27,7 +27,6 @@ http://www.gnu.org/copyleft/gpl.html.
 #include <wx/image.h>
 #include <wx/mstream.h>
 #include <wx/apptrait.h>
-#include <wx/msw/apptrait.h>
 #include <wx/msgdlg.h>
 #include <memory>
 

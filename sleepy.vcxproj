@@ -267,6 +267,7 @@
     <ClCompile Include="src\wxProfilerGUI\capturewin.cpp" />
     <ClCompile Include="src\wxProfilerGUI\contextmenu.cpp" />
     <ClCompile Include="src\wxProfilerGUI\database.cpp" />
+    <ClCompile Include="src\wxProfilerGUI\flamegraphview.cpp" />
     <ClCompile Include="src\wxProfilerGUI\latesymbolinfo.cpp" />
     <ClCompile Include="src\wxProfilerGUI\launchdlg.cpp" />
     <ClCompile Include="src\wxProfilerGUI\logview.cpp" />
@@ -302,6 +303,7 @@
     <ClInclude Include="src\wxProfilerGUI\capturewin.h" />
     <ClInclude Include="src\wxProfilerGUI\contextmenu.h" />
     <ClInclude Include="src\wxProfilerGUI\database.h" />
+    <ClInclude Include="src\wxProfilerGUI\flamegraphview.h" />
     <ClInclude Include="src\wxProfilerGUI\launchdlg.h" />
     <ClInclude Include="src\wxProfilerGUI\logview.h" />
     <ClInclude Include="src\wxProfilerGUI\mainwin.h" />
