@@ -185,7 +185,7 @@ MainWin::MainWin(const wxString& title,
 	sourceview = new SourceView(this);
 
 	// Create the windows
-	proclist = new ProcList(primarySplitter, true, database);
+	proclist = new ProcList(primarySplitter, true, database, "FunctionsList");
 	flameGraphView = new FlameGraphView(primarySplitter, database);
 
 	sourceAndLog = new wxAuiNotebook(this,wxID_ANY,wxDefaultPosition,wxDefaultSize,wxAUI_NB_TOP|wxAUI_NB_TAB_SPLIT|wxAUI_NB_TAB_MOVE|wxAUI_NB_SCROLL_BUTTONS|wxNO_BORDER);
@@ -202,8 +202,8 @@ MainWin::MainWin(const wxString& title,
 	wxWindow *splitWindow = new wxWindow(callViews, wxID_ANY);
 	wxWindow *splitFilters = new wxWindow(callViews, wxID_ANY);
 
-	callers  = new ProcList(splitWindow, false, database);
-	callees  = new ProcList(splitWindow, false, database);
+	callers  = new ProcList(splitWindow, false, database, "CallersList");
+	callees  = new ProcList(splitWindow, false, database, "CalleesList");
 	threadSamples = new ThreadSamplesView(splitWindow, database);
 	callStack = new CallstackView(callViews, database);
 

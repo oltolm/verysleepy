@@ -29,6 +29,8 @@ http://www.gnu.org/copyleft/gpl.html.
 #include "contextmenu.h"
 #include "guiutils.h"
 #include "mainwin.h"
+#include "persistentlistctrl.h"
+#include "profilergui.h"
 
 enum
 {
@@ -42,7 +44,7 @@ EVT_LIST_COL_CLICK(wxID_ANY, ProcList::OnSort)
 EVT_CONTEXT_MENU(ProcList::OnContextMenu)
 END_EVENT_TABLE()
 
-ProcList::ProcList(wxWindow *parent, bool isroot, Database *database)
+ProcList::ProcList(wxWindow *parent, bool isroot, Database *database, const wxString& persistentName)
 	: wxListView(parent, ProcList_List, wxDefaultPosition, wxDefaultSize,
 				 wxLC_REPORT | wxLC_SINGLE_SEL | wxFULL_REPAINT_ON_RESIZE),
 	  isroot(isroot),
@@ -70,6 +72,7 @@ ProcList::ProcList(wxWindow *parent, bool isroot, Database *database)
 	setupColumn(COL_SOURCEFILE, 270, true, _T("Source File"));
 	setupColumn(COL_SOURCELINE, 40, true, _T("Source Line"));
 	setupColumn(COL_ADDRESS, 100, true, _T("Address"));
+	RegisterListCtrlPersistence(this, persistentName);
 
 	ShowSortIndicator(columns[isroot ? COL_EXCLUSIVE : COL_SAMPLES].listctrl_column, false);
 }

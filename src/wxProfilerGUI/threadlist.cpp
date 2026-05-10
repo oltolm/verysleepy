@@ -23,6 +23,7 @@ http://www.gnu.org/copyleft/gpl.html.
 =====================================================================*/
 #include "threadlist.h"
 #include "database.h"
+#include "persistentlistctrl.h"
 #include "../profiler/processinfo.h"
 #include "../profiler/profiler.h"
 #include "../profiler/symbolinfo.h"
@@ -41,7 +42,7 @@ EVT_TIMER(THREADS_LIST_TIMER, ThreadList::OnTimer)
 END_EVENT_TABLE()
 
 ThreadList::ThreadList(wxWindow *parent, wxButton *_ok_button, wxButton *_all_button)
-	: wxListView(parent, THREADS_LIST),
+	: wxListView(parent, THREADS_LIST, wxDefaultPosition, wxDefaultSize, wxLC_REPORT),
 	  timer(this, THREADS_LIST_TIMER),
 	  ok_button(_ok_button),
 	  all_button(_all_button)
@@ -72,6 +73,7 @@ ThreadList::ThreadList(wxWindow *parent, wxButton *_ok_button, wxButton *_all_bu
 	else
 		SetColumnWidth(COL_NAME, 0);
 
+	RegisterListCtrlPersistence(this, "ThreadPickerList");
 	ShowSortIndicator(COL_CPUUSAGE, false);
 
 	syminfo = NULL;

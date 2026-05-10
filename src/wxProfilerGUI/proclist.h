@@ -34,7 +34,7 @@ ProcList
 class ProcList : public wxListView
 {
 public:
-	ProcList(wxWindow *parent, bool isroot, Database *database);
+	ProcList(wxWindow *parent, bool isroot, Database *database, const wxString& persistentName);
 
 	virtual ~ProcList();
 

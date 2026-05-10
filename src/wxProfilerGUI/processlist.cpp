@@ -23,6 +23,7 @@ http://www.gnu.org/copyleft/gpl.html.
 =====================================================================*/
 #include "processlist.h"
 #include "profilergui.h"
+#include "persistentlistctrl.h"
 #include "threadlist.h"
 #include "../profiler/symbolinfo.h"
 #include "../utils/osutils.h"
@@ -67,6 +68,7 @@ ProcessList::ProcessList(wxWindow *parent, ThreadList *threadList_)
 	SetColumnWidth(COL_TOTALCPU, FromDIP(70));
 	SetColumnWidth(COL_PID, FromDIP(50));
 
+	RegisterListCtrlPersistence(this, "ProcessPickerList");
 	ShowSortIndicator(COL_CPUUSAGE, false);
 
 	timer.Start(1000); // 1 second interval

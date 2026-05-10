@@ -33,6 +33,7 @@ http://www.gnu.org/copyleft/gpl.html.
 #include "threadpicker.h"
 #include "capturewin.h"
 #include "mainwin.h"
+#include "persistentlistctrl.h"
 #include "../utils/dbginterface.h"
 #include "../profiler/processinfo.h"
 #include "../profiler/profilerthread.h"
@@ -562,6 +563,8 @@ bool ProfilerGUI::OnInit()
 
 		if (!wxApp::OnInit())
 			return false;
+
+		InitializeGuiPersistence();
 
 		return true;
 	}

@@ -23,6 +23,7 @@ http://www.gnu.org/copyleft/gpl.html.
 #include "threadsview.h"
 #include "guiutils.h"
 #include "mainwin.h"
+#include "persistentlistctrl.h"
 #include <wx/types.h>
 
 BEGIN_EVENT_TABLE(ThreadsView, wxListCtrl)
@@ -33,7 +34,7 @@ EVT_TIMER(THREADS_VIEW_TIMER, ThreadsView::OnTimer)
 END_EVENT_TABLE()
 
 ThreadsView::ThreadsView(wxWindow *parent, Database *database_)
-	: wxListView(parent, THREADS_VIEW),
+	: wxListView(parent, THREADS_VIEW, wxDefaultPosition, wxDefaultSize, wxLC_REPORT),
 	  selectionTimer(this, THREADS_VIEW_TIMER)
 {
 	wxListItem itemCol;
@@ -48,6 +49,7 @@ ThreadsView::ThreadsView(wxWindow *parent, Database *database_)
 	SetColumnWidth(COL_NAME, FromDIP(200));
 
 	database = database_;
+	RegisterListCtrlPersistence(this, "FilterThreadsList");
 	ShowSortIndicator(COL_TID, true);
 }
 
@@ -199,7 +201,7 @@ EVT_LIST_ITEM_ACTIVATED(THREAD_SAMPLES_VIEW, ThreadSamplesView::OnActivated)
 END_EVENT_TABLE()
 
 ThreadSamplesView::ThreadSamplesView(wxWindow *parent, Database *database_)
-	: wxListView(parent, THREAD_SAMPLES_VIEW)
+	: wxListView(parent, THREAD_SAMPLES_VIEW, wxDefaultPosition, wxDefaultSize, wxLC_REPORT)
 {
 	wxListItem itemCol;
 	itemCol.SetMask(wxLIST_MASK_TEXT);
@@ -225,6 +227,7 @@ ThreadSamplesView::ThreadSamplesView(wxWindow *parent, Database *database_)
 	SetColumnWidth(COL_INCLUSIVEPCT, FromDIP(70));
 
 	database = database_;
+	RegisterListCtrlPersistence(this, "ThreadSamplesList");
 	ShowSortIndicator(COL_EXCLUSIVE, false);
 }
 

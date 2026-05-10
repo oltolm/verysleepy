@@ -60,7 +60,7 @@
     <ClCompile Include="src\wxProfilerGUI\database.cpp">
       <Filter>wxProfilerGUI</Filter>
     </ClCompile>
-    <ClCompile Include="src\wxProfilerGUI\flamegraphview.cpp">
+    <ClCompile Include="src\wxProfilerGUI\flamechartview.cpp">
       <Filter>wxProfilerGUI</Filter>
     </ClCompile>
     <ClCompile Include="src\wxProfilerGUI\launchdlg.cpp">
@@ -152,7 +152,7 @@
     <ClInclude Include="src\wxProfilerGUI\database.h">
       <Filter>wxProfilerGUI</Filter>
     </ClInclude>
-    <ClInclude Include="src\wxProfilerGUI\flamegraphview.h">
+    <ClInclude Include="src\wxProfilerGUI\flamechartview.h">
       <Filter>wxProfilerGUI</Filter>
     </ClInclude>
     <ClInclude Include="src\wxProfilerGUI\launchdlg.h">

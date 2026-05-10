@@ -34,6 +34,7 @@ http://www.gnu.org/copyleft/gpl.html.
 #include <wx/listctrl.h>
 #include "contextmenu.h"
 #include "mainwin.h"
+#include "persistentlistctrl.h"
 #include "../utils/container.h"
 #include "../utils/stringutils.h"
 #include "guiutils.h"
@@ -48,12 +49,13 @@ END_EVENT_TABLE()
 CallstackView::CallstackView(wxWindow *parent,Database *_database)
 :	wxWindow(parent,wxID_ANY), database(_database), callstackActive(0), currSymbol(NULL), itemSelected(~0u)
 {
-	listCtrl = new wxListView(this, LIST_CTRL);
+	listCtrl = new wxListView(this, LIST_CTRL, wxDefaultPosition, wxDefaultSize, wxLC_REPORT | wxLC_SINGLE_SEL);
 	setupColumn(COL_NAME,			170,	_T("Name"));
 	setupColumn(COL_MODULE,			70,		_T("Module"));
 	setupColumn(COL_SOURCEFILE,		270,	_T("Source File"));
 	setupColumn(COL_SOURCELINE,		40,		_T("Source Line"));
 	setupColumn(COL_ADDRESS,		100,	_T("Address"));
+	RegisterListCtrlPersistence(listCtrl, "CallStackList");
 
 	toolBar =
 		new wxAuiToolBar(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxAUI_TB_NO_AUTORESIZE);

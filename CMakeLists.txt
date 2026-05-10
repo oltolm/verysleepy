@@ -35,6 +35,7 @@ add_executable(
   src/wxProfilerGUI/logview.cpp
   src/wxProfilerGUI/mainwin.cpp
   src/wxProfilerGUI/optionsdlg.cpp
+  src/wxProfilerGUI/persistentlistctrl.cpp
   src/wxProfilerGUI/processlist.cpp
   src/wxProfilerGUI/proclist.cpp
   src/wxProfilerGUI/profilergui.cpp
