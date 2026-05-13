@@ -82,8 +82,7 @@ private:
 	void OnSize(wxSizeEvent &event);
 	void OnMouseMove(wxMouseEvent &event);
 	void OnMouseLeave(wxMouseEvent &event);
-	void OnLeftDown(wxMouseEvent &event);
-	void OnLeftDClick(wxMouseEvent &event);
+	void OnLeftDown(wxMouseEvent& event);
 	void OnRightDown(wxMouseEvent &event);
 	void OnResetZoom(wxCommandEvent &event);
 

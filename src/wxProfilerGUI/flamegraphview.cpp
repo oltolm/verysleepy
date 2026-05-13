@@ -47,7 +47,6 @@ EVT_SIZE(FlameGraphView::OnSize)
 EVT_MOTION(FlameGraphView::OnMouseMove)
 EVT_LEAVE_WINDOW(FlameGraphView::OnMouseLeave)
 EVT_LEFT_DOWN(FlameGraphView::OnLeftDown)
-EVT_LEFT_DCLICK(FlameGraphView::OnLeftDClick)
 EVT_RIGHT_DOWN(FlameGraphView::OnRightDown)
 EVT_BUTTON(kResetZoomButton, FlameGraphView::OnResetZoom)
 END_EVENT_TABLE()
@@ -300,10 +299,9 @@ wxString FlameGraphView::makeTooltip(const LayoutNode *node) const
 	const wchar_t *name = (node->node && node->node->symbol)
 		? node->node->symbol->procname.c_str()
 		: L"[root]";
-	return wxString::Format("%ls\nInclusive: %.2fs (%.2f%%)\nClick to zoom | Ctrl+click to inspect | Use Reset Zoom to go back",
-							name,
-							node->node->inclusive,
-							pct);
+	return wxString::Format(
+		"%ls\nInclusive: %.2fs (%.2f%%)\nClick to inspect and zoom | Right-click to reset zoom",
+		name, node->node->inclusive, pct);
 }
 
 void FlameGraphView::activateNode(const LayoutNode *node, bool inspect)
@@ -466,15 +464,6 @@ void FlameGraphView::OnLeftDown(wxMouseEvent &event)
 		return;
 
 	zoomToNode(node);
-	activateNode(node, false);
-}
-
-void FlameGraphView::OnLeftDClick(wxMouseEvent &event)
-{
-	const LayoutNode *node = hitTest(event.GetPosition());
-	if (!node)
-		return;
-
 	activateNode(node, true);
 }
 
