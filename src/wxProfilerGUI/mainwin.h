@@ -42,7 +42,6 @@ class wxGauge;
 class wxPanel;
 class wxPropertyGrid;
 class wxPropertyGridEvent;
-class wxSplitterWindow;
 
 /// Cache per-symbol view settings so we don't
 /// have to compute them on every refresh.
@@ -88,6 +87,7 @@ public:
 	void OnForwardUpdate(wxUpdateUIEvent& event);
 	void OnResetToRoot(wxCommandEvent& event);
 	void OnResetToRootUpdate(wxUpdateUIEvent& event);
+	void OnResetLayout(wxCommandEvent& event);
 	void OnResetFilters(wxCommandEvent& event);
 	void OnFiltersChanged(wxPropertyGridEvent& event);
 
@@ -142,9 +142,7 @@ public:
 	void updateProgress(int pos);
 
 private:
-	wxPanel* panel;
-	wxSplitterWindow *mainSplitter;
-	wxSplitterWindow *primarySplitter;
+	wxPanel *panel;
 	ProcList* proclist;
 	ProcList* callers;
 	ProcList* callees;
@@ -166,6 +164,9 @@ private:
 	wxAuiManager *auiTab1;
 	wxAuiManager *auiFilter;
 	wxString contentString;
+	wxString defaultMainLayout;
+	wxString defaultTabLayout;
+	wxString defaultFilterLayout;
 
 	wxAuiNotebook *callViews;
 	wxAuiNotebook *sourceAndLog;
@@ -190,7 +191,6 @@ private:
 	void resetFilters();
 
 	void updateThreads();
-	void restoreSplitterLayout();
 
 	/// Called when the symbol strings have changed in one way or another.
 	void symbolsChanged();

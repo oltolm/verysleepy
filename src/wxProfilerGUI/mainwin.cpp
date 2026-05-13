@@ -30,13 +30,13 @@ http://www.gnu.org/copyleft/gpl.html.
 #include "flamegraphview.h"
 #include <algorithm>
 #include <wx/aui/auibook.h>
+#include <wx/aui/framemanager.h>
 #include <wx/hashset.h>
 #include <wx/menu.h>
 #include <wx/filedlg.h>
 #include <wx/gauge.h>
 #include <wx/progdlg.h>
 #include <wx/propgrid/propgrid.h>
-#include <wx/splitter.h>
 #include "../utils/except.h"
 #include "../appinfo.h"
 #include "logview.h"
@@ -68,6 +68,7 @@ enum
 	MainWin_View_Collapse_OS,
 	MainWin_View_Stats,
 	MainWin_ResetToRoot,
+	MainWin_ResetLayout,
 	MainWin_Filters,
 	MainWin_ResetFilters,
 	MainWin_Help_Documentation,
@@ -151,6 +152,8 @@ MainWin::MainWin(const wxString& title,
 	collapseOSCalls = menuView->AppendCheckItem(MainWin_View_Collapse_OS,_T("&Hide Collapsed Functions"), _T("Hide functions nested inside system calls"));
 	collapseOSCalls->Check(config.Read("MainWinCollapseOS",1)!=0);
 	menuView->Append(MainWin_ResetToRoot , _T("Reset Profile &Root"), _T("Resets the root so that the entire profile is shown"));
+	menuView->Append(MainWin_ResetLayout, _T("Reset Window Layout"),
+					 _T("Restores the default pane arrangement"));
 	menuView->Append(MainWin_ResetFilters, _T("Reset Filters"), _T("Resets all the view filters"));
 
 	// the "About" item should be in the help menu
@@ -175,30 +178,46 @@ MainWin::MainWin(const wxString& title,
 
 	// Construct the docking panes
 	wxSize clientSize = GetClientSize();
+	const int minSidePaneWidth = FromDIP(220);
+	const int minBottomPaneHeight = FromDIP(180);
+	const int leftPaneWidth = std::max(minSidePaneWidth, clientSize.GetWidth() * 3 / 10);
+	const int rightPaneWidth = std::max(minSidePaneWidth, clientSize.GetWidth() / 3);
+	const int bottomPaneHeight = std::max(minBottomPaneHeight, clientSize.GetHeight() / 3);
 
-	aui = new wxAuiManager(this,wxAUI_MGR_RECTANGLE_HINT);
-
-	const long splitterStyle = wxSP_3D | wxSP_LIVE_UPDATE;
-	mainSplitter = new wxSplitterWindow(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, splitterStyle);
-	primarySplitter = new wxSplitterWindow(mainSplitter, wxID_ANY, wxDefaultPosition, wxDefaultSize, splitterStyle);
-
-	sourceview = new SourceView(this);
+	const unsigned int paneHintFlags = wxAUI_MGR_TRANSPARENT_HINT | wxAUI_MGR_TRANSPARENT_DRAG;
+	const unsigned int mainAuiFlags =
+		paneHintFlags | wxAUI_MGR_LIVE_RESIZE | wxAUI_MGR_ALLOW_FLOATING;
+	aui = new wxAuiManager(this, mainAuiFlags);
 
 	// Create the windows
-	proclist = new ProcList(primarySplitter, true, database, "FunctionsList");
-	flameGraphView = new FlameGraphView(primarySplitter, database);
+	proclist = new ProcList(this, true, database, "FunctionsList");
+	flameGraphView = new FlameGraphView(this, database);
 
 	sourceAndLog = new wxAuiNotebook(this,wxID_ANY,wxDefaultPosition,wxDefaultSize,wxAUI_NB_TOP|wxAUI_NB_TAB_SPLIT|wxAUI_NB_TAB_MOVE|wxAUI_NB_SCROLL_BUTTONS|wxNO_BORDER);
+	sourceview = new SourceView(sourceAndLog);
 	aui->AddPane(sourceAndLog, wxAuiPaneInfo()
-		.Name(wxT("SourceAndLog"))
-		.CaptionVisible(false)
-		.CloseButton(false)
-		.Bottom()
-		.Layer(0)
-		.BestSize(clientSize.GetWidth() * 2/3, clientSize.GetHeight() * 1/3)
-		);
+								   .DefaultPane()
+								   .Name(wxT("SourceAndLog"))
+								   .Caption(wxT("Source / Log"))
+								   .CaptionVisible(true)
+								   .CloseButton(false)
+								   .Movable(true)
+								   .Dockable(true)
+								   .Floatable(true)
+								   .Resizable(true)
+								   .Gripper(true)
+								   .GripperTop(true)
+								   .PinButton(true)
+								   .Bottom()
+								   .Layer(0)
+								   .MinSize(wxDefaultCoord, minBottomPaneHeight)
+								   .BestSize(clientSize.GetWidth() * 2 / 3, bottomPaneHeight)
+								   .Row(0)
+								   .Position(0));
 
-	callViews = new wxAuiNotebook(mainSplitter,wxID_ANY,wxDefaultPosition,wxDefaultSize,wxAUI_NB_TOP|wxAUI_NB_TAB_SPLIT|wxAUI_NB_TAB_MOVE|wxAUI_NB_SCROLL_BUTTONS|wxNO_BORDER|wxNO_BORDER);
+	callViews = new wxAuiNotebook(this, wxID_ANY, wxDefaultPosition, wxDefaultSize,
+								  wxAUI_NB_TOP | wxAUI_NB_TAB_SPLIT | wxAUI_NB_TAB_MOVE |
+									  wxAUI_NB_SCROLL_BUTTONS | wxNO_BORDER | wxNO_BORDER);
 	wxWindow *splitWindow = new wxWindow(callViews, wxID_ANY);
 	wxWindow *splitFilters = new wxWindow(callViews, wxID_ANY);
 
@@ -228,23 +247,65 @@ MainWin::MainWin(const wxString& title,
 	callViews->AddPage(splitFilters,wxT("Filters"));
 	//callViews->AddPage(threads, wxT("Threads"));
 
-	primarySplitter->SplitVertically(proclist, flameGraphView, clientSize.GetWidth() * 2/5);
-	primarySplitter->SetMinimumPaneSize(FromDIP(200));
-	primarySplitter->SetSashGravity(0.4);
+	aui->AddPane(proclist, wxAuiPaneInfo()
+							   .DefaultPane()
+							   .Name(wxT("FunctionsPane"))
+							   .Caption(wxT("Functions"))
+							   .CaptionVisible(true)
+							   .CloseButton(false)
+							   .Movable(true)
+							   .Dockable(true)
+							   .Floatable(true)
+							   .Resizable(true)
+							   .Gripper(true)
+							   .GripperTop(true)
+							   .PinButton(true)
+							   .Left()
+							   .Layer(0)
+							   .Row(0)
+							   .Position(0)
+							   .MinSize(minSidePaneWidth, wxDefaultCoord)
+							   .BestSize(leftPaneWidth, clientSize.GetHeight() * 2 / 3));
 
-	mainSplitter->SplitVertically(primarySplitter, callViews, clientSize.GetWidth() * 2/3);
-	mainSplitter->SetMinimumPaneSize(FromDIP(220));
-	mainSplitter->SetSashGravity(0.67);
+	aui->AddPane(flameGraphView,
+				 wxAuiPaneInfo()
+					 .CenterPane()
+					 .Name(wxT("FlameGraphPane"))
+					 .Caption(wxT("Flame Graph"))
+					 .CaptionVisible(true)
+					 .CloseButton(false)
+					 .Movable(true)
+					 .Dockable(true)
+					 .Floatable(true)
+					 .Resizable(true)
+					 .Gripper(true)
+					 .GripperTop(true)
+					 .PinButton(true)
+					 .MinSize(FromDIP(320), FromDIP(240))
+					 .BestSize(clientSize.GetWidth() * 2 / 5, clientSize.GetHeight() * 2 / 3));
 
-	aui->AddPane(mainSplitter, wxAuiPaneInfo()
-		.Name(wxT("MainContent"))
-		.CentrePane()
-		.CaptionVisible(false)
-		.PaneBorder(false)
-		);
+	aui->AddPane(callViews, wxAuiPaneInfo()
+								.DefaultPane()
+								.Name(wxT("DetailsPane"))
+								.Caption(wxT("Details"))
+								.CaptionVisible(true)
+								.CloseButton(false)
+								.Movable(true)
+								.Dockable(true)
+								.Floatable(true)
+								.Resizable(true)
+								.Gripper(true)
+								.GripperTop(true)
+								.PinButton(true)
+								.Right()
+								.Layer(0)
+								.Row(0)
+								.Position(2)
+								.MinSize(minSidePaneWidth, wxDefaultCoord)
+								.BestSize(rightPaneWidth, clientSize.GetHeight() * 2 / 3)
+								.PaneBorder(false));
 
-
-	auiTab1 = new wxAuiManager(splitWindow,wxAUI_MGR_RECTANGLE_HINT);
+	auiTab1 = new wxAuiManager(splitWindow, paneHintFlags);
 	auiTab1->AddPane(callers, wxAuiPaneInfo()
 		.Name(wxT("CalledFrom"))
 		.Caption(wxT("Called From"))
@@ -269,7 +330,7 @@ MainWin::MainWin(const wxString& title,
 		.PaneBorder(false)
 	);
 
-	auiFilter = new wxAuiManager(splitFilters, wxAUI_MGR_RECTANGLE_HINT);
+	auiFilter = new wxAuiManager(splitFilters, paneHintFlags);
 	auiFilter->AddPane(filters, wxAuiPaneInfo()
 		.Name(wxT("FilterProperties"))
 		.CaptionVisible(false)
@@ -290,10 +351,13 @@ MainWin::MainWin(const wxString& title,
 	aui->Update();
 	auiTab1->Update();
 	auiFilter->Update();
+	defaultMainLayout = aui->SavePerspective();
+	defaultTabLayout = auiTab1->SavePerspective();
+	defaultFilterLayout = auiFilter->SavePerspective();
 
 	// Calculate a string with the content of the AUI.
 	// If we add or remove elements, the config will reset.
-	contentString = aui->SavePerspective() + "|" + auiTab1->SavePerspective() + "|" + auiFilter->SavePerspective();
+	contentString = defaultMainLayout + "|" + defaultTabLayout + "|" + defaultFilterLayout;
 
 	if(config.Read("MainWinContent") == contentString) {
 		if (config.Read("MainWinLayout", &str) ) {
@@ -309,7 +373,6 @@ MainWin::MainWin(const wxString& title,
 	}
 
 	aui->Update();
-	restoreSplitterLayout();
 	proclist->SetFocus();
 
 	filters->FitColumns();
@@ -416,6 +479,7 @@ EVT_MENU(MainWin_View_Forward, MainWin::OnForward)
 EVT_UPDATE_UI(MainWin_View_Forward, MainWin::OnForwardUpdate)
 EVT_MENU(MainWin_ResetToRoot, MainWin::OnResetToRoot)
 EVT_UPDATE_UI(MainWin_ResetToRoot, MainWin::OnResetToRootUpdate)
+EVT_MENU(MainWin_ResetLayout, MainWin::OnResetLayout)
 EVT_MENU(MainWin_ResetFilters, MainWin::OnResetFilters)
 EVT_MENU(MainWin_View_Collapse_OS,  MainWin::OnCollapseOS)
 EVT_MENU(MainWin_View_Stats,  MainWin::OnStats)
@@ -442,11 +506,7 @@ void MainWin::OnClose(wxCloseEvent& WXUNUSED(event))
 	config.Write("MainWinBookTab1Layout",auiTab1->SavePerspective());
 	config.Write("MainWinFilterLayout", auiFilter->SavePerspective());
 	config.Write("MainWinContent",contentString);
-	config.Write("MainWinCollapseOS",collapseOSCalls->IsChecked());
-	if (primarySplitter && primarySplitter->IsSplit())
-		config.Write("MainWinPrimarySplitterSash", primarySplitter->GetSashPosition());
-	if (mainSplitter && mainSplitter->IsSplit())
-		config.Write("MainWinMainSplitterSash", mainSplitter->GetSashPosition());
+	config.Write("MainWinCollapseOS", collapseOSCalls->IsChecked());
 
 	wxExit();
 }
@@ -454,6 +514,21 @@ void MainWin::OnClose(wxCloseEvent& WXUNUSED(event))
 void MainWin::OnQuit(wxCommandEvent& WXUNUSED(event))
 {
 	wxExit();
+}
+
+void MainWin::OnResetLayout(wxCommandEvent& WXUNUSED(event))
+{
+	aui->LoadPerspective(defaultMainLayout, false);
+	auiTab1->LoadPerspective(defaultTabLayout, false);
+	auiFilter->LoadPerspective(defaultFilterLayout, false);
+	callViews->SetSelection(0);
+	auiFilter->Update();
+	auiTab1->Update();
+	aui->Update();
+	Layout();
+	Refresh();
+	Update();
+	proclist->SetFocus();
 }
 
 void MainWin::OnNew(wxCommandEvent& WXUNUSED(event))
@@ -1165,27 +1240,6 @@ void MainWin::setHighlight(const std::vector<Database::Address> &addresses, bool
 void MainWin::updateThreads()
 {
 	threads->updateList();
-}
-
-void MainWin::restoreSplitterLayout()
-{
-	if (primarySplitter && primarySplitter->IsSplit())
-	{
-		const int minPrimary = FromDIP(200);
-		const int primaryWidth = std::max(minPrimary * 2, primarySplitter->GetClientSize().GetWidth());
-		const int defaultPrimary = primaryWidth * 2 / 5;
-		const int sash = config.Read("MainWinPrimarySplitterSash", (long)defaultPrimary);
-		primarySplitter->SetSashPosition(std::clamp(sash, minPrimary, primaryWidth - minPrimary));
-	}
-
-	if (mainSplitter && mainSplitter->IsSplit())
-	{
-		const int minMain = FromDIP(220);
-		const int mainWidth = std::max(minMain * 2, mainSplitter->GetClientSize().GetWidth());
-		const int defaultMain = mainWidth * 2 / 3;
-		const int sash = config.Read("MainWinMainSplitterSash", (long)defaultMain);
-		mainSplitter->SetSashPosition(std::clamp(sash, minMain, mainWidth - minMain));
-	}
 }
 
 void MainWin::refreshSelectedThreads()
