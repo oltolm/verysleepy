@@ -192,6 +192,10 @@ MainWin::MainWin(const wxString& title,
 	// Create the windows
 	proclist = new ProcList(this, true, database, "FunctionsList");
 	flameGraphView = new FlameGraphView(this, database);
+	mainViews =
+		new wxAuiNotebook(this, wxID_ANY, wxDefaultPosition, wxDefaultSize,
+						  wxAUI_NB_TOP | wxAUI_NB_TAB_SPLIT | wxAUI_NB_TAB_MOVE |
+							  wxAUI_NB_TAB_EXTERNAL_MOVE | wxAUI_NB_SCROLL_BUTTONS | wxNO_BORDER);
 
 	sourceAndLog = new wxAuiNotebook(this,wxID_ANY,wxDefaultPosition,wxDefaultSize,wxAUI_NB_TOP|wxAUI_NB_TAB_SPLIT|wxAUI_NB_TAB_MOVE|wxAUI_NB_SCROLL_BUTTONS|wxNO_BORDER);
 	sourceview = new SourceView(sourceAndLog);
@@ -241,37 +245,19 @@ MainWin::MainWin(const wxString& title,
 	sourceAndLog->AddPage(sourceview,wxT("Source"));
 	log = new LogView(sourceAndLog);
 	sourceAndLog->AddPage(log,wxT("Log"));
+	mainViews->AddPage(proclist, wxT("Functions"), true);
+	mainViews->AddPage(flameGraphView, wxT("Flame Graph"));
 
 	callViews->AddPage(splitWindow,wxT("Averages"));
 	callViews->AddPage(callStack,wxT("Call Stacks"));
 	callViews->AddPage(splitFilters,wxT("Filters"));
 	//callViews->AddPage(threads, wxT("Threads"));
 
-	aui->AddPane(proclist, wxAuiPaneInfo()
-							   .DefaultPane()
-							   .Name(wxT("FunctionsPane"))
-							   .Caption(wxT("Functions"))
-							   .CaptionVisible(true)
-							   .CloseButton(false)
-							   .Movable(true)
-							   .Dockable(true)
-							   .Floatable(true)
-							   .Resizable(true)
-							   .Gripper(true)
-							   .GripperTop(true)
-							   .PinButton(true)
-							   .Left()
-							   .Layer(0)
-							   .Row(0)
-							   .Position(0)
-							   .MinSize(minSidePaneWidth, wxDefaultCoord)
-							   .BestSize(leftPaneWidth, clientSize.GetHeight() * 2 / 3));
-
-	aui->AddPane(flameGraphView,
+	aui->AddPane(mainViews,
 				 wxAuiPaneInfo()
 					 .CenterPane()
-					 .Name(wxT("FlameGraphPane"))
-					 .Caption(wxT("Flame Graph"))
+					 .Name(wxT("MainViewsPane"))
+					 .Caption(wxT("Main Views"))
 					 .CaptionVisible(true)
 					 .CloseButton(false)
 					 .Movable(true)
@@ -281,7 +267,7 @@ MainWin::MainWin(const wxString& title,
 					 .Gripper(true)
 					 .GripperTop(true)
 					 .PinButton(true)
-					 .MinSize(FromDIP(320), FromDIP(240))
+					 .MinSize(std::max(minSidePaneWidth, leftPaneWidth), FromDIP(240))
 					 .BestSize(clientSize.GetWidth() * 2 / 5, clientSize.GetHeight() * 2 / 3));
 
 	aui->AddPane(callViews, wxAuiPaneInfo()
@@ -369,6 +355,7 @@ MainWin::MainWin(const wxString& title,
 		if (config.Read("MainWinFilterLayout", &str)) {
 			auiFilter->LoadPerspective(str);
 		}
+		mainViews->SetSelection(config.Read("MainWinMainTab", mainViews->GetSelection()));
 		callViews->SetSelection(config.Read("MainWinBookTab",callViews->GetSelection()));
 	}
 
@@ -502,6 +489,7 @@ void MainWin::OnClose(wxCloseEvent& WXUNUSED(event))
 	config.Write("MainWinY", GetScreenRect().y);
 	config.Write("MainWinW", GetScreenRect().width);
 	config.Write("MainWinH", GetScreenRect().height);
+	config.Write("MainWinMainTab", mainViews->GetSelection());
 	config.Write("MainWinBookTab",callViews->GetSelection());
 	config.Write("MainWinBookTab1Layout",auiTab1->SavePerspective());
 	config.Write("MainWinFilterLayout", auiFilter->SavePerspective());
@@ -521,6 +509,7 @@ void MainWin::OnResetLayout(wxCommandEvent& WXUNUSED(event))
 	aui->LoadPerspective(defaultMainLayout, false);
 	auiTab1->LoadPerspective(defaultTabLayout, false);
 	auiFilter->LoadPerspective(defaultFilterLayout, false);
+	mainViews->SetSelection(0);
 	callViews->SetSelection(0);
 	auiFilter->Update();
 	auiTab1->Update();

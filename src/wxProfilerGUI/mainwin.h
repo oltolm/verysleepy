@@ -168,6 +168,7 @@ private:
 	wxString defaultTabLayout;
 	wxString defaultFilterLayout;
 
+	wxAuiNotebook *mainViews;
 	wxAuiNotebook *callViews;
 	wxAuiNotebook *sourceAndLog;
 
