@@ -162,6 +162,7 @@ endif()
 
 if(WIN32)
   get_filename_component(VERYSLEEPY_MINGW_BIN_DIR "${CMAKE_CXX_COMPILER}" DIRECTORY)
+  set(VERYSLEEPY_PACKAGE_FILE_NAME "verysleepy-${VERYSLEEPY_VERSION}-x64")
 
   install(
     TARGETS sleepy
@@ -224,7 +225,7 @@ if(WIN32)
   set(CPACK_CREATE_DESKTOP_LINKS "sleepy")
   set(CPACK_NSIS_EXECUTABLES_DIRECTORY ".")
   set(CPACK_PACKAGE_DIRECTORY "${PROJECT_BINARY_DIR}/packages")
-  set(CPACK_PACKAGE_FILE_NAME "verysleepy-${VERYSLEEPY_VERSION}-x64")
+  set(CPACK_PACKAGE_FILE_NAME "${VERYSLEEPY_PACKAGE_FILE_NAME}")
   set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "${VERYSLEEPY_APPNAME} profiler")
   set(CPACK_PACKAGE_HOMEPAGE_URL "${VERYSLEEPY_APPURL}")
   set(CPACK_RESOURCE_FILE_LICENSE "${PROJECT_SOURCE_DIR}/license.txt")
@@ -239,6 +240,15 @@ if(WIN32)
   set(CPACK_NSIS_MUI_ICON "${PROJECT_SOURCE_DIR}/src/res/sleepy.ico")
   set(CPACK_NSIS_MUI_UNIICON "${PROJECT_SOURCE_DIR}/src/res/sleepy.ico")
   set(CPACK_NSIS_MUI_FINISHPAGE_RUN "sleepy.exe")
+  string(CONCAT CPACK_NSIS_DEFINES
+    "VIProductVersion \\\"${VERYSLEEPY_FILE_VERSION_MAJOR}.${VERYSLEEPY_FILE_VERSION_MINOR}.${VERYSLEEPY_FILE_VERSION_PATCH}.${GIT_VERSION_DIRTY}\\\"\n"
+    "VIAddVersionKey \\\"ProductName\\\" \\\"${VERYSLEEPY_APPNAME}\\\"\n"
+    "VIAddVersionKey \\\"ProductVersion\\\" \\\"${VERYSLEEPY_VERSION}\\\"\n"
+    "VIAddVersionKey \\\"CompanyName\\\" \\\"${VERYSLEEPY_VENDOR}\\\"\n"
+    "VIAddVersionKey \\\"FileDescription\\\" \\\"${VERYSLEEPY_APPNAME} installer\\\"\n"
+    "VIAddVersionKey \\\"FileVersion\\\" \\\"${VERYSLEEPY_VERSION}\\\"\n"
+    "VIAddVersionKey \\\"OriginalFilename\\\" \\\"${VERYSLEEPY_PACKAGE_FILE_NAME}.exe\\\""
+  )
 
   include(CPack)
 endif()
