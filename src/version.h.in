@@ -1,5 +1,7 @@
+/* clang-format off */
 #pragma once
 
-#define VERSION "@GIT_VERSION@"
-#define VERSION_PATCH @GIT_VERSION_PATCH@
+#define VERSION "@VERYSLEEPY_VERSION@"
+#define VERSION_PATCH @VERYSLEEPY_FILE_VERSION_PATCH@
 #define VERSION_DIRTY @GIT_VERSION_DIRTY@
+/* clang-format on */

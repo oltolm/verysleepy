@@ -1,11 +1,12 @@
+/* clang-format off */
 #pragma once
 
 #define APPNAME "@VERYSLEEPY_APPNAME@"
 
-// The VERSION string is in version.h, which is generated from git metadata.
+// The VERSION string is in version.h, which is generated from the build metadata.
 
-#define VERSION_MAJOR @PROJECT_VERSION_MAJOR@
-#define VERSION_MINOR @PROJECT_VERSION_MINOR@
+#define VERSION_MAJOR @VERYSLEEPY_FILE_VERSION_MAJOR@
+#define VERSION_MINOR @VERYSLEEPY_FILE_VERSION_MINOR@
 
 #define VENDOR  "@VERYSLEEPY_VENDOR@"
 
@@ -15,3 +16,4 @@
 // Update this whenever backwards-incompatible changes
 // are made to the profiling results file format.
 #define FORMAT_VERSION "@VERYSLEEPY_FORMAT_VERSION@"
+/* clang-format on */

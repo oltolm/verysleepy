@@ -39,6 +39,7 @@ http://www.gnu.org/copyleft/gpl.html.
 #include <wx/propgrid/propgrid.h>
 #include "../utils/except.h"
 #include "appinfo.h"
+#include "version.h"
 #include "logview.h"
 #include "proclist.h"
 #include "profilergui.h"
@@ -794,8 +795,7 @@ void MainWin::OnExportAsSpeedscope(wxCommandEvent& WXUNUSED(event))
 		txt << pad(indent) << "\"name\": ";
 		writeQuote(txt, database->filename);
 		txt << ",\n";
-		txt << pad(indent) << "\"exporter\": \"" << APPNAME << "@" << VERSION_MAJOR << "."
-			<< VERSION_MINOR << "\",\n";
+		txt << pad(indent) << "\"exporter\": \"" << APPNAME << "@" << VERSION << "\",\n";
 		txt << pad(indent) << "\"shared\": {\n";
 		indent++;
 		txt << pad(indent) << "\"frames\": [\n";
