@@ -5,7 +5,12 @@ on:
     branches:
       - master
       - ids
+    tags:
+      - 'v*'
   pull_request:
+
+permissions:
+  contents: write
 
 jobs:
   msys2-ucrt64:
@@ -17,9 +22,24 @@ jobs:
 
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           submodules: recursive
+
+      - name: Determine build number
+        id: build_number
+        run: |
+          if [[ "${GITHUB_REF}" == refs/tags/v* ]]; then
+            build_number="${GITHUB_REF_NAME#v}"
+            if [[ ! "${build_number}" =~ ^[0-9]+$ ]]; then
+              echo "Release tags must match v<number>." >&2
+              exit 1
+            fi
+          else
+            build_number="${GITHUB_RUN_NUMBER}"
+          fi
+
+          echo "build_number=${build_number}" >> "$GITHUB_OUTPUT"
 
       - name: Set up MSYS2 UCRT64
         uses: msys2/setup-msys2@v2
@@ -35,7 +55,7 @@ jobs:
             mingw-w64-ucrt-x86_64-nsis
 
       - name: Configure
-        run: cmake --preset gcc64 -DVERYSLEEPY_BUILD_NUMBER=${{ github.run_number }}
+        run: cmake --preset gcc64 -DVERYSLEEPY_BUILD_NUMBER=${{ steps.build_number.outputs.build_number }}
 
       - name: Build binaries
         run: cmake --build --preset gcc64 --config Release --parallel
@@ -44,8 +64,16 @@ jobs:
         run: cmake --build --preset gcc64 --config Release --parallel --target package
 
       - name: Upload installer artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: verysleepy-installer
           path: build-gcc64/packages/*.exe
           if-no-files-found: error
+
+      - name: Create GitHub release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          files: build-gcc64/packages/*.exe
+          fail_on_unmatched_files: true
