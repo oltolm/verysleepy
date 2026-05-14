@@ -113,7 +113,6 @@ Changes before this repository's creation can be found on [the project's website
 
 #### Prerequisites
 
-* Visual C++ 2010 or newer for the legacy Visual Studio solution flow
 * [CMake](https://cmake.org/)
 * [7-Zip](http://www.7-zip.org/) (for unpacking MinGW)
 * [NSIS](https://nsis.sourceforge.io/) (for building the CMake package target)
@@ -122,10 +121,6 @@ Changes before this repository's creation can be found on [the project's website
 #### Instructions
 
 Third party dependencies are registered using git submodules, so you will need to either clone with the `--recursive` flag, or run `git submodule update --init` after cloning.
-
-The `build.cmd` batch file will attempt to build Very Sleepy and its dependencies.
-
-Alternatively, you can build Dr. MinGW using the `thirdparty/drmingw_build_mingw.cmd` batch file, then use the Visual Studio solution file (`sleepy.sln`) to build everything else.
 
 For the CMake-based packaging flow used by GitHub Actions, configure the existing `gcc64` preset inside an MSYS2 UCRT64 shell and build the `package` target:
 
