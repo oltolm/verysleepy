@@ -113,10 +113,11 @@ Changes before this repository's creation can be found on [the project's website
 
 #### Prerequisites
 
-* Visual C++ 2010 or newer
-* [CMake](https://cmake.org/) (for Dr. MinGW)
+* Visual C++ 2010 or newer for the legacy Visual Studio solution flow
+* [CMake](https://cmake.org/)
 * [7-Zip](http://www.7-zip.org/) (for unpacking MinGW)
-* [InnoSetup 5](http://www.jrsoftware.org/isinfo.php) (for building an installer)
+* [NSIS](https://nsis.sourceforge.io/) (for building the CMake package target)
+* MSYS2 UCRT64 with CMake, Ninja, GCC, wxWidgets, and NSIS for the GitHub Actions packaging flow
 
 #### Instructions
 
@@ -125,6 +126,15 @@ Third party dependencies are registered using git submodules, so you will need t
 The `build.cmd` batch file will attempt to build Very Sleepy and its dependencies.
 
 Alternatively, you can build Dr. MinGW using the `thirdparty/drmingw_build_mingw.cmd` batch file, then use the Visual Studio solution file (`sleepy.sln`) to build everything else.
+
+For the CMake-based packaging flow used by GitHub Actions, configure the existing `gcc64` preset inside an MSYS2 UCRT64 shell and build the `package` target:
+
+```sh
+cmake --preset gcc64
+cmake --build --preset gcc64 --config Release --target package
+```
+
+The resulting NSIS installer is written to `build-gcc64/packages/`.
 
 ### Contributing
 

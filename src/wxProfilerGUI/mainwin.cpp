@@ -38,7 +38,7 @@ http://www.gnu.org/copyleft/gpl.html.
 #include <wx/progdlg.h>
 #include <wx/propgrid/propgrid.h>
 #include "../utils/except.h"
-#include "../appinfo.h"
+#include "appinfo.h"
 #include "logview.h"
 #include "proclist.h"
 #include "profilergui.h"

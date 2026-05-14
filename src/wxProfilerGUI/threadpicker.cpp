@@ -37,7 +37,7 @@ http://www.gnu.org/copyleft/gpl.html.
 #include <wx/stattext.h>
 #include <wx/valnum.h>
 #include "../utils/except.h"
-#include "../appinfo.h"
+#include "appinfo.h"
 #include "processlist.h"
 #include "profilergui.h"
 #include "threadlist.h"

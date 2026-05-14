@@ -7,7 +7,7 @@
 #include "crashreport.h"
 #include "resource.h"
 #include "..\..\..\thirdparty\ms\dbghelp.h"
-#include "..\..\appinfo.h"
+#include "appinfo.h"
 #include "..\..\version.h"
 
 #define HOSTNAME	"thecybershadow.net"

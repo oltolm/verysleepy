@@ -34,7 +34,7 @@ http://www.gnu.org/copyleft/gpl.html..
 #include <wx/file.h>
 #include <wx/filename.h>
 #include "../utils/except.h"
-#include "../appinfo.h"
+#include "appinfo.h"
 
 SymLogFn *g_symLog = NULL;
 

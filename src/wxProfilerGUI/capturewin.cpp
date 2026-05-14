@@ -21,7 +21,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 http://www.gnu.org/copyleft/gpl.html.
 =====================================================================*/
 #include "capturewin.h"
-#include "../appinfo.h"
+#include "appinfo.h"
 #include <algorithm>
 #include <wx/button.h>
 #include <wx/gauge.h>

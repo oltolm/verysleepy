@@ -58,5 +58,37 @@
                 "CMAKE_BUILD_TYPE": "Debug"
             }
         }
+    ],
+    "buildPresets": [
+        {
+            "name": "gcc64",
+            "configurePreset": "gcc64",
+            "configuration": "Release"
+        },
+        {
+            "name": "gcc32",
+            "configurePreset": "gcc32",
+            "configuration": "Release"
+        },
+        {
+            "name": "msvc",
+            "configurePreset": "msvc",
+            "configuration": "Release"
+        },
+        {
+            "name": "clang64",
+            "configurePreset": "clang64",
+            "configuration": "Debug"
+        },
+        {
+            "name": "iwyu",
+            "configurePreset": "iwyu",
+            "configuration": "Debug"
+        },
+        {
+            "name": "clang-tidy",
+            "configurePreset": "clang-tidy",
+            "configuration": "Debug"
+        }
     ]
 }

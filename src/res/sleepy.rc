@@ -19,7 +19,7 @@ button_add RCDATA "Button-Add.png"
 button_remove RCDATA "Button-Remove.png"
 button_exportcsv RCDATA "Button-ExportCSV.png"
 
-#include "../appinfo.h"
+#include "appinfo.h"
 #include "version.h"
 
 VS_VERSION_INFO VERSIONINFO

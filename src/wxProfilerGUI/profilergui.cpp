@@ -50,7 +50,7 @@ http://www.gnu.org/copyleft/gpl.html.
 #endif
 #include "aboutdlg.h"
 #include "../utils/except.h"
-#include "../appinfo.h"
+#include "appinfo.h"
 #include <limits>
 
 // DE: 20090325 Linking fails in debug target under visual studio 2005

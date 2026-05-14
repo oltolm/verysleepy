@@ -35,7 +35,7 @@ http://www.gnu.org/copyleft/gpl.html.
 #include <wx/txtstrm.h>
 #include <wx/wfstream.h>
 #include <wx/zipstrm.h>
-#include "../appinfo.h"
+#include "appinfo.h"
 #include "../utils/container.h"
 #include "../utils/except.h"
 #include "latesymbolinfo.h"

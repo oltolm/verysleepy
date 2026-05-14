@@ -1,0 +1,17 @@
+#pragma once
+
+#define APPNAME "@VERYSLEEPY_APPNAME@"
+
+// The VERSION string is in version.h, which is generated from git metadata.
+
+#define VERSION_MAJOR @PROJECT_VERSION_MAJOR@
+#define VERSION_MINOR @PROJECT_VERSION_MINOR@
+
+#define VENDOR  "@VERYSLEEPY_VENDOR@"
+
+#define APPURL  "@VERYSLEEPY_APPURL@"
+#define GITURL  "@VERYSLEEPY_GITURL@"
+
+// Update this whenever backwards-incompatible changes
+// are made to the profiling results file format.
+#define FORMAT_VERSION "@VERYSLEEPY_FORMAT_VERSION@"
