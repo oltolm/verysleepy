@@ -96,8 +96,7 @@ void symLogCallback(const wchar_t *text)
 }
 
 ThreadPicker::ThreadPicker()
-	: wxModalFrame(NULL, wxID_ANY, APPNAME),
-	  attach_info()
+	: wxModalFrame(NULL, wxID_ANY, APPNAME), attach_info(), m_recent(NULL)
 {
 	SetIcon(sleepy_icon);
 
@@ -242,7 +241,6 @@ void ThreadPicker::OnMRUFile(wxCommandEvent& event)
 			wxGetApp().getFileHistory()->RemoveFileFromHistory(event.GetId() - wxID_FILE1);
 			return;
 		}
-		wxGetApp().getFileHistory()->RemoveMenu(m_recent);
 		EndModal(OPEN);
 	}
 }
@@ -253,7 +251,6 @@ void ThreadPicker::OnOpen(wxCommandEvent& WXUNUSED(event))
 	if (!open_filename.empty())
 	{
 		wxGetApp().getFileHistory()->AddFileToHistory(open_filename);
-		wxGetApp().getFileHistory()->RemoveMenu(m_recent);
 		EndModal(OPEN);
 	}
 }
@@ -262,7 +259,6 @@ void ThreadPicker::OnAttachProfiler(wxCommandEvent& WXUNUSED(event))
 {
 	if (TryAttachToProcess(false))
 	{
-		wxGetApp().getFileHistory()->RemoveMenu(m_recent);
 		EndModal(ATTACH);
 	}
 }
@@ -271,7 +267,6 @@ void ThreadPicker::OnAttachProfilerAll(wxCommandEvent& WXUNUSED(event))
 {
 	if (TryAttachToProcess(true))
 	{
-		wxGetApp().getFileHistory()->RemoveMenu(m_recent);
 		EndModal(ATTACH);
 	}
 }
@@ -280,7 +275,6 @@ void ThreadPicker::OnDoubleClicked(wxListEvent& WXUNUSED(event))
 {
 	if (TryAttachToProcess(false))
 	{
-		wxGetApp().getFileHistory()->RemoveMenu(m_recent);
 		EndModal(ATTACH);
 	}
 }
@@ -364,6 +358,8 @@ void ThreadPicker::OnTimeCheck(wxCommandEvent& WXUNUSED(event))
 
 ThreadPicker::~ThreadPicker()
 {
+	if (m_recent)
+		wxGetApp().getFileHistory()->RemoveMenu(m_recent);
 	g_symLog = NULL;
 	delete log;
 }
