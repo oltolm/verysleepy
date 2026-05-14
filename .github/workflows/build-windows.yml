@@ -28,6 +28,7 @@ jobs:
 
       - name: Determine build number
         id: build_number
+        shell: bash
         run: |
           if [[ "${GITHUB_REF}" == refs/tags/v* ]]; then
             build_number="${GITHUB_REF_NAME#v}"
