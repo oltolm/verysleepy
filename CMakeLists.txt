@@ -114,7 +114,7 @@ elseif(VERYSLEEPY_BUILD_NUMBER STREQUAL "0")
 endif()
 
 execute_process(
-  COMMAND git diff --quiet --ignore-submodules=dirty
+  COMMAND git diff --quiet --ignore-cr-at-eol --ignore-submodules=dirty
   RESULT_VARIABLE GIT_DIFF_RESULT
   ERROR_QUIET
   WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}"
