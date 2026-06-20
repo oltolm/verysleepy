@@ -38,6 +38,7 @@ class ThreadSamplesView;
 class ThreadsView;
 class wxAuiManager;
 class wxAuiNotebook;
+class wxAuiNotebookEvent;
 class wxGauge;
 class wxPanel;
 class wxPropertyGrid;
@@ -90,6 +91,7 @@ public:
 	void OnResetLayout(wxCommandEvent& event);
 	void OnResetFilters(wxCommandEvent& event);
 	void OnFiltersChanged(wxPropertyGridEvent& event);
+	void OnMainViewsPageChanged(wxAuiNotebookEvent& event);
 
 	void OnDocumentation(wxCommandEvent& event);
 	void OnSupport(wxCommandEvent& event);

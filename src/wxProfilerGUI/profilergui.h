@@ -164,6 +164,7 @@ public:
 	ProfilerGUI();
 	virtual ~ProfilerGUI();
 	virtual bool OnInit();
+	virtual bool OnExceptionInMainLoop();
 	virtual bool ProcessIdle();
 	virtual int OnExit();
 

@@ -579,6 +579,11 @@ bool ProfilerGUI::OnInit()
 	return false;
 }
 
+bool ProfilerGUI::OnExceptionInMainLoop()
+{
+	throw;
+}
+
 bool ProfilerGUI::ProcessIdle()
 {
 	bool result = wxApp::ProcessIdle();

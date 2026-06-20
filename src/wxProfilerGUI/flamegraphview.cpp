@@ -35,9 +35,13 @@ namespace
 {
 const int kBarGap = 2;
 const int kMargin = 8;
+const int kLabelPadding = 4;
 const int kMinLabelWidth = 36;
 const int kPreferredBarHeight = 16;
 const int kToolbarHeight = 30;
+const double kMinZoomScale = 0.25;
+const double kMaxZoomScale = 128.0;
+const double kZoomStep = 1.5;
 const int kResetZoomButton = wxID_HIGHEST + 201;
 }
 
@@ -48,6 +52,7 @@ EVT_MOTION(FlameGraphView::OnMouseMove)
 EVT_LEAVE_WINDOW(FlameGraphView::OnMouseLeave)
 EVT_LEFT_DOWN(FlameGraphView::OnLeftDown)
 EVT_RIGHT_DOWN(FlameGraphView::OnRightDown)
+EVT_MOUSEWHEEL(FlameGraphView::OnMouseWheel)
 EVT_BUTTON(kResetZoomButton, FlameGraphView::OnResetZoom)
 END_EVENT_TABLE()
 
@@ -55,17 +60,21 @@ FlameGraphView::FlameGraphView(wxWindow *parent, Database *database_)
 	: wxScrolledWindow(parent, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxBORDER_THEME),
 	  database(database_),
 	  resetZoomButton(NULL),
+	  pendingInspectAddrInfo(NULL),
+	  inspectScheduled(false),
 	  selectedSymbol(NULL),
 	  hoveredNode(NULL),
 	  zoomRoot(NULL),
 	  maxDepth(0),
 	  chartDirty(true),
+	  pendingInitialSnap(true),
 	  rowHeight(FromDIP(kPreferredBarHeight)),
-	  visibleDepthLimit(0),
-	  hiddenDepthCount(0)
+	  zoomScale(1.0),
+	  layoutWidth(0),
+	  chartHeight(0)
 {
 	SetBackgroundStyle(wxBG_STYLE_PAINT);
-	SetScrollRate(0, 0);
+	SetScrollRate(FromDIP(16), FromDIP(16));
 
 	resetZoomButton = new wxButton(this, kResetZoomButton, "Reset Zoom");
 	resetZoomButton->Hide();
@@ -90,16 +99,35 @@ void FlameGraphView::reset()
 {
 	flameGraph.reset();
 	layout.clear();
+	viewHistory.clear();
+	pendingInspectAddrInfo = NULL;
+	inspectScheduled = false;
 	selectedSymbol = NULL;
 	hoveredNode = NULL;
 	zoomRoot = NULL;
 	zoomPath.clear();
 	maxDepth = 0;
 	chartDirty = true;
-	visibleDepthLimit = 0;
-	hiddenDepthCount = 0;
+	pendingInitialSnap = true;
+	zoomScale = 1.0;
+	layoutWidth = 0;
+	chartHeight = 0;
+	SetVirtualSize(GetClientSize());
+	Scroll(0, 0);
 	updateResetButton();
 	Refresh();
+}
+
+void FlameGraphView::snapToBottomLeftIfPending()
+{
+	if (!pendingInitialSnap)
+		return;
+
+	const wxSize client = GetClientSize();
+	const wxSize virtualSize = GetVirtualSize();
+	const int maxY = std::max(0, virtualSize.GetHeight() - client.GetHeight());
+	scrollToPixelPosition(0, maxY);
+	pendingInitialSnap = false;
 }
 
 void FlameGraphView::rebuildChart()
@@ -107,6 +135,8 @@ void FlameGraphView::rebuildChart()
 	flameGraph = database->buildFlameGraph();
 	zoomRoot = flameGraph.get();
 	zoomPath.clear();
+	viewHistory.clear();
+	pendingInitialSnap = true;
 	rebuildLayout();
 }
 
@@ -115,15 +145,15 @@ void FlameGraphView::rebuildLayout()
 	layout.clear();
 	hoveredNode = NULL;
 	maxDepth = 0;
+	layoutWidth = 0;
+	chartHeight = 0;
 
 	if (!flameGraph || flameGraph->inclusive <= 0.0)
 	{
+		updateVirtualSize();
 		updateResetButton();
 		return;
 	}
-
-	int clientWidth = std::max(GetClientSize().GetWidth(), FromDIP(200));
-	double chartWidth = std::max(1, clientWidth - 2 * FromDIP(kMargin));
 
 	const Database::FlameGraphNode *root = zoomRoot ? zoomRoot : flameGraph.get();
 	zoomPath.clear();
@@ -135,18 +165,31 @@ void FlameGraphView::rebuildLayout()
 		if (zoomPath[i]->symbol)
 			ancestorRows++;
 	}
-	int subtreeRows = std::max(1, getSubtreeDepth(root));
-	int totalRows = ancestorRows + subtreeRows;
-	int availableHeight = std::max(1, GetClientSize().GetHeight() - FromDIP(kToolbarHeight) - 2 * FromDIP(kMargin));
+
+	const int subtreeRows = std::max(1, getSubtreeDepth(root));
+	const int totalRows = ancestorRows + subtreeRows;
 	rowHeight = FromDIP(kPreferredBarHeight);
-	int slotHeight = rowHeight + FromDIP(kBarGap);
-	visibleDepthLimit = std::max(1, (availableHeight + FromDIP(kBarGap)) / std::max(1, slotHeight));
-	hiddenDepthCount = std::max(0, totalRows - visibleDepthLimit);
 	maxDepth = totalRows;
 
-	layoutZoomPath(FromDIP(kMargin), chartWidth);
-	layoutNode(root, ancestorRows, FromDIP(kMargin), chartWidth, true);
+	const int margin = FromDIP(kMargin);
+	const int requiredChartHeight = FromDIP(kToolbarHeight) + 2 * margin + std::max(1, totalRows) * rowHeight +
+		std::max(0, totalRows - 1) * FromDIP(kBarGap);
+	const int clientLogicalHeight = std::max(1, (int)std::ceil(GetClientSize().GetHeight() /
+		std::max(zoomScale, kMinZoomScale)));
+	chartHeight = std::max(requiredChartHeight, clientLogicalHeight);
+	layoutWidth = std::max(1, GetClientSize().GetWidth() - 2 * margin);
+
+	layoutZoomPath(margin, layoutWidth);
+	layoutNode(root, ancestorRows, margin, layoutWidth, true);
+	updateVirtualSize();
 	updateResetButton();
+}
+
+void FlameGraphView::updateVirtualSize()
+{
+	const wxSize client = GetClientSize();
+	SetVirtualSize(std::max(client.GetWidth(), logicalToVirtualX(layoutWidth + 2 * FromDIP(kMargin))),
+		std::max(client.GetHeight(), logicalToVirtualY(chartHeight)));
 }
 
 void FlameGraphView::layoutNode(const Database::FlameGraphNode *node, int depth, double x, double width, bool includeNode)
@@ -156,14 +199,14 @@ void FlameGraphView::layoutNode(const Database::FlameGraphNode *node, int depth,
 
 	if (includeNode)
 	{
-		if (isDepthVisible(depth))
-		{
-			LayoutNode item;
-			item.node = node;
-			item.depth = depth;
-			item.rect = wxRect((int)std::lround(x), 0, std::max(1, (int)std::lround(width)), rowHeight);
-			layout.push_back(item);
-		}
+		LayoutNode item;
+		item.node = node;
+		item.depth = depth;
+		item.rect = wxRect((int)std::lround(x),
+			chartHeight - FromDIP(kMargin) - (depth + 1) * rowHeight - depth * FromDIP(kBarGap),
+			std::max(1, (int)std::lround(width)),
+			rowHeight);
+		layout.push_back(item);
 		depth++;
 	}
 
@@ -194,16 +237,13 @@ void FlameGraphView::layoutZoomPath(double x, double width)
 		if (!zoomPath[i]->symbol)
 			continue;
 
-		if (!isDepthVisible(depth))
-		{
-			depth++;
-			continue;
-		}
-
 		LayoutNode item;
 		item.node = zoomPath[i];
 		item.depth = depth++;
-		item.rect = wxRect((int)std::lround(x), 0, std::max(1, (int)std::lround(width)), rowHeight);
+		item.rect = wxRect((int)std::lround(x),
+			chartHeight - FromDIP(kMargin) - (item.depth + 1) * rowHeight - item.depth * FromDIP(kBarGap),
+			std::max(1, (int)std::lround(width)),
+			rowHeight);
 		layout.push_back(item);
 	}
 }
@@ -256,20 +296,68 @@ void FlameGraphView::updateResetButton()
 	resetZoomButton->Show(zoomRoot && flameGraph && zoomRoot != flameGraph.get());
 }
 
-bool FlameGraphView::isDepthVisible(int depth) const
+void FlameGraphView::scheduleInspect(const Database::AddrInfo *addrinfo)
 {
-	return depth >= 0 && depth < visibleDepthLimit;
+	pendingInspectAddrInfo = addrinfo;
+	if (inspectScheduled || !addrinfo)
+		return;
+
+	inspectScheduled = true;
+	CallAfter([this]()
+		{
+			inspectScheduled = false;
+			const Database::AddrInfo *addrinfoToInspect = pendingInspectAddrInfo;
+			pendingInspectAddrInfo = NULL;
+			if (addrinfoToInspect)
+				theMainWin->inspectSymbol(addrinfoToInspect);
+		});
+}
+
+wxPoint FlameGraphView::toLogicalPoint(wxPoint point) const
+{
+	int x = 0;
+	int y = 0;
+	CalcUnscrolledPosition(point.x, point.y, &x, &y);
+	const double scale = std::max(zoomScale, kMinZoomScale);
+	return wxPoint((int)std::lround(x / scale), (int)std::lround(y / scale));
+}
+
+int FlameGraphView::logicalToVirtualX(int logicalX) const
+{
+	return (int)std::lround(logicalX * zoomScale);
+}
+
+int FlameGraphView::logicalToVirtualY(int logicalY) const
+{
+	return (int)std::lround(logicalY * zoomScale);
+}
+
+wxRect FlameGraphView::scaleRect(const wxRect &rect) const
+{
+	const int left = logicalToVirtualX(rect.x);
+	const int right = logicalToVirtualX(rect.x + rect.width);
+	const int top = logicalToVirtualY(rect.y);
+	const int bottom = logicalToVirtualY(rect.y + rect.height);
+	return wxRect(left, top, std::max(1, right - left), std::max(1, bottom - top));
+}
+
+void FlameGraphView::scrollToPixelPosition(int x, int y)
+{
+	int pixelsPerUnitX = 0;
+	int pixelsPerUnitY = 0;
+	GetScrollPixelsPerUnit(&pixelsPerUnitX, &pixelsPerUnitY);
+
+	const int scrollX = pixelsPerUnitX > 0 ? x / pixelsPerUnitX : x;
+	const int scrollY = pixelsPerUnitY > 0 ? y / pixelsPerUnitY : y;
+	Scroll(std::max(0, scrollX), std::max(0, scrollY));
 }
 
 const FlameGraphView::LayoutNode *FlameGraphView::hitTest(wxPoint point) const
 {
-	int chartBottom = GetClientSize().GetHeight() - FromDIP(kMargin);
-
+	const wxPoint logicalPoint = toLogicalPoint(point);
 	for (const auto &item : layout)
 	{
-		wxRect rect(item.rect);
-		rect.y = chartBottom - (item.depth + 1) * rowHeight - item.depth * FromDIP(kBarGap);
-		if (rect.Contains(point))
+		if (item.rect.Contains(logicalPoint))
 			return &item;
 	}
 
@@ -300,20 +388,8 @@ wxString FlameGraphView::makeTooltip(const LayoutNode *node) const
 		? node->node->symbol->procname.c_str()
 		: L"[root]";
 	return wxString::Format(
-		"%ls\nInclusive: %.2fs (%.2f%%)\nClick to inspect and zoom | Right-click to reset zoom",
+		"%ls\nInclusive: %.2fs (%.2f%%)\nClick to inspect and zoom | Right-click to reset zoom | Ctrl+Wheel to resize",
 		name, node->node->inclusive, pct);
-}
-
-void FlameGraphView::activateNode(const LayoutNode *node, bool inspect)
-{
-	if (!node || !node->node || !node->node->symbol)
-		return;
-
-	const Database::AddrInfo *addrinfo = database->getAddrInfo(node->node->address);
-	if (inspect)
-		theMainWin->inspectSymbol(addrinfo);
-	else
-		theMainWin->focusSymbol(addrinfo);
 }
 
 void FlameGraphView::zoomToNode(const LayoutNode *node)
@@ -322,7 +398,9 @@ void FlameGraphView::zoomToNode(const LayoutNode *node)
 		return;
 
 	zoomRoot = node->node;
+	pendingInitialSnap = true;
 	rebuildLayout();
+	snapToBottomLeftIfPending();
 	Refresh();
 }
 
@@ -362,8 +440,12 @@ void FlameGraphView::resetZoom()
 	if (!flameGraph)
 		return;
 
+	viewHistory.clear();
 	zoomRoot = flameGraph.get();
+	zoomScale = 1.0;
+	pendingInitialSnap = true;
 	rebuildLayout();
+	snapToBottomLeftIfPending();
 	Refresh();
 }
 
@@ -382,20 +464,26 @@ void FlameGraphView::OnPaint(wxPaintEvent &WXUNUSED(event))
 		return;
 	}
 
-	if (hiddenDepthCount > 0)
-	{
-		dc.SetTextForeground(wxSystemSettings::GetColour(wxSYS_COLOUR_GRAYTEXT));
-		dc.DrawText(wxString::Format("%d upper stack %s hidden", hiddenDepthCount, hiddenDepthCount == 1 ? "row" : "rows"),
-					FromDIP(kMargin), FromDIP(kToolbarHeight));
-	}
-
+	int viewX = 0;
+	int viewY = 0;
+	GetViewStart(&viewX, &viewY);
+	int scrollX = 0;
+	int scrollY = 0;
+	GetScrollPixelsPerUnit(&scrollX, &scrollY);
+	const double scale = std::max(zoomScale, kMinZoomScale);
+	const wxRect visibleRect(
+		(int)std::floor((viewX * scrollX) / scale),
+		(int)std::floor((viewY * scrollY) / scale),
+		(int)std::ceil(GetClientSize().GetWidth() / scale),
+		(int)std::ceil(GetClientSize().GetHeight() / scale));
 	const wxColour textColor = *wxBLACK;
-	const int chartBottom = GetClientSize().GetHeight() - FromDIP(kMargin);
+
+	dc.SetUserScale(scale, scale);
 
 	for (const auto &item : layout)
 	{
-		wxRect rect(item.rect);
-		rect.y = chartBottom - (item.depth + 1) * rowHeight - item.depth * FromDIP(kBarGap);
+		if (!item.rect.Intersects(visibleRect))
+			continue;
 
 		wxColour fill = colorForNode(item.node);
 		if (item.node->symbol == selectedSymbol)
@@ -405,24 +493,20 @@ void FlameGraphView::OnPaint(wxPaintEvent &WXUNUSED(event))
 
 		wxPen pen(fill.ChangeLightness(70));
 		if (item.node->symbol == selectedSymbol)
-		{
 			pen = wxPen(*wxBLACK, std::max(2, FromDIP(2)));
-		}
 		else if (&item == hoveredNode)
-		{
 			pen = wxPen(fill.ChangeLightness(45));
-		}
 
 		dc.SetPen(pen);
 		dc.SetBrush(wxBrush(fill));
-		dc.DrawRectangle(rect);
+		dc.DrawRectangle(item.rect);
 
-		if (item.node->symbol && item.rect.width >= FromDIP(kMinLabelWidth))
+		if (item.node->symbol && item.rect.width * scale >= FromDIP(kMinLabelWidth))
 		{
-			wxString text = item.node->symbol->procname;
 			dc.SetTextForeground(textColor);
-			dc.DrawLabel(text, rect.Deflate(FromDIP(4), FromDIP(2)),
-						 wxALIGN_LEFT | wxALIGN_CENTER_VERTICAL | wxELLIPSIZE_END);
+			dc.DrawLabel(item.node->symbol->procname,
+				item.rect.Deflate(FromDIP(kLabelPadding), FromDIP(2)),
+				wxALIGN_LEFT | wxALIGN_CENTER_VERTICAL | wxELLIPSIZE_END);
 		}
 	}
 }
@@ -463,14 +547,51 @@ void FlameGraphView::OnLeftDown(wxMouseEvent &event)
 	if (!node)
 		return;
 
+	const Database::AddrInfo *addrinfo = NULL;
+	if (node->node && node->node->symbol)
+	{
+		selectedSymbol = node->node->symbol;
+		addrinfo = database->getAddrInfo(node->node->address);
+	}
+
+	viewHistory.push_back(ViewState{zoomRoot, zoomScale, GetScrollPos(wxHORIZONTAL), GetScrollPos(wxVERTICAL)});
 	zoomToNode(node);
-	activateNode(node, true);
+	Update();
+	scheduleInspect(addrinfo);
 }
 
 void FlameGraphView::OnRightDown(wxMouseEvent &event)
 {
 	resetZoom();
 	event.Skip();
+}
+
+void FlameGraphView::OnMouseWheel(wxMouseEvent &event)
+{
+	if (!event.ControlDown() || !flameGraph || flameGraph->inclusive <= 0.0)
+	{
+		event.Skip();
+		return;
+	}
+
+	const int rotation = event.GetWheelRotation();
+	if (rotation == 0)
+		return;
+
+	const double previousZoom = zoomScale;
+	const double factor = rotation > 0 ? kZoomStep : (1.0 / kZoomStep);
+	zoomScale = std::max(kMinZoomScale, std::min(kMaxZoomScale, zoomScale * factor));
+	if (std::abs(zoomScale - previousZoom) < 1e-9)
+		return;
+
+	const wxPoint cursor = event.GetPosition();
+	const wxPoint before = toLogicalPoint(cursor);
+
+	updateVirtualSize();
+	const int targetX = logicalToVirtualX(before.x) - cursor.x;
+	const int targetY = logicalToVirtualY(before.y) - cursor.y;
+	scrollToPixelPosition(targetX, targetY);
+	Refresh();
 }
 
 void FlameGraphView::OnResetZoom(wxCommandEvent &WXUNUSED(event))

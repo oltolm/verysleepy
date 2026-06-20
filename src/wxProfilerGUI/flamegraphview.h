@@ -37,8 +37,17 @@ public:
 
 	void showChart(const Database::Symbol *selectedSymbol);
 	void reset();
+	void snapToBottomLeftIfPending();
 
 private:
+	struct ViewState
+	{
+		const Database::FlameGraphNode *zoomRoot;
+		double zoomScale;
+		int scrollX;
+		int scrollY;
+	};
+
 	struct LayoutNode
 	{
 		const Database::FlameGraphNode *node;
@@ -51,17 +60,23 @@ private:
 	std::unique_ptr<Database::FlameGraphNode> flameGraph;
 	std::vector<LayoutNode> layout;
 	std::vector<const Database::FlameGraphNode *> zoomPath;
+	std::vector<ViewState> viewHistory;
+	const Database::AddrInfo *pendingInspectAddrInfo;
+	bool inspectScheduled;
 	const Database::Symbol *selectedSymbol;
 	const LayoutNode *hoveredNode;
 	const Database::FlameGraphNode *zoomRoot;
 	int maxDepth;
 	bool chartDirty;
+	bool pendingInitialSnap;
 	int rowHeight;
-	int visibleDepthLimit;
-	int hiddenDepthCount;
+	double zoomScale;
+	int layoutWidth;
+	int chartHeight;
 
 	void rebuildChart();
 	void rebuildLayout();
+	void updateVirtualSize();
 	void layoutNode(const Database::FlameGraphNode *node, int depth, double x, double width, bool includeNode);
 	void layoutZoomPath(double x, double width);
 	int getSubtreeDepth(const Database::FlameGraphNode *node) const;
@@ -69,11 +84,15 @@ private:
 		const Database::FlameGraphNode *target,
 		std::vector<const Database::FlameGraphNode *> &path) const;
 	void updateResetButton();
-	bool isDepthVisible(int depth) const;
+	wxPoint toLogicalPoint(wxPoint point) const;
+	int logicalToVirtualX(int logicalX) const;
+	int logicalToVirtualY(int logicalY) const;
+	wxRect scaleRect(const wxRect &rect) const;
+	void scrollToPixelPosition(int x, int y);
+	void scheduleInspect(const Database::AddrInfo *addrinfo);
 	const LayoutNode *hitTest(wxPoint point) const;
 	wxColour colorForNode(const Database::FlameGraphNode *node) const;
 	wxString makeTooltip(const LayoutNode *node) const;
-	void activateNode(const LayoutNode *node, bool inspect);
 	void zoomToNode(const LayoutNode *node);
 	void zoomOut();
 	void resetZoom();
@@ -84,6 +103,7 @@ private:
 	void OnMouseLeave(wxMouseEvent &event);
 	void OnLeftDown(wxMouseEvent& event);
 	void OnRightDown(wxMouseEvent &event);
+	void OnMouseWheel(wxMouseEvent &event);
 	void OnResetZoom(wxCommandEvent &event);
 
 	DECLARE_EVENT_TABLE()

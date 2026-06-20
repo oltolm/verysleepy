@@ -197,6 +197,7 @@ MainWin::MainWin(const wxString& title,
 		new wxAuiNotebook(this, wxID_ANY, wxDefaultPosition, wxDefaultSize,
 						  wxAUI_NB_TOP | wxAUI_NB_TAB_SPLIT | wxAUI_NB_TAB_MOVE |
 							  wxAUI_NB_TAB_EXTERNAL_MOVE | wxAUI_NB_SCROLL_BUTTONS | wxNO_BORDER);
+	mainViews->Bind(wxEVT_AUINOTEBOOK_PAGE_CHANGED, &MainWin::OnMainViewsPageChanged, this);
 
 	sourceAndLog = new wxAuiNotebook(this,wxID_ANY,wxDefaultPosition,wxDefaultSize,wxAUI_NB_TOP|wxAUI_NB_TAB_SPLIT|wxAUI_NB_TAB_MOVE|wxAUI_NB_SCROLL_BUTTONS|wxNO_BORDER);
 	sourceview = new SourceView(sourceAndLog);
@@ -1244,6 +1245,14 @@ void MainWin::refreshSelectedThreads()
 void MainWin::invalidateFlameGraph()
 {
 	flameGraphView->reset();
+}
+
+void MainWin::OnMainViewsPageChanged(wxAuiNotebookEvent& event)
+{
+	if (event.GetSelection() != wxNOT_FOUND && mainViews->GetPage(event.GetSelection()) == flameGraphView)
+		flameGraphView->snapToBottomLeftIfPending();
+
+	event.Skip();
 }
 
 void MainWin::setProgress(const wchar_t *text, int max)
