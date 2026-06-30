@@ -24,6 +24,7 @@ http://www.gnu.org/copyleft/gpl.html.
 
 #include "database.h"
 #include <memory>
+#include <unordered_map>
 #include <vector>
 #include <wx/scrolwin.h>
 
@@ -40,14 +41,6 @@ public:
 	void snapToBottomLeftIfPending();
 
 private:
-	struct ViewState
-	{
-		const Database::FlameGraphNode *zoomRoot;
-		double zoomScale;
-		int scrollX;
-		int scrollY;
-	};
-
 	struct LayoutNode
 	{
 		const Database::FlameGraphNode *node;
@@ -55,46 +48,71 @@ private:
 		int depth;
 	};
 
+	struct NodeMetadata
+	{
+		const Database::FlameGraphNode *parent;
+		int subtreeDepth;
+	};
+
+	struct CachedLayout
+	{
+		std::vector<LayoutNode> layout;
+		std::vector<std::vector<size_t> > layoutRows;
+		std::vector<const Database::FlameGraphNode *> zoomPath;
+		int maxDepth;
+		int baseChartHeight;
+		int layoutWidth;
+	};
+
 	Database *database;
 	wxButton *resetZoomButton;
 	std::unique_ptr<Database::FlameGraphNode> flameGraph;
-	std::vector<LayoutNode> layout;
-	std::vector<const Database::FlameGraphNode *> zoomPath;
-	std::vector<ViewState> viewHistory;
+	std::shared_ptr<const CachedLayout> activeLayout;
+	std::unordered_map<const Database::FlameGraphNode *, std::shared_ptr<const CachedLayout> > layoutCache;
+	std::unordered_map<const Database::FlameGraphNode *, NodeMetadata> nodeMetadata;
 	const Database::AddrInfo *pendingInspectAddrInfo;
 	bool inspectScheduled;
 	const Database::Symbol *selectedSymbol;
 	const LayoutNode *hoveredNode;
 	const Database::FlameGraphNode *zoomRoot;
-	int maxDepth;
 	bool chartDirty;
 	bool pendingInitialSnap;
 	int rowHeight;
 	double zoomScale;
+	const Database::FlameGraphNode *activeLayoutRoot;
+	int cachedLayoutWidth;
 	int layoutWidth;
 	int chartHeight;
+	int verticalOffset;
 
 	void rebuildChart();
-	void rebuildLayout();
+	void invalidateLayoutCache();
+	void ensureActiveLayout();
+	void updateViewportMetrics();
 	void updateVirtualSize();
-	void layoutNode(const Database::FlameGraphNode *node, int depth, double x, double width, bool includeNode);
-	void layoutZoomPath(double x, double width);
-	int getSubtreeDepth(const Database::FlameGraphNode *node) const;
-	bool buildZoomPath(const Database::FlameGraphNode *node,
-		const Database::FlameGraphNode *target,
+	void buildCachedLayout(CachedLayout &cached, const Database::FlameGraphNode *root, int width) const;
+	void rebuildLayoutRows(CachedLayout &cached) const;
+	void buildZoomPath(const Database::FlameGraphNode *target,
 		std::vector<const Database::FlameGraphNode *> &path) const;
+	void layoutNode(CachedLayout &cached,
+		const Database::FlameGraphNode *node,
+		int depth,
+		double x,
+		double width,
+		bool includeNode) const;
+	void layoutZoomPath(CachedLayout &cached, double x, double width) const;
+	int cacheNodeMetadata(const Database::FlameGraphNode *node, const Database::FlameGraphNode *parent);
 	void updateResetButton();
 	wxPoint toLogicalPoint(wxPoint point) const;
 	int logicalToVirtualX(int logicalX) const;
 	int logicalToVirtualY(int logicalY) const;
-	wxRect scaleRect(const wxRect &rect) const;
+	wxRect offsetRect(const wxRect &rect) const;
 	void scrollToPixelPosition(int x, int y);
 	void scheduleInspect(const Database::AddrInfo *addrinfo);
 	const LayoutNode *hitTest(wxPoint point) const;
 	wxColour colorForNode(const Database::FlameGraphNode *node) const;
 	wxString makeTooltip(const LayoutNode *node) const;
 	void zoomToNode(const LayoutNode *node);
-	void zoomOut();
 	void resetZoom();
 
 	void OnPaint(wxPaintEvent &event);

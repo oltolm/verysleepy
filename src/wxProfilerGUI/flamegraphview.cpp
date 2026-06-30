@@ -26,7 +26,6 @@ http://www.gnu.org/copyleft/gpl.html.
 #include "mainwin.h"
 #include <algorithm>
 #include <cmath>
-#include <functional>
 #include <wx/button.h>
 #include <wx/dcbuffer.h>
 #include <wx/settings.h>
@@ -65,13 +64,15 @@ FlameGraphView::FlameGraphView(wxWindow *parent, Database *database_)
 	  selectedSymbol(NULL),
 	  hoveredNode(NULL),
 	  zoomRoot(NULL),
-	  maxDepth(0),
 	  chartDirty(true),
 	  pendingInitialSnap(true),
 	  rowHeight(FromDIP(kPreferredBarHeight)),
 	  zoomScale(1.0),
+	  activeLayoutRoot(NULL),
+	  cachedLayoutWidth(0),
 	  layoutWidth(0),
-	  chartHeight(0)
+	  chartHeight(0),
+	  verticalOffset(0)
 {
 	SetBackgroundStyle(wxBG_STYLE_PAINT);
 	SetScrollRate(FromDIP(16), FromDIP(16));
@@ -92,26 +93,29 @@ void FlameGraphView::showChart(const Database::Symbol *selectedSymbol_)
 		rebuildChart();
 		chartDirty = false;
 	}
+	ensureActiveLayout();
 	Refresh();
 }
 
 void FlameGraphView::reset()
 {
 	flameGraph.reset();
-	layout.clear();
-	viewHistory.clear();
+	activeLayout.reset();
+	layoutCache.clear();
+	nodeMetadata.clear();
 	pendingInspectAddrInfo = NULL;
 	inspectScheduled = false;
 	selectedSymbol = NULL;
 	hoveredNode = NULL;
 	zoomRoot = NULL;
-	zoomPath.clear();
-	maxDepth = 0;
 	chartDirty = true;
 	pendingInitialSnap = true;
 	zoomScale = 1.0;
+	activeLayoutRoot = NULL;
+	cachedLayoutWidth = 0;
 	layoutWidth = 0;
 	chartHeight = 0;
+	verticalOffset = 0;
 	SetVirtualSize(GetClientSize());
 	Scroll(0, 0);
 	updateResetButton();
@@ -134,55 +138,117 @@ void FlameGraphView::rebuildChart()
 {
 	flameGraph = database->buildFlameGraph();
 	zoomRoot = flameGraph.get();
-	zoomPath.clear();
-	viewHistory.clear();
 	pendingInitialSnap = true;
-	rebuildLayout();
+	nodeMetadata.clear();
+	if (flameGraph)
+		cacheNodeMetadata(flameGraph.get(), NULL);
+	invalidateLayoutCache();
 }
 
-void FlameGraphView::rebuildLayout()
+void FlameGraphView::invalidateLayoutCache()
 {
-	layout.clear();
+	activeLayout.reset();
+	layoutCache.clear();
+	activeLayoutRoot = NULL;
+	cachedLayoutWidth = 0;
 	hoveredNode = NULL;
-	maxDepth = 0;
 	layoutWidth = 0;
 	chartHeight = 0;
+	verticalOffset = 0;
+}
 
-	if (!flameGraph || flameGraph->inclusive <= 0.0)
-	{
-		updateVirtualSize();
-		updateResetButton();
-		return;
-	}
+void FlameGraphView::ensureActiveLayout()
+{
+	hoveredNode = NULL;
 
 	const Database::FlameGraphNode *root = zoomRoot ? zoomRoot : flameGraph.get();
-	zoomPath.clear();
-	buildZoomPath(flameGraph.get(), root, zoomPath);
+	const int width = std::max(1, GetClientSize().GetWidth() - 2 * FromDIP(kMargin));
+	if (width != cachedLayoutWidth)
+	{
+		activeLayout.reset();
+		layoutCache.clear();
+		activeLayoutRoot = NULL;
+		cachedLayoutWidth = width;
+	}
+
+	if (flameGraph && flameGraph->inclusive > 0.0 && root)
+	{
+		if (!activeLayout || activeLayoutRoot != root)
+		{
+			auto it = layoutCache.find(root);
+			if (it == layoutCache.end())
+			{
+				auto cached = std::make_shared<CachedLayout>();
+				buildCachedLayout(*cached, root, width);
+				it = layoutCache.emplace(root, cached).first;
+			}
+
+			activeLayout = it->second;
+			activeLayoutRoot = root;
+		}
+	}
+	else
+	{
+		activeLayout.reset();
+		activeLayoutRoot = NULL;
+	}
+
+	updateViewportMetrics();
+	updateResetButton();
+}
+
+void FlameGraphView::updateViewportMetrics()
+{
+	layoutWidth = activeLayout ? activeLayout->layoutWidth : cachedLayoutWidth;
+	const int clientLogicalHeight = std::max(1, (int)std::ceil(GetClientSize().GetHeight() /
+		std::max(zoomScale, kMinZoomScale)));
+	const int baseChartHeight = activeLayout ? activeLayout->baseChartHeight : 0;
+	chartHeight = std::max(baseChartHeight, clientLogicalHeight);
+	verticalOffset = std::max(0, chartHeight - baseChartHeight);
+	updateVirtualSize();
+}
+
+void FlameGraphView::buildCachedLayout(CachedLayout &cached, const Database::FlameGraphNode *root, int width) const
+{
+	cached.layout.clear();
+	cached.layoutRows.clear();
+	cached.zoomPath.clear();
+	cached.layoutWidth = width;
+
+	buildZoomPath(root, cached.zoomPath);
 
 	int ancestorRows = 0;
-	for (size_t i = 0; i + 1 < zoomPath.size(); ++i)
+	for (size_t i = 0; i + 1 < cached.zoomPath.size(); ++i)
 	{
-		if (zoomPath[i]->symbol)
+		if (cached.zoomPath[i]->symbol)
 			ancestorRows++;
 	}
 
-	const int subtreeRows = std::max(1, getSubtreeDepth(root));
+	const auto rootMetadata = nodeMetadata.find(root);
+	const int subtreeRows = std::max(1, rootMetadata != nodeMetadata.end() ? rootMetadata->second.subtreeDepth : 1);
 	const int totalRows = ancestorRows + subtreeRows;
-	rowHeight = FromDIP(kPreferredBarHeight);
-	maxDepth = totalRows;
-
 	const int margin = FromDIP(kMargin);
-	const int requiredChartHeight = FromDIP(kToolbarHeight) + 2 * margin + std::max(1, totalRows) * rowHeight +
-		std::max(0, totalRows - 1) * FromDIP(kBarGap);
-	const int clientLogicalHeight = std::max(1, (int)std::ceil(GetClientSize().GetHeight() /
-		std::max(zoomScale, kMinZoomScale)));
-	chartHeight = std::max(requiredChartHeight, clientLogicalHeight);
-	layoutWidth = std::max(1, GetClientSize().GetWidth() - 2 * margin);
+	const int barGap = FromDIP(kBarGap);
+	cached.maxDepth = totalRows;
+	cached.baseChartHeight = FromDIP(kToolbarHeight) + 2 * margin + std::max(1, totalRows) * rowHeight +
+		std::max(0, totalRows - 1) * barGap;
 
-	layoutZoomPath(margin, layoutWidth);
-	layoutNode(root, ancestorRows, margin, layoutWidth, true);
-	updateVirtualSize();
-	updateResetButton();
+	layoutZoomPath(cached, margin, cached.layoutWidth);
+	layoutNode(cached, root, ancestorRows, margin, cached.layoutWidth, true);
+	rebuildLayoutRows(cached);
+}
+
+void FlameGraphView::rebuildLayoutRows(CachedLayout &cached) const
+{
+	cached.layoutRows.clear();
+	cached.layoutRows.resize(std::max(0, cached.maxDepth));
+
+	for (size_t i = 0; i < cached.layout.size(); ++i)
+	{
+		const LayoutNode &item = cached.layout[i];
+		if (item.depth >= 0 && item.depth < (int)cached.layoutRows.size())
+			cached.layoutRows[item.depth].push_back(i);
+	}
 }
 
 void FlameGraphView::updateVirtualSize()
@@ -192,7 +258,27 @@ void FlameGraphView::updateVirtualSize()
 		std::max(client.GetHeight(), logicalToVirtualY(chartHeight)));
 }
 
-void FlameGraphView::layoutNode(const Database::FlameGraphNode *node, int depth, double x, double width, bool includeNode)
+void FlameGraphView::buildZoomPath(const Database::FlameGraphNode *target,
+	std::vector<const Database::FlameGraphNode *> &path) const
+{
+	path.clear();
+
+	for (const Database::FlameGraphNode *node = target; node; )
+	{
+		path.push_back(node);
+		const auto it = nodeMetadata.find(node);
+		node = it != nodeMetadata.end() ? it->second.parent : NULL;
+	}
+
+	std::reverse(path.begin(), path.end());
+}
+
+void FlameGraphView::layoutNode(CachedLayout &cached,
+	const Database::FlameGraphNode *node,
+	int depth,
+	double x,
+	double width,
+	bool includeNode) const
 {
 	if (!node || node->inclusive <= 0.0)
 		return;
@@ -203,10 +289,10 @@ void FlameGraphView::layoutNode(const Database::FlameGraphNode *node, int depth,
 		item.node = node;
 		item.depth = depth;
 		item.rect = wxRect((int)std::lround(x),
-			chartHeight - FromDIP(kMargin) - (depth + 1) * rowHeight - depth * FromDIP(kBarGap),
+			cached.baseChartHeight - FromDIP(kMargin) - (depth + 1) * rowHeight - depth * FromDIP(kBarGap),
 			std::max(1, (int)std::lround(width)),
 			rowHeight);
-		layout.push_back(item);
+		cached.layout.push_back(item);
 		depth++;
 	}
 
@@ -221,63 +307,44 @@ void FlameGraphView::layoutNode(const Database::FlameGraphNode *node, int depth,
 			? (x + width)
 			: (cursor + width * (child->inclusive / node->inclusive));
 
-		layoutNode(child, depth, cursor, next - cursor, true);
+		layoutNode(cached, child, depth, cursor, next - cursor, true);
 		cursor = next;
 	}
 }
 
-void FlameGraphView::layoutZoomPath(double x, double width)
+void FlameGraphView::layoutZoomPath(CachedLayout &cached, double x, double width) const
 {
-	if (zoomPath.size() <= 1)
+	if (cached.zoomPath.size() <= 1)
 		return;
 
 	int depth = 0;
-	for (size_t i = 0; i + 1 < zoomPath.size(); ++i)
+	for (size_t i = 0; i + 1 < cached.zoomPath.size(); ++i)
 	{
-		if (!zoomPath[i]->symbol)
+		if (!cached.zoomPath[i]->symbol)
 			continue;
 
 		LayoutNode item;
-		item.node = zoomPath[i];
+		item.node = cached.zoomPath[i];
 		item.depth = depth++;
 		item.rect = wxRect((int)std::lround(x),
-			chartHeight - FromDIP(kMargin) - (item.depth + 1) * rowHeight - item.depth * FromDIP(kBarGap),
+			cached.baseChartHeight - FromDIP(kMargin) - (item.depth + 1) * rowHeight - item.depth * FromDIP(kBarGap),
 			std::max(1, (int)std::lround(width)),
 			rowHeight);
-		layout.push_back(item);
+		cached.layout.push_back(item);
 	}
 }
 
-int FlameGraphView::getSubtreeDepth(const Database::FlameGraphNode *node) const
+int FlameGraphView::cacheNodeMetadata(const Database::FlameGraphNode *node, const Database::FlameGraphNode *parent)
 {
 	if (!node)
 		return 0;
 
 	int depth = 1;
 	for (const auto &child : node->children)
-		depth = std::max(depth, 1 + getSubtreeDepth(child.get()));
+		depth = std::max(depth, 1 + cacheNodeMetadata(child.get(), node));
+
+	nodeMetadata[node] = NodeMetadata{parent, depth};
 	return depth;
-}
-
-bool FlameGraphView::buildZoomPath(const Database::FlameGraphNode *node,
-	const Database::FlameGraphNode *target,
-	std::vector<const Database::FlameGraphNode *> &path) const
-{
-	if (!node)
-		return false;
-
-	path.push_back(node);
-	if (node == target)
-		return true;
-
-	for (const auto &child : node->children)
-	{
-		if (buildZoomPath(child.get(), target, path))
-			return true;
-	}
-
-	path.pop_back();
-	return false;
 }
 
 void FlameGraphView::updateResetButton()
@@ -332,13 +399,9 @@ int FlameGraphView::logicalToVirtualY(int logicalY) const
 	return (int)std::lround(logicalY * zoomScale);
 }
 
-wxRect FlameGraphView::scaleRect(const wxRect &rect) const
+wxRect FlameGraphView::offsetRect(const wxRect &rect) const
 {
-	const int left = logicalToVirtualX(rect.x);
-	const int right = logicalToVirtualX(rect.x + rect.width);
-	const int top = logicalToVirtualY(rect.y);
-	const int bottom = logicalToVirtualY(rect.y + rect.height);
-	return wxRect(left, top, std::max(1, right - left), std::max(1, bottom - top));
+	return wxRect(rect.x, rect.y + verticalOffset, rect.width, rect.height);
 }
 
 void FlameGraphView::scrollToPixelPosition(int x, int y)
@@ -354,11 +417,44 @@ void FlameGraphView::scrollToPixelPosition(int x, int y)
 
 const FlameGraphView::LayoutNode *FlameGraphView::hitTest(wxPoint point) const
 {
+	if (!activeLayout)
+		return NULL;
+
 	const wxPoint logicalPoint = toLogicalPoint(point);
-	for (const auto &item : layout)
+	const int margin = FromDIP(kMargin);
+	const int barGap = FromDIP(kBarGap);
+	const int slotHeight = rowHeight + barGap;
+	const int fromBottom = chartHeight - margin - 1 - logicalPoint.y;
+	if (fromBottom < 0 || slotHeight <= 0)
+		return NULL;
+
+	const int depth = fromBottom / slotHeight;
+	if (depth < 0 || depth >= (int)activeLayout->layoutRows.size())
+		return NULL;
+
+	const std::vector<size_t> &row = activeLayout->layoutRows[depth];
+	if (row.empty())
+		return NULL;
+
+	size_t left = 0;
+	size_t right = row.size();
+	while (left < right)
 	{
-		if (item.rect.Contains(logicalPoint))
-			return &item;
+		const size_t mid = left + (right - left) / 2;
+		const LayoutNode &candidate = activeLayout->layout[row[mid]];
+		const wxRect rect = offsetRect(candidate.rect);
+		if (logicalPoint.x < rect.x)
+		{
+			right = mid;
+		}
+		else if (logicalPoint.x >= rect.x + rect.width)
+		{
+			left = mid + 1;
+		}
+		else
+		{
+			return rect.Contains(logicalPoint) ? &candidate : NULL;
+		}
 	}
 
 	return NULL;
@@ -399,40 +495,9 @@ void FlameGraphView::zoomToNode(const LayoutNode *node)
 
 	zoomRoot = node->node;
 	pendingInitialSnap = true;
-	rebuildLayout();
+	ensureActiveLayout();
 	snapToBottomLeftIfPending();
 	Refresh();
-}
-
-void FlameGraphView::zoomOut()
-{
-	if (!flameGraph || !zoomRoot || zoomRoot == flameGraph.get())
-		return;
-
-	const Database::FlameGraphNode *target = zoomRoot;
-	const Database::FlameGraphNode *parent = NULL;
-	std::function<bool(const Database::FlameGraphNode *)> findParent =
-		[&](const Database::FlameGraphNode *node) -> bool
-		{
-			for (const auto &child : node->children)
-			{
-				if (child.get() == target)
-				{
-					parent = node;
-					return true;
-				}
-				if (findParent(child.get()))
-					return true;
-			}
-			return false;
-		};
-
-	if (findParent(flameGraph.get()))
-	{
-		zoomRoot = parent;
-		rebuildLayout();
-		Refresh();
-	}
 }
 
 void FlameGraphView::resetZoom()
@@ -440,11 +505,10 @@ void FlameGraphView::resetZoom()
 	if (!flameGraph)
 		return;
 
-	viewHistory.clear();
 	zoomRoot = flameGraph.get();
 	zoomScale = 1.0;
 	pendingInitialSnap = true;
-	rebuildLayout();
+	ensureActiveLayout();
 	snapToBottomLeftIfPending();
 	Refresh();
 }
@@ -464,6 +528,9 @@ void FlameGraphView::OnPaint(wxPaintEvent &WXUNUSED(event))
 		return;
 	}
 
+	if (!activeLayout)
+		return;
+
 	int viewX = 0;
 	int viewY = 0;
 	GetViewStart(&viewX, &viewY);
@@ -480,9 +547,10 @@ void FlameGraphView::OnPaint(wxPaintEvent &WXUNUSED(event))
 
 	dc.SetUserScale(scale, scale);
 
-	for (const auto &item : layout)
+	for (const auto &item : activeLayout->layout)
 	{
-		if (!item.rect.Intersects(visibleRect))
+		const wxRect rect = offsetRect(item.rect);
+		if (!rect.Intersects(visibleRect))
 			continue;
 
 		wxColour fill = colorForNode(item.node);
@@ -499,13 +567,13 @@ void FlameGraphView::OnPaint(wxPaintEvent &WXUNUSED(event))
 
 		dc.SetPen(pen);
 		dc.SetBrush(wxBrush(fill));
-		dc.DrawRectangle(item.rect);
+		dc.DrawRectangle(rect);
 
-		if (item.node->symbol && item.rect.width * scale >= FromDIP(kMinLabelWidth))
+		if (item.node->symbol && rect.width * scale >= FromDIP(kMinLabelWidth))
 		{
 			dc.SetTextForeground(textColor);
 			dc.DrawLabel(item.node->symbol->procname,
-				item.rect.Deflate(FromDIP(kLabelPadding), FromDIP(2)),
+				rect.Deflate(FromDIP(kLabelPadding), FromDIP(2)),
 				wxALIGN_LEFT | wxALIGN_CENTER_VERTICAL | wxELLIPSIZE_END);
 		}
 	}
@@ -513,7 +581,7 @@ void FlameGraphView::OnPaint(wxPaintEvent &WXUNUSED(event))
 
 void FlameGraphView::OnSize(wxSizeEvent &event)
 {
-	rebuildLayout();
+	ensureActiveLayout();
 	Refresh();
 	event.Skip();
 }
@@ -554,7 +622,6 @@ void FlameGraphView::OnLeftDown(wxMouseEvent &event)
 		addrinfo = database->getAddrInfo(node->node->address);
 	}
 
-	viewHistory.push_back(ViewState{zoomRoot, zoomScale, GetScrollPos(wxHORIZONTAL), GetScrollPos(wxVERTICAL)});
 	zoomToNode(node);
 	Update();
 	scheduleInspect(addrinfo);
@@ -587,7 +654,7 @@ void FlameGraphView::OnMouseWheel(wxMouseEvent &event)
 	const wxPoint cursor = event.GetPosition();
 	const wxPoint before = toLogicalPoint(cursor);
 
-	updateVirtualSize();
+	updateViewportMetrics();
 	const int targetX = logicalToVirtualX(before.x) - cursor.x;
 	const int targetY = logicalToVirtualY(before.y) - cursor.y;
 	scrollToPixelPosition(targetX, targetY);
