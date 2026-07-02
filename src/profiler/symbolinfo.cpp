@@ -25,7 +25,6 @@ http://www.gnu.org/copyleft/gpl.html
 #include "../wxProfilerGUI/profilergui.h"
 
 #include "../utils/osutils.h"
-#include <utility>
 #include <windows.h>
 #include <psapi.h>
 #include "../utils/dbginterface.h"
@@ -326,7 +325,6 @@ const std::wstring SymbolInfo::getProcForAddr(PROFILER_ADDR addr,
 {
 	procfilepath_out = L"";
 	proclinenum_out = 0;
-	std::wstring name;
 
 	Module *mod = getModuleForAddr(addr);
 
@@ -340,33 +338,7 @@ const std::wstring SymbolInfo::getProcForAddr(PROFILER_ADDR addr,
 	symbol_info->MaxNameLen = ((sizeof(buffer) - sizeof(SYMBOL_INFOW)) / sizeof(WCHAR)) - 1;
 
 	DWORD64 displacement = 0;
-	BOOL result = FALSE;
-	if (mod)
-	{
-		auto it = mod->sym_cache.find(addr);
-		if (it != mod->sym_cache.end())
-		{
-			result = TRUE;
-			name = it->second;
-		}
-		else
-		{
-			result = dbgHelp->SymFromAddrW(process_handle.get(), (DWORD64)addr, &displacement,
-										   symbol_info);
-			if (result)
-			{
-				name = symbol_info->Name;
-				mod->sym_cache.emplace(addr, name);
-			}
-		}
-	}
-	else
-	{
-		result =
-			dbgHelp->SymFromAddrW(process_handle.get(), (DWORD64)addr, &displacement, symbol_info);
-		if (result)
-			name = symbol_info->Name;
-	}
+	BOOL result = dbgHelp->SymFromAddrW(process_handle.get(), (DWORD64)addr, &displacement, symbol_info);
 
 	if(!result)
 	{
@@ -381,7 +353,7 @@ const std::wstring SymbolInfo::getProcForAddr(PROFILER_ADDR addr,
 	//------------------------------------------------------------------------
 	getLineForAddr(addr, procfilepath_out, proclinenum_out);
 
-	return name;
+	return symbol_info->Name;
 }
 
 void SymbolInfo::getLineForAddr(PROFILER_ADDR addr, std::wstring& filepath_out, int& linenum_out)
@@ -389,16 +361,6 @@ void SymbolInfo::getLineForAddr(PROFILER_ADDR addr, std::wstring& filepath_out, 
 	Module *mod = getModuleForAddr(addr);
 	DbgHelp *dbgHelp = mod ? mod->dbghelp : &dbgHelpDrMingw;
 
-	if (mod)
-	{
-		auto it = mod->line_cache.find(addr);
-		if (it != mod->line_cache.end())
-		{
-			filepath_out = it->second.first;
-			linenum_out = it->second.second;
-			return;
-		}
-	}
 	DWORD displacement;
 	IMAGEHLP_LINEW64 lineinfo;
 	ZeroMemory(&lineinfo, sizeof(lineinfo));
@@ -406,7 +368,7 @@ void SymbolInfo::getLineForAddr(PROFILER_ADDR addr, std::wstring& filepath_out, 
 	BOOL result = dbgHelp->SymGetLineFromAddrW64(process_handle.get(), (DWORD64)addr, &displacement,
 												 &lineinfo);
 
-	if (result)
+	if(result)
 	{
 		filepath_out = lineinfo.FileName;
 		linenum_out = lineinfo.LineNumber;
@@ -416,8 +378,6 @@ void SymbolInfo::getLineForAddr(PROFILER_ADDR addr, std::wstring& filepath_out, 
 		filepath_out = L"[unknown]";
 		linenum_out = 0;
 	}
-	if (mod)
-		mod->line_cache.emplace(addr, std::make_pair(filepath_out, linenum_out));
 }
 
 std::wstring SymbolInfo::saveMinidump()
