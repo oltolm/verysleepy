@@ -45,6 +45,7 @@ http://www.gnu.org/copyleft/gpl.html
 #include "profilergui.h"
 #include "sourceview.h"
 #include "threadsview.h"
+#include <cmath>
 #include <shellapi.h>
 #include <wx/txtstrm.h>
 #include <wx/wfstream.h>
@@ -891,8 +892,10 @@ void MainWin::OnExportAsSpeedscope(wxCommandEvent& WXUNUSED(event))
 
 void MainWin::OnExportAsFlamegraph(wxCommandEvent& WXUNUSED(event))
 {
-	wxFileDialog dlg(this, "Export File As", wxEmptyString, "flamegraph.txt",
-					 "Text Files (*.txt)|*.txt", wxFD_SAVE | wxFD_OVERWRITE_PROMPT);
+	wxFileDialog dlg(
+		this, "Export File As", wxEmptyString, "flamegraph.txt",
+		"Folded Stack Files (*.txt)|*.txt|Folded Stack Files for flameshow (*.txt)|*.txt",
+		wxFD_SAVE | wxFD_OVERWRITE_PROMPT);
 	if (dlg.ShowModal() != wxID_CANCEL)
 	{
 		wxFileOutputStream file(dlg.GetPath());
@@ -901,25 +904,26 @@ void MainWin::OnExportAsFlamegraph(wxCommandEvent& WXUNUSED(event))
 			wxLogSysError("Could not export profile data.\n");
 			return;
 		}
-		wxTextOutputStream txt(file, wxEOL_UNIX);
+		std::map<std::wstring, double> foldedStacks;
+		const wxString lineEnding = dlg.GetFilterIndex() == 1 ? "\r\n" : "\n";
+		const wxScopedCharBuffer lineEndingBytes = lineEnding.utf8_str();
 
 		// flamegraph.pl expects "folded stack" format:
 		// root;mid;leaf count
-		// The stack is bottom-to-top, semicolon-separated.
+		// The stack is bottom-to-top, semicolon-separated, with an integer weight.
 		for (const auto& callstack : database->callstacks)
 		{
 			double count = database->getFilteredSampleCount(callstack.samples);
-			if (count <= 0.0)
+			if (count <= 0.0 || callstack.symbols.empty())
 				continue;
 
-			// callstack.symbols[0] is the leaf (top), last is root (bottom).
-			// flamegraph.pl expects root first, so iterate in reverse.
-			for (size_t i = callstack.symbols.size(); i > 0; --i)
+			std::wstring folded;
+			for (size_t i = callstack.symbols.size(); i-- > 0;)
 			{
-				if (i < callstack.symbols.size())
-					txt << ";";
-				// Sanitize: replace semicolons and spaces that would break the format
-				std::wstring name = callstack.symbols[i - 1]->procname;
+				if (!folded.empty())
+					folded += L';';
+
+				std::wstring name = callstack.symbols[i]->procname;
 				for (auto& c : name)
 				{
 					if (c == L';')
@@ -927,11 +931,31 @@ void MainWin::OnExportAsFlamegraph(wxCommandEvent& WXUNUSED(event))
 					else if (c == L'\n' || c == L'\r')
 						c = L' ';
 				}
-				txt << name;
+				folded += name;
+
+				if (i == 0)
+					break;
 			}
-			txt << " " << count << "\n";
+
+			foldedStacks[folded] += count;
 		}
-		txt.Flush();
+
+		for (const auto& entry : foldedStacks)
+		{
+			long long exportedCount = (long long)std::llround(entry.second);
+			if (exportedCount <= 0)
+				exportedCount = 1;
+
+			wxString line(entry.first);
+			line << " " << exportedCount;
+			const wxScopedCharBuffer utf8Line = line.utf8_str();
+			if (!file.Write(utf8Line.data(), utf8Line.length()).IsOk() ||
+				!file.Write(lineEndingBytes.data(), lineEndingBytes.length()).IsOk())
+			{
+				wxLogSysError("Could not export profile data.\n");
+				return;
+			}
+		}
 	}
 }
 
