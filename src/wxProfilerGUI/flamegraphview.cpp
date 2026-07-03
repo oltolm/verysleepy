@@ -36,6 +36,7 @@ const int kBarGap = 2;
 const int kMargin = 8;
 const int kLabelPadding = 4;
 const int kMinLabelWidth = 36;
+const int kMinVisibleBarWidth = 12;
 const int kPreferredBarHeight = 16;
 const int kToolbarHeight = 30;
 const double kMinZoomScale = 0.25;
@@ -47,6 +48,7 @@ const int kResetZoomButton = wxID_HIGHEST + 201;
 BEGIN_EVENT_TABLE(FlameGraphView, wxScrolledWindow)
 EVT_PAINT(FlameGraphView::OnPaint)
 EVT_SIZE(FlameGraphView::OnSize)
+EVT_CHAR_HOOK(FlameGraphView::OnCharHook)
 EVT_MOTION(FlameGraphView::OnMouseMove)
 EVT_LEAVE_WINDOW(FlameGraphView::OnMouseLeave)
 EVT_LEFT_DOWN(FlameGraphView::OnLeftDown)
@@ -56,13 +58,14 @@ EVT_BUTTON(kResetZoomButton, FlameGraphView::OnResetZoom)
 END_EVENT_TABLE()
 
 FlameGraphView::FlameGraphView(wxWindow *parent, Database *database_)
-	: wxScrolledWindow(parent, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxBORDER_THEME),
+	: wxScrolledWindow(parent, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxBORDER_THEME | wxWANTS_CHARS),
 	  database(database_),
 	  resetZoomButton(NULL),
 	  pendingInspectAddrInfo(NULL),
 	  inspectScheduled(false),
 	  selectedSymbol(NULL),
 	  hoveredNode(NULL),
+	  activeNode(NULL),
 	  zoomRoot(NULL),
 	  chartDirty(true),
 	  pendingInitialSnap(true),
@@ -94,6 +97,8 @@ void FlameGraphView::showChart(const Database::Symbol *selectedSymbol_)
 		chartDirty = false;
 	}
 	ensureActiveLayout();
+	if (!activeNode)
+		setActiveNode(findDefaultActiveNode());
 	Refresh();
 }
 
@@ -107,6 +112,7 @@ void FlameGraphView::reset()
 	inspectScheduled = false;
 	selectedSymbol = NULL;
 	hoveredNode = NULL;
+	activeNode = NULL;
 	zoomRoot = NULL;
 	chartDirty = true;
 	pendingInitialSnap = true;
@@ -152,6 +158,7 @@ void FlameGraphView::invalidateLayoutCache()
 	activeLayoutRoot = NULL;
 	cachedLayoutWidth = 0;
 	hoveredNode = NULL;
+	activeNode = NULL;
 	layoutWidth = 0;
 	chartHeight = 0;
 	verticalOffset = 0;
@@ -195,6 +202,12 @@ void FlameGraphView::ensureActiveLayout()
 
 	updateViewportMetrics();
 	updateResetButton();
+	if (activeNode)
+		activeNode = findLayoutNode(activeNode->node);
+	if (activeNode && !isLayoutNodeVisible(activeNode))
+		activeNode = NULL;
+	if (!activeNode)
+		activeNode = findDefaultActiveNode();
 }
 
 void FlameGraphView::updateViewportMetrics()
@@ -453,11 +466,236 @@ const FlameGraphView::LayoutNode *FlameGraphView::hitTest(wxPoint point) const
 		}
 		else
 		{
-			return rect.Contains(logicalPoint) ? &candidate : NULL;
+			return rect.Contains(logicalPoint) && isLayoutNodeVisible(&candidate) ? &candidate : NULL;
 		}
 	}
 
 	return NULL;
+}
+
+const FlameGraphView::LayoutNode *FlameGraphView::findLayoutNode(const Database::FlameGraphNode *node) const
+{
+	if (!activeLayout || !node)
+		return NULL;
+
+	for (const auto &item : activeLayout->layout)
+	{
+		if (item.node == node)
+			return &item;
+	}
+
+	return NULL;
+}
+
+const FlameGraphView::LayoutNode *FlameGraphView::findDefaultActiveNode() const
+{
+	if (!activeLayout)
+		return NULL;
+
+	if (selectedSymbol)
+	{
+		for (const auto &item : activeLayout->layout)
+		{
+			if (item.node && item.node->symbol == selectedSymbol && isLayoutNodeVisible(&item))
+				return &item;
+		}
+	}
+
+	for (const auto &item : activeLayout->layout)
+	{
+		if (item.node && item.node->symbol && isLayoutNodeVisible(&item))
+			return &item;
+	}
+
+	return activeLayout->layout.empty() ? NULL : &activeLayout->layout.front();
+}
+
+const FlameGraphView::LayoutNode *FlameGraphView::findParentNode(const LayoutNode *node) const
+{
+	if (!node || !node->node)
+		return NULL;
+
+	for (const Database::FlameGraphNode *current = node->node; current; )
+	{
+		auto it = nodeMetadata.find(current);
+		if (it == nodeMetadata.end() || !it->second.parent)
+			return NULL;
+
+		current = it->second.parent;
+		const LayoutNode *candidate = findLayoutNode(current);
+		if (candidate && isLayoutNodeVisible(candidate))
+			return candidate;
+	}
+
+	return NULL;
+}
+
+const FlameGraphView::LayoutNode *FlameGraphView::findChildNode(const LayoutNode *node) const
+{
+	if (!activeLayout || !node)
+		return NULL;
+
+	const wxRect rect = offsetRect(node->rect);
+	const int centerX = rect.x + rect.width / 2;
+	const LayoutNode *best = NULL;
+	int bestDistance = 0;
+	for (const auto &candidate : activeLayout->layout)
+	{
+		if (candidate.depth <= node->depth || !isLayoutNodeVisible(&candidate))
+			continue;
+
+		if (!candidate.node || candidate.node == node->node)
+			continue;
+
+		if (!isDescendantOf(candidate.node, node->node))
+			continue;
+
+		const wxRect candidateRect = offsetRect(candidate.rect);
+		if (candidateRect.y >= rect.y)
+			continue;
+
+		if (candidateRect.x <= centerX && centerX < candidateRect.x + candidateRect.width)
+		{
+			if (!best || candidate.depth < best->depth)
+				best = &candidate;
+			continue;
+		}
+
+		const int candidateCenter = candidateRect.x + candidateRect.width / 2;
+		const int distance = std::abs(candidateCenter - centerX);
+		if (!best || best->depth > candidate.depth ||
+			(best->depth == candidate.depth &&
+				(distance < bestDistance ||
+					(distance == bestDistance && candidateRect.width > best->rect.width))))
+		{
+			best = &candidate;
+			bestDistance = distance;
+		}
+	}
+
+	return best;
+}
+
+const FlameGraphView::LayoutNode *FlameGraphView::findSiblingNode(const LayoutNode *node, int direction) const
+{
+	if (!activeLayout || !node || direction == 0 || node->depth < 0 ||
+		node->depth >= (int)activeLayout->layoutRows.size())
+		return NULL;
+
+	const std::vector<size_t> &row = activeLayout->layoutRows[node->depth];
+	const wxRect currentRect = offsetRect(node->rect);
+	const int currentCenter = currentRect.x + currentRect.width / 2;
+	const LayoutNode *best = NULL;
+	int bestDistance = 0;
+	for (size_t i = 0; i < row.size(); ++i)
+	{
+		const LayoutNode &candidate = activeLayout->layout[row[i]];
+		if (&candidate == node || !isLayoutNodeVisible(&candidate))
+			continue;
+
+		const wxRect candidateRect = offsetRect(candidate.rect);
+		const int candidateCenter = candidateRect.x + candidateRect.width / 2;
+		const int delta = candidateCenter - currentCenter;
+		if ((direction < 0 && delta >= 0) || (direction > 0 && delta <= 0))
+			continue;
+
+		const int distance = std::abs(delta);
+		if (!best || distance < bestDistance ||
+			(distance == bestDistance && candidateRect.width > best->rect.width))
+		{
+			best = &candidate;
+			bestDistance = distance;
+		}
+	}
+
+	return best;
+}
+
+bool FlameGraphView::isDescendantOf(const Database::FlameGraphNode *node,
+	const Database::FlameGraphNode *ancestor) const
+{
+	if (!node || !ancestor || node == ancestor)
+		return false;
+
+	for (const Database::FlameGraphNode *current = node; current; )
+	{
+		auto it = nodeMetadata.find(current);
+		if (it == nodeMetadata.end() || !it->second.parent)
+			return false;
+
+		current = it->second.parent;
+		if (current == ancestor)
+			return true;
+	}
+
+	return false;
+}
+
+bool FlameGraphView::isLayoutNodeVisible(const LayoutNode *node) const
+{
+	if (!node)
+		return false;
+
+	if (!node->node || !node->node->symbol)
+		return true;
+
+	return node->rect.width * std::max(zoomScale, kMinZoomScale) >= FromDIP(kMinVisibleBarWidth);
+}
+
+void FlameGraphView::setActiveNode(const LayoutNode *node,
+	bool preserveHorizontalPosition,
+	bool preserveVerticalPosition)
+{
+	activeNode = node;
+	selectedSymbol = activeNode && activeNode->node ? activeNode->node->symbol : NULL;
+	ensureActiveNodeVisible(preserveHorizontalPosition, preserveVerticalPosition);
+	Refresh();
+}
+
+void FlameGraphView::ensureActiveNodeVisible(bool preserveHorizontalPosition,
+	bool preserveVerticalPosition)
+{
+	if (!activeNode)
+		return;
+
+	const wxRect rect = offsetRect(activeNode->rect);
+	int viewX = 0;
+	int viewY = 0;
+	GetViewStart(&viewX, &viewY);
+	int scrollX = 0;
+	int scrollY = 0;
+	GetScrollPixelsPerUnit(&scrollX, &scrollY);
+	const double scale = std::max(zoomScale, kMinZoomScale);
+	const int currentPixelX = viewX * scrollX;
+	const int currentPixelY = viewY * scrollY;
+	const int currentLeft = (int)std::floor(currentPixelX / scale);
+	const int currentTop = (int)std::floor(currentPixelY / scale);
+	const int viewportWidth = (int)std::ceil(GetClientSize().GetWidth() / scale);
+	const int viewportHeight = (int)std::ceil(GetClientSize().GetHeight() / scale);
+	const int currentRight = currentLeft + viewportWidth;
+	const int currentBottom = currentTop + viewportHeight;
+	int targetPixelX = currentPixelX;
+	int targetPixelY = currentPixelY;
+	if (!preserveHorizontalPosition)
+	{
+		int targetX = currentLeft;
+		if (rect.x < currentLeft)
+			targetX = rect.x;
+		else if (rect.x + rect.width > currentRight)
+			targetX = rect.x + rect.width - viewportWidth;
+		targetPixelX = logicalToVirtualX(targetX);
+	}
+	if (!preserveVerticalPosition)
+	{
+		int targetY = currentTop;
+		if (rect.y < currentTop)
+			targetY = rect.y;
+		else if (rect.y + rect.height > currentBottom)
+			targetY = rect.y + rect.height - viewportHeight;
+		targetPixelY = logicalToVirtualY(targetY);
+	}
+
+	scrollToPixelPosition(targetPixelX, targetPixelY);
 }
 
 wxColour FlameGraphView::colorForNode(const Database::FlameGraphNode *node) const
@@ -493,24 +731,43 @@ void FlameGraphView::zoomToNode(const LayoutNode *node)
 	if (!node)
 		return;
 
+	if (node->node == zoomRoot)
+	{
+		setActiveNode(node, true, true);
+		return;
+	}
+
+	const Database::FlameGraphNode *focusNode = node->node;
 	zoomRoot = node->node;
-	pendingInitialSnap = true;
+	activeNode = NULL;
 	ensureActiveLayout();
-	snapToBottomLeftIfPending();
-	Refresh();
+	const LayoutNode *target = findLayoutNode(focusNode);
+	if (!target || !isLayoutNodeVisible(target))
+		target = findDefaultActiveNode();
+	setActiveNode(target, true, false);
 }
 
-void FlameGraphView::resetZoom()
+void FlameGraphView::resetZoom(bool resetScale)
 {
 	if (!flameGraph)
 		return;
 
+	const Database::FlameGraphNode *focusNode = activeNode && activeNode->node
+		? activeNode->node
+		: zoomRoot;
+
 	zoomRoot = flameGraph.get();
-	zoomScale = 1.0;
-	pendingInitialSnap = true;
+	activeNode = NULL;
+	if (resetScale)
+		zoomScale = 1.0;
+	pendingInitialSnap = resetScale;
 	ensureActiveLayout();
-	snapToBottomLeftIfPending();
-	Refresh();
+	if (resetScale)
+		snapToBottomLeftIfPending();
+	const LayoutNode *target = findLayoutNode(focusNode);
+	if (!target || !isLayoutNodeVisible(target))
+		target = findDefaultActiveNode();
+	setActiveNode(target);
 }
 
 void FlameGraphView::OnPaint(wxPaintEvent &WXUNUSED(event))
@@ -544,11 +801,16 @@ void FlameGraphView::OnPaint(wxPaintEvent &WXUNUSED(event))
 		(int)std::ceil(GetClientSize().GetWidth() / scale),
 		(int)std::ceil(GetClientSize().GetHeight() / scale));
 	const wxColour textColor = *wxBLACK;
+	const wxColour activeOutline(0, 120, 215);
+	const wxColour activeFill(235, 244, 255);
 
 	dc.SetUserScale(scale, scale);
 
 	for (const auto &item : activeLayout->layout)
 	{
+		if (!isLayoutNodeVisible(&item))
+			continue;
+
 		const wxRect rect = offsetRect(item.rect);
 		if (!rect.Intersects(visibleRect))
 			continue;
@@ -558,16 +820,28 @@ void FlameGraphView::OnPaint(wxPaintEvent &WXUNUSED(event))
 			fill = fill.ChangeLightness(135);
 		if (&item == hoveredNode)
 			fill = fill.ChangeLightness(112);
+		if (&item == activeNode)
+			fill = activeFill;
 
 		wxPen pen(fill.ChangeLightness(70));
-		if (item.node->symbol == selectedSymbol)
-			pen = wxPen(*wxBLACK, std::max(2, FromDIP(2)));
+		if (&item == activeNode)
+			pen = wxPen(activeOutline, std::max(3, FromDIP(3)));
+		else if (item.node->symbol == selectedSymbol)
+			pen = wxPen(wxColour(90, 90, 90), std::max(2, FromDIP(2)));
 		else if (&item == hoveredNode)
 			pen = wxPen(fill.ChangeLightness(45));
 
 		dc.SetPen(pen);
 		dc.SetBrush(wxBrush(fill));
 		dc.DrawRectangle(rect);
+		if (&item == activeNode && rect.width > 6 && rect.height > 6)
+		{
+			wxRect innerRect(rect);
+			innerRect.Deflate(1);
+			dc.SetPen(wxPen(*wxWHITE, std::max(1, FromDIP(1))));
+			dc.SetBrush(*wxTRANSPARENT_BRUSH);
+			dc.DrawRectangle(innerRect);
+		}
 
 		if (item.node->symbol && rect.width * scale >= FromDIP(kMinLabelWidth))
 		{
@@ -611,16 +885,14 @@ void FlameGraphView::OnMouseLeave(wxMouseEvent &event)
 
 void FlameGraphView::OnLeftDown(wxMouseEvent &event)
 {
+	SetFocus();
 	const LayoutNode *node = hitTest(event.GetPosition());
 	if (!node)
 		return;
 
 	const Database::AddrInfo *addrinfo = NULL;
 	if (node->node && node->node->symbol)
-	{
-		selectedSymbol = node->node->symbol;
 		addrinfo = database->getAddrInfo(node->node->address);
-	}
 
 	zoomToNode(node);
 	Update();
@@ -652,13 +924,84 @@ void FlameGraphView::OnMouseWheel(wxMouseEvent &event)
 		return;
 
 	const wxPoint cursor = event.GetPosition();
+	const LayoutNode *cursorNode = hoveredNode ? hoveredNode : hitTest(cursor);
+	const Database::FlameGraphNode *focusNode = cursorNode && cursorNode->node
+		? cursorNode->node
+		: (activeNode && activeNode->node ? activeNode->node : NULL);
 	const wxPoint before = toLogicalPoint(cursor);
 
 	updateViewportMetrics();
 	const int targetX = logicalToVirtualX(before.x) - cursor.x;
 	const int targetY = logicalToVirtualY(before.y) - cursor.y;
 	scrollToPixelPosition(targetX, targetY);
+
+	if (focusNode)
+	{
+		const LayoutNode *target = findLayoutNode(focusNode);
+		if (target && isLayoutNodeVisible(target))
+		{
+			activeNode = target;
+			selectedSymbol = target->node ? target->node->symbol : NULL;
+		}
+		else
+		{
+			activeNode = findDefaultActiveNode();
+			selectedSymbol = activeNode && activeNode->node ? activeNode->node->symbol : NULL;
+		}
+	}
+	else if (activeNode && !isLayoutNodeVisible(activeNode))
+	{
+		activeNode = findDefaultActiveNode();
+		selectedSymbol = activeNode && activeNode->node ? activeNode->node->symbol : NULL;
+	}
+
 	Refresh();
+}
+
+void FlameGraphView::OnCharHook(wxKeyEvent &event)
+{
+	if (!activeLayout || !flameGraph || flameGraph->inclusive <= 0.0)
+	{
+		event.Skip();
+		return;
+	}
+
+	const LayoutNode *target = NULL;
+	switch (event.GetKeyCode())
+	{
+	case WXK_LEFT:
+		target = activeNode ? findSiblingNode(activeNode, -1) : findDefaultActiveNode();
+		break;
+	case WXK_RIGHT:
+		target = activeNode ? findSiblingNode(activeNode, 1) : findDefaultActiveNode();
+		break;
+	case WXK_UP:
+		target = activeNode ? findChildNode(activeNode) : findDefaultActiveNode();
+		break;
+	case WXK_DOWN:
+		target = activeNode ? findParentNode(activeNode) : findDefaultActiveNode();
+		break;
+	case WXK_RETURN:
+	case WXK_NUMPAD_ENTER:
+		if (activeNode)
+		{
+			zoomToNode(activeNode);
+			if (activeNode && activeNode->node && activeNode->node->symbol)
+				scheduleInspect(database->getAddrInfo(activeNode->node->address));
+		}
+		return;
+	case WXK_ESCAPE:
+		resetZoom(false);
+		return;
+	default:
+		event.Skip();
+		return;
+	}
+
+	if (target)
+		setActiveNode(target,
+			event.GetKeyCode() == WXK_UP || event.GetKeyCode() == WXK_DOWN,
+			event.GetKeyCode() == WXK_LEFT || event.GetKeyCode() == WXK_RIGHT);
 }
 
 void FlameGraphView::OnResetZoom(wxCommandEvent &WXUNUSED(event))

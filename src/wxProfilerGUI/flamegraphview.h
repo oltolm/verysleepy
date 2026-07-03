@@ -74,6 +74,7 @@ private:
 	bool inspectScheduled;
 	const Database::Symbol *selectedSymbol;
 	const LayoutNode *hoveredNode;
+	const LayoutNode *activeNode;
 	const Database::FlameGraphNode *zoomRoot;
 	bool chartDirty;
 	bool pendingInitialSnap;
@@ -110,10 +111,22 @@ private:
 	void scrollToPixelPosition(int x, int y);
 	void scheduleInspect(const Database::AddrInfo *addrinfo);
 	const LayoutNode *hitTest(wxPoint point) const;
+	const LayoutNode *findLayoutNode(const Database::FlameGraphNode *node) const;
+	const LayoutNode *findDefaultActiveNode() const;
+	const LayoutNode *findParentNode(const LayoutNode *node) const;
+	const LayoutNode *findChildNode(const LayoutNode *node) const;
+	const LayoutNode *findSiblingNode(const LayoutNode *node, int direction) const;
+	bool isDescendantOf(const Database::FlameGraphNode *node, const Database::FlameGraphNode *ancestor) const;
+	bool isLayoutNodeVisible(const LayoutNode *node) const;
+	void setActiveNode(const LayoutNode *node,
+		bool preserveHorizontalPosition = false,
+		bool preserveVerticalPosition = false);
+	void ensureActiveNodeVisible(bool preserveHorizontalPosition = false,
+		bool preserveVerticalPosition = false);
 	wxColour colorForNode(const Database::FlameGraphNode *node) const;
 	wxString makeTooltip(const LayoutNode *node) const;
 	void zoomToNode(const LayoutNode *node);
-	void resetZoom();
+	void resetZoom(bool resetScale = true);
 
 	void OnPaint(wxPaintEvent &event);
 	void OnSize(wxSizeEvent &event);
@@ -122,6 +135,7 @@ private:
 	void OnLeftDown(wxMouseEvent& event);
 	void OnRightDown(wxMouseEvent &event);
 	void OnMouseWheel(wxMouseEvent &event);
+	void OnCharHook(wxKeyEvent &event);
 	void OnResetZoom(wxCommandEvent &event);
 
 	DECLARE_EVENT_TABLE()
