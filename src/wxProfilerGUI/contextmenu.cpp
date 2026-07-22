@@ -226,7 +226,6 @@ void FunctionMenu(wxListView *list, Database *database)
 
 	case ID_SET_ROOT:
 		database->setRoot(sym);
-		theMainWin->invalidateFlameGraph();
 		theMainWin->refresh();
 		break;
 

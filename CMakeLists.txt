@@ -55,7 +55,6 @@ add_executable(
   src/wxProfilerGUI/capturewin.cpp
   src/wxProfilerGUI/contextmenu.cpp
   src/wxProfilerGUI/database.cpp
-  src/wxProfilerGUI/flamegraphview.cpp
   src/wxProfilerGUI/latesymbolinfo.cpp
   src/wxProfilerGUI/launchdlg.cpp
   src/wxProfilerGUI/logview.cpp

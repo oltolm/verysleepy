@@ -122,16 +122,6 @@ public:
 		std::map<ThreadID, double> samples;
 	};
 
-	struct FlameGraphNode
-	{
-		FlameGraphNode() : symbol(NULL), address(0), inclusive(0) {}
-
-		const Symbol *symbol;
-		Address address;
-		double inclusive;
-		std::vector<std::unique_ptr<FlameGraphNode>> children;
-	};
-
 	Database();
 	virtual ~Database();
 	void clear();
@@ -157,7 +147,6 @@ public:
 	SymbolSamples getSymbolSamples(const Symbol *symbol) const;
 	std::vector<const CallStack*> getCallstacksContaining(const Symbol *symbol) const;
 	std::vector<double> getLineCounts(FileID sourcefile);
-	std::unique_ptr<FlameGraphNode> buildFlameGraph() const;
 
 	std::vector<std::wstring> stats;
 

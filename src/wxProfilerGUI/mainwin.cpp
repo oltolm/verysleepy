@@ -27,7 +27,6 @@ http://www.gnu.org/copyleft/gpl.html
 #include "../utils/container.h"
 #include "../utils/stringutils.h"
 #include "CallstackView.h"
-#include "flamegraphview.h"
 #include <algorithm>
 #include <wx/aui/auibook.h>
 #include <wx/aui/framemanager.h>
@@ -128,7 +127,7 @@ MainWin::MainWin(const wxString& title,
 	menuFile->Append(MainWin_ExportAsSpeedscope, _T("&Export as speedscope..."),
 					 _T("Export the profile data to a speedscope file"));
 	menuFile->Append(MainWin_ExportAsFlamegraph, _T("&Export as Flamegraph..."),
-					 _T("Export the profile data to a folded stack file for flamegraph.pl"));
+					 _T("Export the profile data to a folded stack file for flamegraph.pl or flamelens"));
 	menuFile->AppendSeparator();
 	menuFile->Append(MainWin_LoadMinidumpSymbols,_T("Load symbols from &minidump"), _T("Loads symbols for modules recorded in the minidump included with this capture."))
 		->Enable(database->has_minidump);
@@ -188,17 +187,15 @@ MainWin::MainWin(const wxString& title,
 
 	const unsigned int paneHintFlags = wxAUI_MGR_TRANSPARENT_HINT | wxAUI_MGR_TRANSPARENT_DRAG;
 	const unsigned int mainAuiFlags =
-		paneHintFlags | wxAUI_MGR_LIVE_RESIZE | wxAUI_MGR_ALLOW_FLOATING;
+		paneHintFlags | wxAUI_MGR_LIVE_RESIZE;
 	aui = new wxAuiManager(this, mainAuiFlags);
 
 	// Create the windows
-	proclist = new ProcList(this, true, database, "FunctionsList");
-	flameGraphView = new FlameGraphView(this, database);
 	mainViews =
 		new wxAuiNotebook(this, wxID_ANY, wxDefaultPosition, wxDefaultSize,
 						  wxAUI_NB_TOP | wxAUI_NB_TAB_SPLIT | wxAUI_NB_TAB_MOVE |
 							  wxAUI_NB_TAB_EXTERNAL_MOVE | wxAUI_NB_SCROLL_BUTTONS | wxNO_BORDER);
-	mainViews->Bind(wxEVT_AUINOTEBOOK_PAGE_CHANGED, &MainWin::OnMainViewsPageChanged, this);
+	proclist = new ProcList(mainViews, true, database, "FunctionsList");
 
 	sourceAndLog = new wxAuiNotebook(this,wxID_ANY,wxDefaultPosition,wxDefaultSize,wxAUI_NB_TOP|wxAUI_NB_TAB_SPLIT|wxAUI_NB_TAB_MOVE|wxAUI_NB_SCROLL_BUTTONS|wxNO_BORDER);
 	sourceview = new SourceView(sourceAndLog);
@@ -208,13 +205,13 @@ MainWin::MainWin(const wxString& title,
 								   .Caption(wxT("Source / Log"))
 								   .CaptionVisible(true)
 								   .CloseButton(false)
-								   .Movable(true)
-								   .Dockable(true)
-								   .Floatable(true)
+								   .Movable(false)
+								   .Dockable(false)
+								   .Floatable(false)
 								   .Resizable(true)
-								   .Gripper(true)
-								   .GripperTop(true)
-								   .PinButton(true)
+								   .Gripper(false)
+								   .GripperTop(false)
+								   .PinButton(false)
 								   .Bottom()
 								   .Layer(0)
 								   .MinSize(wxDefaultCoord, minBottomPaneHeight)
@@ -249,7 +246,6 @@ MainWin::MainWin(const wxString& title,
 	log = new LogView(sourceAndLog);
 	sourceAndLog->AddPage(log,wxT("Log"));
 	mainViews->AddPage(proclist, wxT("Functions"), true);
-	mainViews->AddPage(flameGraphView, wxT("Flame Graph"));
 
 	callViews->AddPage(splitWindow,wxT("Averages"));
 	callViews->AddPage(callStack,wxT("Call Stacks"));
@@ -263,13 +259,13 @@ MainWin::MainWin(const wxString& title,
 					 .Caption(wxT("Main Views"))
 					 .CaptionVisible(true)
 					 .CloseButton(false)
-					 .Movable(true)
-					 .Dockable(true)
-					 .Floatable(true)
+					 .Movable(false)
+					 .Dockable(false)
+					 .Floatable(false)
 					 .Resizable(true)
-					 .Gripper(true)
-					 .GripperTop(true)
-					 .PinButton(true)
+					 .Gripper(false)
+					 .GripperTop(false)
+					 .PinButton(false)
 					 .MinSize(std::max(minSidePaneWidth, leftPaneWidth), FromDIP(240))
 					 .BestSize(clientSize.GetWidth() * 2 / 5, clientSize.GetHeight() * 2 / 3));
 
@@ -279,13 +275,13 @@ MainWin::MainWin(const wxString& title,
 								.Caption(wxT("Details"))
 								.CaptionVisible(true)
 								.CloseButton(false)
-								.Movable(true)
-								.Dockable(true)
-								.Floatable(true)
+								.Movable(false)
+								.Dockable(false)
+								.Floatable(false)
 								.Resizable(true)
-								.Gripper(true)
-								.GripperTop(true)
-								.PinButton(true)
+								.Gripper(false)
+								.GripperTop(false)
+								.PinButton(false)
 								.Right()
 								.Layer(0)
 								.Row(0)
@@ -908,7 +904,7 @@ void MainWin::OnExportAsFlamegraph(wxCommandEvent& WXUNUSED(event))
 		const wxString lineEnding = dlg.GetFilterIndex() == 1 ? "\r\n" : "\n";
 		const wxScopedCharBuffer lineEndingBytes = lineEnding.utf8_str();
 
-		// flamegraph.pl expects "folded stack" format:
+		// Folded stack format:
 		// root;mid;leaf count
 		// The stack is bottom-to-top, semicolon-separated, with an integer weight.
 		for (const auto& callstack : database->callstacks)
@@ -999,7 +995,6 @@ void MainWin::OnForwardUpdate(wxUpdateUIEvent& event)
 void MainWin::OnResetToRoot(wxCommandEvent& WXUNUSED(event))
 {
 	database->setRoot(NULL);
-	invalidateFlameGraph();
 	refresh();
 }
 
@@ -1019,7 +1014,6 @@ void MainWin::OnCollapseOS(wxCommandEvent& WXUNUSED(event))
 {
 	reload();
 	updateThreads();
-	invalidateFlameGraph();
 	refresh();
 }
 
@@ -1119,7 +1113,6 @@ void MainWin::focusSymbol(const Database::AddrInfo *addrinfo)
 	proclist->focusSymbol(symbol);
 	callers->focusSymbol(symbol);
 	callees->focusSymbol(symbol);
-	flameGraphView->showChart(symbol);
 }
 
 void MainWin::inspectSymbol(const Database::AddrInfo *addrinfo, bool addtohistory/*=true*/)
@@ -1131,7 +1124,6 @@ void MainWin::inspectSymbol(const Database::AddrInfo *addrinfo, bool addtohistor
 	callees->showList(database->getCallees(symbol));
 	threadSamples->showList(database->getSymbolSamples(symbol));
 	callStack->showCallStack(symbol);
-	flameGraphView->showChart(symbol);
 
 	if (addtohistory && addrinfo)
 	{
@@ -1166,7 +1158,6 @@ void MainWin::reset()
 	callees->DeleteAllItems();
 	threadSamples->reset();
 	callStack->reset();
-	flameGraphView->reset();
 	sourceview->reset();
 
 	resetFilters();
@@ -1188,7 +1179,6 @@ void MainWin::refresh()
 	callees->showList(database->getCallees(symbol));
 	threadSamples->showList(database->getSymbolSamples(symbol));
 	callStack->showCallStack(symbol);
-	flameGraphView->showChart(symbol);
 }
 
 void MainWin::setSourcePos(const std::wstring& currentfile_, int currentline_)
@@ -1262,21 +1252,7 @@ void MainWin::refreshSelectedThreads()
 	database->setFilterThreads(newFilterThreads);
 	symbolsChanged();
 	callStack->reset();
-	invalidateFlameGraph();
 	refresh();
-}
-
-void MainWin::invalidateFlameGraph()
-{
-	flameGraphView->reset();
-}
-
-void MainWin::OnMainViewsPageChanged(wxAuiNotebookEvent& event)
-{
-	if (event.GetSelection() != wxNOT_FOUND && mainViews->GetPage(event.GetSelection()) == flameGraphView)
-		flameGraphView->snapToBottomLeftIfPending();
-
-	event.Skip();
 }
 
 void MainWin::setProgress(const wchar_t *text, int max)

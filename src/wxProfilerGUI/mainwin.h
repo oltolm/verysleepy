@@ -30,7 +30,6 @@ http://www.gnu.org/copyleft/gpl.html
 #include <wx/frame.h>
 
 class CallstackView;
-class FlameGraphView;
 class LogView;
 class ProcList;
 class SourceView;
@@ -91,8 +90,6 @@ public:
 	void OnResetLayout(wxCommandEvent& event);
 	void OnResetFilters(wxCommandEvent& event);
 	void OnFiltersChanged(wxPropertyGridEvent& event);
-	void OnMainViewsPageChanged(wxAuiNotebookEvent& event);
-
 	void OnDocumentation(wxCommandEvent& event);
 	void OnSupport(wxCommandEvent& event);
 	void OnAbout(wxCommandEvent& event);
@@ -137,7 +134,6 @@ public:
 	void setHighlight(const std::vector<Database::Address> &addresses, bool set);
 
 	void refreshSelectedThreads();
-	void invalidateFlameGraph();
 
 	/// Non-modal (status bar) progress display
 	void setProgress(const wchar_t *text, int max=0);
@@ -150,7 +146,6 @@ private:
 	ProcList* callees;
 	ThreadSamplesView *threadSamples;
 	CallstackView* callStack;
-	FlameGraphView *flameGraphView;
 	SourceView* sourceview;
 	LogView* log;
 	Database *database;
