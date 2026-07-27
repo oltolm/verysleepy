@@ -126,15 +126,6 @@ void ProfilerThread::sample(const SAMPLE_TYPE timeSpent)
 	numThreadsRunning = (int)profilers.size();
 }
 
-class ProcPred
-{
-public:
-	bool operator () (std::pair<std::wstring, int>& a, std::pair<std::wstring, int>& b)
-	{
-		return a.second > b.second;
-	}
-};
-
 void ProfilerThread::sampleLoop()
 {
 	timeBeginPeriod(1);
