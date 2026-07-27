@@ -237,7 +237,7 @@ void ThreadList::updateTimes()
 	int sampleTimeDiff = (now - lastTime).ToLong();
 	lastTime = now;
 
-	for (int i = 0; i < (int)GetItemCount(); ++i)
+	for (int i = 0; i < GetItemCount(); ++i)
 	{
 		ThreadInfo *thread = (ThreadInfo *)GetItemData(i);
 		if (!thread->recalcUsage(sampleTimeDiff))
