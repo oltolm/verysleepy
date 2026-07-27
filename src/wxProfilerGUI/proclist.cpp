@@ -30,7 +30,6 @@ http://www.gnu.org/copyleft/gpl.html
 #include "guiutils.h"
 #include "mainwin.h"
 #include "persistentlistctrl.h"
-#include "profilergui.h"
 
 enum
 {
