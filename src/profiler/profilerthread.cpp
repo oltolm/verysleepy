@@ -29,6 +29,7 @@ http://www.gnu.org/copyleft/gpl.html
 #include "threadinfo.h"
 #include <random>
 #include <set>
+#include <wx/strconv.h>
 #include <wx/txtstrm.h>
 #include <wx/wfstream.h>
 #include <wx/zipstrm.h>
@@ -187,7 +188,7 @@ void ProfilerThread::saveData()
 {
 	wxFFileOutputStream out(filename);
 	wxZipOutputStream zip(out);
-	wxTextOutputStream txt(zip, wxEOL_NATIVE, wxConvAuto(wxFONTENCODING_UTF8));
+	wxTextOutputStream txt(zip, wxEOL_NATIVE, wxConvUTF8);
 
 	if (!out.IsOk() || !zip.IsOk())
 	{

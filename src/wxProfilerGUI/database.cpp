@@ -28,6 +28,7 @@ http://www.gnu.org/copyleft/gpl.html
 #include <wx/ffile.h>
 #include <wx/log.h>
 #include <wx/progdlg.h>
+#include <wx/strconv.h>
 #include <wx/stream.h>
 #include <set>
 #include "mainwin.h"
@@ -198,7 +199,7 @@ static const __int64 kMaxProgress = 0x8000LL;
 // read symbol table
 void Database::loadSymbols(wxInputStream &file)
 {
-	wxTextInputStream str(file, wxT(" \t"), wxConvAuto(wxFONTENCODING_UTF8));
+	wxTextInputStream str(file, wxT(" \t"), wxConvUTF8);
 
 	size_t filesize = file.GetSize();
 	wxProgressDialog progressdlg(APPNAME, "Loading symbols...",
