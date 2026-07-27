@@ -105,22 +105,22 @@ void ProfilerThread::sample(const SAMPLE_TYPE timeSpent)
 	std::default_random_engine dre;
 	std::shuffle(profilers.begin(), profilers.end(), dre);
 
-	profilers.erase(std::remove_if(profilers.begin(), profilers.end(),
-								   [this, timeSpent](Profiler& p) -> bool {
-									   try
-									   {
-										   bool failed = !p.sampleTarget(timeSpent, sym_info);
-										   if (!failed)
-											   ++numsamplessofar;
-										   return failed && p.targetExited();
-									   }
-									   catch (const ProfilerExcep& e)
-									   {
-										   error(_T("ProfilerExcep: ") + e.what());
-										   commit_suicide = true;
-										   return false;
-									   }
-								   }),
+	auto hasProfilerFailed = [this, timeSpent](Profiler& p) -> bool {
+		try
+		{
+			bool failed = !p.sampleTarget(timeSpent, sym_info);
+			if (!failed)
+				++numsamplessofar;
+			return failed && p.targetExited();
+		}
+		catch (const ProfilerExcep& e)
+		{
+			error(_T("ProfilerExcep: ") + e.what());
+			commit_suicide = true;
+			return false;
+		}
+	};
+	profilers.erase(std::remove_if(profilers.begin(), profilers.end(), hasProfilerFailed),
 					profilers.end());
 
 	numThreadsRunning = (int)profilers.size();
@@ -326,7 +326,7 @@ void ProfilerThread::run()
 		debugger->attach([this](Debugger::NotifyData const &notification) {
 			if (notification.eventType != Debugger::NOTIFY_NEW_THREAD)
 				return;
-			profilers.push_back(Profiler(target_process_id, notification.threadId, callstacks));
+			profilers.emplace_back(target_process_id, notification.threadId, callstacks);
 			thread_names[notification.threadId] = getThreadDescriptorName(notification.threadHandle);
 		});
 
