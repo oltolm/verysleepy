@@ -388,10 +388,10 @@ static wxArrayString arrayFromSet( const wxStringHashSet& set )
 	wxArrayString dest;
 	dest.reserve(set.size());
 
-	for (auto iter = set.begin(); iter != set.end(); ++iter)
+	for (const auto& item : set)
 	{
-		if( *iter != "" )
-			dest.Add(*iter);
+		if (item != "")
+			dest.Add(item);
 	}
 
 	return dest;

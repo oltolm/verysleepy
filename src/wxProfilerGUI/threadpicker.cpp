@@ -423,12 +423,10 @@ void ThreadPicker::AttachToProcess(bool allThreads)
 	enforce(selectedThreads.size(), "No thread(s) selected");
 
 	// DE: 20090325 attaches to specific a list of threads
-	for (auto it = selectedThreads.begin(); it != selectedThreads.end(); ++it)
+	for (auto threadInfo : selectedThreads)
 	{
 		try
 		{
-			const ThreadInfo* threadInfo(*it);
-
 			DWORD thread_id = threadInfo->getID();
 			wenforce(thread_id, "Attaching to selected thread");
 			attach_info->thread_ids.push_back(thread_id);

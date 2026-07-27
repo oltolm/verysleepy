@@ -297,13 +297,13 @@ static DWORD getMostBusyThread(ProcessInfo& process_info)
 {
 	int max = -1;
 	DWORD mostBusy = 0;
-	for (auto thread_info = process_info.threads.begin(); thread_info != process_info.threads.end(); ++thread_info)
+	for (auto& thread_info : process_info.threads)
 	{
-		thread_info->recalcUsage(0);
-		if (max < thread_info->totalCpuTimeMs)
+		thread_info.recalcUsage(0);
+		if (max < thread_info.totalCpuTimeMs)
 		{
-			max = thread_info->totalCpuTimeMs;
-			mostBusy = thread_info->getID();
+			max = thread_info.totalCpuTimeMs;
+			mostBusy = thread_info.getID();
 		}
 	}
 
@@ -338,9 +338,9 @@ static std::vector<DWORD> getThreadsByAttachMode(ProcessInfo& process_info)
 
 	default: // all thread
 		thread_ids.reserve(process_info.threads.size());
-		for (auto thread_info = process_info.threads.begin(); thread_info != process_info.threads.end(); ++thread_info)
+		for (auto& thread_info : process_info.threads)
 		{
-			thread_ids.push_back(thread_info->getID());
+			thread_ids.push_back(thread_info.getID());
 		}
 		return thread_ids;
 	}

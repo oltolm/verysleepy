@@ -182,7 +182,8 @@ void Database::loadFromPath(const std::wstring& _profilepath, bool collapseOSCal
 
 	// Warn the user about extra entries.
 	std::set<wxString> standard_entries { "Symbols.txt", "Callstacks.txt", "Threads.txt", "Stats.txt", "minidump.dmp" };
-	for ( auto item : entries ) {
+	for (const auto& item : entries)
+	{
 		auto& name = item.first;
 		if ( standard_entries.find(name) != standard_entries.end() ) continue;
 		else if (name.Left(8) == "Version ") continue;
@@ -523,19 +524,18 @@ void Database::scanMainList()
 	Symbol::ID currentRootID = currentRoot ? currentRoot->id : -1;
 
 	int progress = 0;
-	for (auto it = callstacks.begin(); it != callstacks.end(); ++it)
+	for (const auto& callstack : callstacks)
 	{
-		const auto& i = *it;
 		// Only use call stacks that include the current root
-		if (!includeCallstack(i))
+		if (!includeCallstack(callstack))
 			continue;
 
-		double iSampleCount = getFilteredSampleCount(i.samples);
-		exclusive[i.symbols[0]->id] += iSampleCount;
+		double iSampleCount = getFilteredSampleCount(callstack.samples);
+		exclusive[callstack.symbols[0]->id] += iSampleCount;
 		std::vector<bool> seen(symbols.size());
-		for (size_t n = 0; n < i.symbols.size(); ++n)
+		for (auto symbol : callstack.symbols)
 		{
-			Symbol::ID id = i.symbols[n]->id;
+			Symbol::ID id = symbol->id;
 
 			// we filter out duplicates, to avoid getting funny numbers when
 			// using recursive functions.
@@ -565,18 +565,18 @@ void Database::scanMainList()
 std::vector<const Database::CallStack*> Database::getCallstacksContaining(const Database::Symbol *symbol) const
 {
 	std::vector<const CallStack *> ret;
-	for (auto it = callstacks.begin(); it != callstacks.end(); ++it)
+	for (const auto& callstack : callstacks)
 	{
-		const auto& i = *it;
 		// Only use call stacks that include the current root
-		if (!includeCallstack(i)) continue;
+		if (!includeCallstack(callstack))
+			continue;
 
 		// Only include callstacks that have our symbol in.
-		for (size_t n=0;n<i.symbols.size();n++)
+		for (size_t n = 0; n < callstack.symbols.size(); n++)
 		{
-			if (i.symbols[n] == symbol)
+			if (callstack.symbols[n] == symbol)
 			{
-				ret.push_back(&i);
+				ret.push_back(&callstack);
 				break;
 			}
 		}
@@ -588,22 +588,22 @@ Database::List Database::getCallers(const Database::Symbol *symbol) const
 {
 	List list;
 	std::map<Address, double> counts;
-	for (auto it = callstacks.begin(); it != callstacks.end(); ++it)
+	for (const auto& callstack : callstacks)
 	{
-		const auto& i = *it;
 		// Only use call stacks that include the current root
-		if (!includeCallstack(i)) continue;
+		if (!includeCallstack(callstack))
+			continue;
 
 		// Only include callstacks that have our symbol in.
-		for (size_t n=0;n<i.symbols.size()-1;n++)
+		for (size_t n = 0; n < callstack.symbols.size() - 1; n++)
 		{
-			const Symbol *s = i.symbols[n];
+			const Symbol *s = callstack.symbols[n];
 			if (s == currentRoot) break;       // Stop handling the call stack if we encounter the root
 			if (s == symbol)
 			{
-				Address caller = i.addresses[n+1];
+				Address caller = callstack.addresses[n + 1];
 
-				double iSampleCount = getFilteredSampleCount(i.samples);
+				double iSampleCount = getFilteredSampleCount(callstack.samples);
 				counts[caller] += iSampleCount;
 				list.totalcount += iSampleCount;
 				break; // Stop walking the stack to avoid getting funny numbers for recursive functions
@@ -628,24 +628,26 @@ Database::List Database::getCallees(const Database::Symbol *symbol) const
 {
 	List list;
 	std::map<const Symbol *, double> counts;
-	for (auto i = callstacks.begin(); i != callstacks.end(); ++i)
+	for (const auto& callstack : callstacks)
 	{
 		// Only use call stacks that include the current root
-		if (!includeCallstack(*i)) continue;
+		if (!includeCallstack(callstack))
+			continue;
 
-		double callstackCost = getFilteredSampleCount(i->samples);
+		double callstackCost = getFilteredSampleCount(callstack.samples);
 
 		// Only include callstacks that have our symbol in.
-		for (size_t n=1;n<i->symbols.size();n++)
+		for (size_t n = 1; n < callstack.symbols.size(); n++)
 		{
-			if (i->symbols[n] == symbol)
+			if (callstack.symbols[n] == symbol)
 			{
-				const Symbol *callee = i->symbols[n-1];
+				const Symbol *callee = callstack.symbols[n - 1];
 				counts[callee] += callstackCost;
 				list.totalcount += callstackCost;
 				break; // Stop walking the stack to avoid getting funny numbers for recursive functions
 			}
-			if (i->symbols[n] == currentRoot) break;       // Stop handling the call stack if we encounter the root
+			if (callstack.symbols[n] == currentRoot)
+				break; // Stop handling the call stack if we encounter the root
 		}
 	}
 
@@ -667,22 +669,24 @@ Database::SymbolSamples Database::getSymbolSamples(const Symbol *symbol) const
 	SymbolSamples samples;
 	samples.symbol = symbol;
 
-	for (auto i = callstacks.begin(); i != callstacks.end(); ++i)
+	for (const auto& callstack : callstacks)
 	{
 		// Only use call stacks that include the current root
-		if (!includeCallstack(*i)) continue;
+		if (!includeCallstack(callstack))
+			continue;
 
 		// Only include callstacks that have our symbol in.
-		for (size_t n = 0; n < i->symbols.size(); n++)
+		for (size_t n = 0; n < callstack.symbols.size(); n++)
 		{
-			if (i->symbols[n] == symbol)
+			if (callstack.symbols[n] == symbol)
 			{
 				if (n == 0)
-					addSamplesInfo(samples.exclusive, i->samples, filterThreads);
-				addSamplesInfo(samples.inclusive, i->samples, filterThreads);
+					addSamplesInfo(samples.exclusive, callstack.samples, filterThreads);
+				addSamplesInfo(samples.inclusive, callstack.samples, filterThreads);
 				break; // Stop walking the stack to avoid getting funny numbers for recursive functions
 			}
-			if (i->symbols[n] == currentRoot) break;       // Stop handling the call stack if we encounter the root
+			if (callstack.symbols[n] == currentRoot)
+				break; // Stop handling the call stack if we encounter the root
 		}
 	}
 

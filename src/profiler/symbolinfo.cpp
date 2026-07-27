@@ -154,10 +154,8 @@ void SymbolInfo::loadSymbolsUsing(DbgHelp* dbgHelp, const std::wstring& sympath)
 			// This is a secondary dbgHelp, so just complement debug
 			// information for modules that have none.
 
-			for (size_t m=0;m<modules.size();m++)
+			for (auto& mod : modules)
 			{
-				Module &mod = modules[m];
-
 				IMAGEHLP_MODULEW64 info;
 				info.SizeOfStruct = sizeof(info);
 				if (!mod.dbghelp->SymGetModuleInfoW64(process_handle.get(), mod.base_addr, &info))

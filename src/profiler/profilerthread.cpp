@@ -243,11 +243,10 @@ void ProfilerThread::saveData()
 	beginProgress(L"Querying and saving symbols", used_addresses.size());
 	zip.PutNextEntry(_T("Symbols.txt"));
 
-	for (auto i = used_addresses.begin(); i != used_addresses.end(); ++i)
+	for (auto addr : used_addresses)
 	{
 		int proclinenum;
 		std::wstring procfile;
-		PROFILER_ADDR addr = *i;
 
 		const std::wstring proc_name = sym_info->getProcForAddr(addr, procfile, proclinenum);
 		txt <<  wxString::Format("%#llx", addr);
@@ -337,9 +336,8 @@ void ProfilerThread::run()
 		sampleLoop();
 	} catch(ProfilerExcep& e) {
 		// see if it's an actual error, or did the thread just finish naturally
-		for (auto it = profilers.begin(); it != profilers.end(); ++it)
+		for (auto& profiler : profilers)
 		{
-			const Profiler& profiler(*it);
 			if (!profiler.targetExited())
 			{
 				error(L"ProfilerExcep: " + e.what());
