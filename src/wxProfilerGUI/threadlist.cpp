@@ -104,8 +104,9 @@ std::vector<const ThreadInfo*> ThreadList::getSelectedThreads(bool all)
 	std::vector<const ThreadInfo*> selectedThreads;
 	if(all) {
 		selectedThreads.reserve(this->threads.size());
-		for(size_t i=0;i<threads.size();i++) {
-			selectedThreads.push_back(&threads[i]);
+		for (auto& thread : threads)
+		{
+			selectedThreads.push_back(&thread);
 		}
 	}
 	else
