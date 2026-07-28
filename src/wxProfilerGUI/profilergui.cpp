@@ -112,8 +112,7 @@ ProfilerGUI::~ProfilerGUI()
 
 }
 
-
-IMPLEMENT_APP(ProfilerGUI)
+wxIMPLEMENT_APP(ProfilerGUI);
 
 class ProfilerAppTraits : public wxGUIAppTraits
 {
