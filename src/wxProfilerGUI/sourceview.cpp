@@ -25,8 +25,6 @@ http://www.gnu.org/copyleft/gpl.html
 #include "sourceview.h"
 #include "guiutils.h"
 
-#define countof(_x) (sizeof(_x)/sizeof(_x[0]))
-
 #include "mainwin.h"
 
 BEGIN_EVENT_TABLE(SourceView, wxStyledTextCtrl)
@@ -186,7 +184,7 @@ void SourceView::showFile(std::wstring path, int proclinenum, const std::vector<
 
 	std::wstring displaytext;
 	wchar_t lineBuf[1024];
-	while(fgetws(lineBuf,countof(lineBuf),file))
+	while (fgetws(lineBuf, _countof(lineBuf), file))
 	{
 		displaytext += lineBuf;
 	}
