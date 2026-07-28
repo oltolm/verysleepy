@@ -186,8 +186,7 @@ MainWin::MainWin(const wxString& title,
 	const int bottomPaneHeight = std::max(minBottomPaneHeight, clientSize.GetHeight() / 3);
 
 	const unsigned int paneHintFlags = wxAUI_MGR_TRANSPARENT_HINT | wxAUI_MGR_TRANSPARENT_DRAG;
-	const unsigned int mainAuiFlags =
-		paneHintFlags | wxAUI_MGR_LIVE_RESIZE;
+	const unsigned int mainAuiFlags = paneHintFlags | wxAUI_MGR_LIVE_RESIZE;
 	aui = new wxAuiManager(this, mainAuiFlags);
 
 	// Create the windows
