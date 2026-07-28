@@ -196,7 +196,7 @@ private:
 	wxFileHistory m_fileHistory;
 };
 
-DECLARE_APP(ProfilerGUI)
+wxDECLARE_APP(ProfilerGUI);
 
 extern Prefs prefs;
 extern wxConfig config;
