@@ -45,9 +45,6 @@ http://www.gnu.org/copyleft/gpl.html
 #include <wx/scopeguard.h>
 #include <wx/stopwatch.h>
 #include <wx/timer.h>
-#ifdef _MSC_VER
-#include "../crashback/client/crashback.h"
-#endif
 #include "aboutdlg.h"
 #include "../utils/except.h"
 #include "appinfo.h"

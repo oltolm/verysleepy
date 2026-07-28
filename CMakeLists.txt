@@ -87,7 +87,6 @@ target_compile_options(sleepy PRIVATE -Wno-missing-field-initializers)
 if(MSVC)
   target_link_options(sleepy PRIVATE /MANIFEST:NO)
   target_compile_options(sleepy PRIVATE /MP)
-  target_sources(sleepy PRIVATE src/crashback/client/client.cpp)
 endif()
 
 execute_process(
