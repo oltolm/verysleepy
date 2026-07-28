@@ -49,28 +49,6 @@ Profiler::Profiler(DWORD target_process_id_, DWORD target_thread_id_,
 {
 }
 
-// DE: 20090325: Need copy constructor since it is put in a std::vector
-
-Profiler::Profiler(const Profiler& iOther)
-	: callstacks(iOther.callstacks),
-	  is64BitProcess(iOther.is64BitProcess),
-	  target_process_id(iOther.target_process_id),
-	  target_thread_id(iOther.target_thread_id)
-{
-}
-
-// DE: 20090325: Need copy assignement since it is put in a std::vector
-
-Profiler& Profiler::operator=(const Profiler& iOther)
-{
-	target_process_id = iOther.target_process_id;
-	target_thread_id = iOther.target_thread_id;
-	callstacks = iOther.callstacks;
-	assert(is64BitProcess == iOther.is64BitProcess);
-
-	return *this;
-}
-
 Profiler::~Profiler()
 {
 
