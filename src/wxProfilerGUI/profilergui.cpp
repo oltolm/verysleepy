@@ -50,18 +50,6 @@ http://www.gnu.org/copyleft/gpl.html
 #include "appinfo.h"
 #include <limits>
 
-// DE: 20090325 Linking fails in debug target under visual studio 2005
-// RJM: works for me :-/
-// #include <wx/apptrait.h>
-// #if wxUSE_STACKWALKER && defined( __WXDEBUG__ )
-//// silly workaround for the link error with debug configuration:
-//// \src\common\appbase.cpp
-// wxString wxAppTraitsBase::GetAssertStackTrace()
-//{
-//    return wxT("");
-// }
-// #endif
-
 static const wxCmdLineEntryDesc g_cmdLineDesc[] =
 {
 	{ wxCMD_LINE_SWITCH, "h", "", "Displays help on the command line parameters.",          wxCMD_LINE_VAL_NONE, wxCMD_LINE_OPTION_HELP },

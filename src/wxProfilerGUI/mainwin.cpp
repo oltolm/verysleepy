@@ -116,7 +116,6 @@ MainWin::MainWin(const wxString& title,
 	// set the frame icon
 	SetIcon(sleepy_icon);
 
-#if wxUSE_MENUS
 	// create a menu bar
 	wxMenu *menuFile = new wxMenu;
 	menuFile->Append(MainWin_New, _T("&New\tCtrl-N"), _T("Starts a new profile"));
@@ -172,7 +171,6 @@ MainWin::MainWin(const wxString& title,
 
 	// ... and attach this menu bar to the frame
 	SetMenuBar(menuBar);
-#endif // wxUSE_MENUS
 
 	CreateStatusBar(2);
 	gauge = NULL;
