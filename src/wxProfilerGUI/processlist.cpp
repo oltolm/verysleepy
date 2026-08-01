@@ -29,6 +29,7 @@ http://www.gnu.org/copyleft/gpl.html
 #include "../utils/osutils.h"
 #include <algorithm>
 #include <memory>
+#include <wx/msgdlg.h>
 #include "../utils/except.h"
 
 BEGIN_EVENT_TABLE(ProcessList, wxListCtrl)
@@ -96,7 +97,7 @@ void ProcessList::reloadSymbols(bool download)
 	}
 	catch (SleepyException &e)
 	{
-		::MessageBox(NULL, std::wstring(L"Error: " + e.wwhat()).c_str(), L"Profiler Error", MB_OK);
+		wxMessageBox(wxString::Format(L"Error: %s", e.wwhat()), L"Profiler Error");
 		syminfo = nullptr;
 	}
 

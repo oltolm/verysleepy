@@ -29,6 +29,7 @@ http://www.gnu.org/copyleft/gpl.html
 #include "threadinfo.h"
 #include <random>
 #include <set>
+#include <wx/msgdlg.h>
 #include <wx/strconv.h>
 #include <wx/txtstrm.h>
 #include <wx/wfstream.h>
@@ -359,7 +360,7 @@ void ProfilerThread::error(const std::wstring& what)
 	failed = true;
 	std::wcerr << "ProfilerThread Error: " << what << std::endl;
 
-	::MessageBox(NULL, std::wstring(L"Error: " + what).c_str(), L"Profiler Error", MB_OK);
+	wxMessageBox(wxString::Format(L"Error: %s", what), L"Profiler Error");
 }
 
 void ProfilerThread::beginProgress(std::wstring stage, int total)

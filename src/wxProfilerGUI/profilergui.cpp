@@ -495,7 +495,8 @@ std::wstring ProfilerGUI::ObtainProfileData()
 			{
 				captureWin->Hide();
 				wxLogError("%ls\n", e.wwhat());
-				MessageBox(threadpicker->GetHWND(), std::wstring(L"Error: " + e.wwhat()).c_str(), L"Profiler Error", MB_OK);
+				wxMessageBox(wxString::Format(L"Error: %s", e.wwhat()), L"Profiler Error",
+							 wxOK | wxCENTRE, threadpicker.get());
 				continue;
 			}
 
