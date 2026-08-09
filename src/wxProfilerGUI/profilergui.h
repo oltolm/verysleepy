@@ -163,21 +163,21 @@ class ProfilerGUI : public wxApp
 public:
 	ProfilerGUI();
 	virtual ~ProfilerGUI();
-	virtual bool OnInit();
-	virtual bool OnExceptionInMainLoop();
-	virtual bool ProcessIdle();
-	virtual int OnExit();
+	bool OnInit() override;
+	bool OnExceptionInMainLoop() override;
+	bool ProcessIdle() override;
+	int OnExit() override;
 
 	static void ShowAboutBox();
 	static wxString PromptOpen(wxWindow *parent);
 
-	virtual wxAppTraits *CreateTraits();
+	wxAppTraits *CreateTraits() override;
 
 	wxFileHistory *getFileHistory();
 
 protected:
-	virtual void OnInitCmdLine(wxCmdLineParser& parser);
-	virtual bool OnCmdLineParsed(wxCmdLineParser& parser);
+	void OnInitCmdLine(wxCmdLineParser& parser) override;
+	bool OnCmdLineParsed(wxCmdLineParser& parser) override;
 
 private:
 	void HandleInit();

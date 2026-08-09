@@ -63,7 +63,7 @@ public:
 
 
 	//call this to start profiling.
-	virtual void run();
+	void run() override;
 
 	int getNumThreadsRunning() const { return numThreadsRunning; }
 	bool getDone() const { return done; }
