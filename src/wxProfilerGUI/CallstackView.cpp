@@ -237,7 +237,7 @@ void CallstackView::exportCSV(wxFileOutputStream &file)
 		wxListItem column;
 		column.SetMask(wxLIST_MASK_TEXT);
 		listCtrl->GetColumn(columnIndex, column);
-		writeQuote(txt, column.GetText().wc_string(), '"');
+		writeQuote(txt, column.GetText().ToStdWstring(), '"');
 		txt << ((columnIndex == (columnCount - 1)) ? "\n" : ",");
 	}
 
@@ -245,7 +245,7 @@ void CallstackView::exportCSV(wxFileOutputStream &file)
 	{
 		for(int columnIndex = 0; columnIndex < columnCount; columnIndex++ )
 		{
-			writeQuote(txt, listCtrl->GetItemText(rowIndex, columnIndex).wc_string(), '"');
+			writeQuote(txt, listCtrl->GetItemText(rowIndex, columnIndex).ToStdWstring(), '"');
 			txt << ((columnIndex == (columnCount - 1)) ? "\n" : ",");
 		}
 	}
