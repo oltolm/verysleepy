@@ -44,7 +44,6 @@ Profiler::Profiler(DWORD target_process_id_, DWORD target_thread_id_,
 				   std::map<CallStack, SAMPLE_TYPE>& callstacks_)
 	: callstacks(&callstacks_),
 	  is64BitProcess(Is64BitProcess(target_process_id_)),
-	  target_process_id(target_process_id_),
 	  target_thread_id(target_thread_id_)
 {
 }
@@ -187,6 +186,13 @@ bool Profiler::sampleTarget(SAMPLE_TYPE timeSpent, SymbolInfo *syminfo)
 	DbgHelp *prevDbgHelp = NULL;
 	bool first = true;
 
+	// dbghelp keys its per-process symbol context off the raw HANDLE value that was
+	// passed to SymInitialize. SymFunctionTableAccess64/SymGetModuleBase64 fail for any
+	// other handle, even one that refers to the same process, and StackWalk64 then has no
+	// unwind data to work with. On x64 that leaves it guessing return addresses off the
+	// stack, which produces callstacks full of junk addresses. So reuse SymbolInfo's handle.
+	HANDLE target_process = syminfo->process_handle.get();
+
 	for (;;)
 	{
 		// See which module this IP is in.
@@ -218,8 +224,7 @@ bool Profiler::sampleTarget(SAMPLE_TYPE timeSpent, SymbolInfo *syminfo)
 			stack.addr[stack.depth++] = ip;
 		first = false;
 
-		handle_ptr target_process(OpenProcess(PROCESS_ALL_ACCESS, FALSE, target_process_id));
-		BOOL result = dbgHelp->StackWalk64(machine, target_process.get(), target_thread.get(),
+		BOOL result = dbgHelp->StackWalk64(machine, target_process, target_thread.get(),
 										   &frame, context, NULL, dbgHelp->SymFunctionTableAccess64,
 										   dbgHelp->SymGetModuleBase64, NULL);
 

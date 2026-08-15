@@ -114,6 +114,5 @@ public:
 	DWORD getTarget() { return target_thread_id; }
 
 private:
-	DWORD target_process_id;
 	DWORD target_thread_id;
 };
