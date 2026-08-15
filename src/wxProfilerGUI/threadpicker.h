@@ -115,8 +115,7 @@ private:
 	ProcessList* processlist;
 
 	// DE: 20090325 Include for list to pick thread(s)
-	ThreadList* threadlist;
-	wxBitmap* bitmap;
+	ThreadList *threadlist;
 	wxMenu *m_recent;
 
 	void OnMRUFile(wxCommandEvent& event);

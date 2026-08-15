@@ -43,8 +43,7 @@ protected:
 	wxTextCtrl *m_cmdctl;
 	wxString    m_cmdvalue;
 	wxTextCtrl *m_cwdctl;
-	wxString    m_cwdvalue;
-	long        m_dialogStyle;
+	wxString m_cwdvalue;
 
 	void OnOK(wxCommandEvent& event);
 	void OnChooseCmd(wxCommandEvent& event);

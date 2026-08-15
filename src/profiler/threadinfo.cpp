@@ -70,6 +70,7 @@ ThreadInfo::ThreadInfo(DWORD id_)
 	prevKernelTime.dwHighDateTime = prevKernelTime.dwLowDateTime = 0;
 	prevUserTime.dwHighDateTime = prevUserTime.dwLowDateTime = 0;
 	cpuUsage = -1;
+	totalCpuTimeMs = -1;
 
 	handle_ptr thread_handle(OpenThread(THREAD_ALL_ACCESS, FALSE, id));
 	name = getThreadDescriptorName(thread_handle.get());

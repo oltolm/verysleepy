@@ -110,6 +110,4 @@ private:
 	std::wstring filename;
 	std::wstring minidump;
 	SymbolInfo *sym_info;
-
-	DWORD startTick;
 };

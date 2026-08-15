@@ -153,9 +153,7 @@ private:
 
 	// Used by setSourcePos
 	std::wstring currentfile;
-	int currentline;
-
-	wxAuiNotebook	*modes;
+	int currentline = -1;
 
 	wxAuiManager *aui;
 	wxAuiManager *auiTab1;
@@ -178,7 +176,7 @@ private:
 	ViewState viewstate;
 
 	std::deque<const Database::AddrInfo*> history;
-	size_t historyPos;
+	size_t historyPos = 0;
 
 	wxGauge *gauge;
 
