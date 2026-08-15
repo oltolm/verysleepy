@@ -46,6 +46,7 @@ ProcessList::ProcessList(wxWindow *parent, ThreadList *threadList_)
 	threadList = threadList_;
 	selectionChanged = false;
 	firstUpdate = true;
+	selected_process_id = 0;
 
 	syminfo = std::make_unique<SymbolInfo>();
 
@@ -106,9 +107,11 @@ void ProcessList::reloadSymbols(bool download)
 
 void ProcessList::OnSelected(wxListEvent& event)
 {
-	if (this->selected_process != event.GetIndex())
+	auto *process = (ProcessInfo *)GetItemData(event.GetIndex());
+	DWORD process_id = process ? process->getID() : 0;
+	if (this->selected_process_id != process_id)
 	{
-		this->selected_process = event.GetIndex();
+		this->selected_process_id = process_id;
 		selectionChanged = true;
 
 		reloadSymbols(false);
@@ -267,6 +270,10 @@ void ProcessList::updateProcesses()
 
 	processes.clear();
 	threadList->updateThreads(NULL, NULL);
+
+	// The thread list is now empty, so re-selecting the same process must
+	// repopulate it rather than be skipped as an unchanged selection.
+	selected_process_id = 0;
 
 	this->processes = ProcessInfo::enumProcesses();
 	for(int i=0; i<(int)processes.size(); ++i)

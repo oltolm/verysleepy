@@ -79,7 +79,10 @@ private:
 	ThreadList* threadList;
 	std::unique_ptr<SymbolInfo> syminfo;
 
-	int selected_process;
+	/// Process the thread list was last populated for, so we don't reload its
+	/// symbols again. Keyed by PID rather than row, as rows are rebuilt by
+	/// updateProcesses() and reordered by sorting.
+	DWORD selected_process_id;
 	wxTimer timer;
 	wxLongLong lastTime;
 	// DE: 20090325 Update thread list on process selection change, but do it on idle
