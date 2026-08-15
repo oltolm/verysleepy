@@ -44,7 +44,6 @@ ProcessList::ProcessList(wxWindow *parent, ThreadList *threadList_)
 	  timer(this, PROCESS_LIST_TIMER)
 {
 	threadList = threadList_;
-	selectionChanged = false;
 	firstUpdate = true;
 	selected_process_id = 0;
 
@@ -112,8 +111,8 @@ void ProcessList::OnSelected(wxListEvent& event)
 	if (this->selected_process_id != process_id)
 	{
 		this->selected_process_id = process_id;
-		selectionChanged = true;
 
+		// Also refreshes the thread list.
 		reloadSymbols(false);
 	}
 }
@@ -171,10 +170,6 @@ void ProcessList::OnTimer(wxTimerEvent& WXUNUSED(event))
 	}
 
 	updateTimes();
-	if(selectionChanged){
-		selectionChanged = false;
-		updateThreadList();
-	}
 }
 
 static int ProcessComparator(wxIntPtr item1, wxIntPtr item2, wxIntPtr data)

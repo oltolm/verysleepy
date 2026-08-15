@@ -85,8 +85,6 @@ private:
 	DWORD selected_process_id;
 	wxTimer timer;
 	wxLongLong lastTime;
-	// DE: 20090325 Update thread list on process selection change, but do it on idle
-	bool selectionChanged;
 	bool firstUpdate;
 
 	void fillList();
