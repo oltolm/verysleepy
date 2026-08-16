@@ -163,9 +163,9 @@ ThreadPicker::ThreadPicker()
 	// RM: 20110614 Set time for profiler to run for
 	time_value = 100;
 	time_check = new wxCheckBox(panel, ProcWin_TimeCheck, "Profile for set time (s)");
-	time_ctrl =
-		new wxTextCtrl(panel, ProcWin_TimeCtrl, "100", wxDefaultPosition, FromDIP(wxSize(60, 20)),
-					   0, wxIntegerValidator<int>(&time_value, 0, INT_MAX));
+	wxIntegerValidator<int> time_validator(&time_value, 0, INT_MAX);
+	time_ctrl = new wxTextCtrl(panel, ProcWin_TimeCtrl, "100", wxDefaultPosition,
+							   FromDIP(wxSize(60, 20)), 0, time_validator);
 	time_ctrl->Disable();
 	time_ctrl->SetToolTip(
 		"When enabled, this will limit the profile to run for a set time in seconds.");
