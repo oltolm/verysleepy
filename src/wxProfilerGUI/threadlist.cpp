@@ -42,7 +42,7 @@ EVT_TIMER(THREADS_LIST_TIMER, ThreadList::OnTimer)
 END_EVENT_TABLE()
 
 ThreadList::ThreadList(wxWindow *parent, wxButton *_ok_button, wxButton *_all_button)
-	: wxListView(parent, THREADS_LIST, wxDefaultPosition, wxDefaultSize, wxLC_REPORT),
+	: wxListView(parent, THREADS_LIST),
 	  timer(this, THREADS_LIST_TIMER),
 	  ok_button(_ok_button),
 	  all_button(_all_button)

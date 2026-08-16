@@ -34,8 +34,7 @@ EVT_TIMER(THREADS_VIEW_TIMER, ThreadsView::OnTimer)
 END_EVENT_TABLE()
 
 ThreadsView::ThreadsView(wxWindow *parent, Database *database_)
-	: wxListView(parent, THREADS_VIEW, wxDefaultPosition, wxDefaultSize, wxLC_REPORT),
-	  selectionTimer(this, THREADS_VIEW_TIMER)
+	: wxListView(parent, THREADS_VIEW), selectionTimer(this, THREADS_VIEW_TIMER)
 {
 	wxListItem itemCol;
 	itemCol.SetMask(wxLIST_MASK_TEXT);
@@ -201,7 +200,7 @@ EVT_LIST_ITEM_ACTIVATED(THREAD_SAMPLES_VIEW, ThreadSamplesView::OnActivated)
 END_EVENT_TABLE()
 
 ThreadSamplesView::ThreadSamplesView(wxWindow *parent, Database *database_)
-	: wxListView(parent, THREAD_SAMPLES_VIEW, wxDefaultPosition, wxDefaultSize, wxLC_REPORT)
+	: wxListView(parent, THREAD_SAMPLES_VIEW)
 {
 	wxListItem itemCol;
 	itemCol.SetMask(wxLIST_MASK_TEXT);
