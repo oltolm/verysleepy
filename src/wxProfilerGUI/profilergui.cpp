@@ -630,12 +630,12 @@ bool ProfilerGUI::Run()
 		std::unique_ptr<AttachInfo> info(AttachToProcess(cmdline_attach));
 		if (!cmdline_thread_ids.empty())
 		{
-			auto pred = [&](DWORD dwThreadId) -> bool {
+			auto isNotCmdLineParam = [&](DWORD dwThreadId) -> bool {
 				return std::find(cmdline_thread_ids.begin(), cmdline_thread_ids.end(),
 								 dwThreadId) == cmdline_thread_ids.end();
 			};
 			info->thread_ids.erase(
-				std::remove_if(info->thread_ids.begin(), info->thread_ids.end(), pred),
+				std::remove_if(info->thread_ids.begin(), info->thread_ids.end(), isNotCmdLineParam),
 				info->thread_ids.end());
 			// Do not attach to any new threads created after this point in time.
 			info->attach_all_threads = false;
