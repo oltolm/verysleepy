@@ -116,8 +116,6 @@ void LateSymbolInfo::loadMinidump(const std::wstring& dumppath, bool delete_when
 	// we have to keep the debugger session open and query symbols as requested by the
 	// profiler GUI.
 
-	debugClient->Release(); // but keep the other ones
-
 	// If we are given a temporary file, clean it up later
 	if (delete_when_done)
 		file_to_delete = dumppath;
