@@ -131,7 +131,6 @@ void SymbolInfo::loadSymbolsUsing(DbgHelp* dbgHelp, const std::wstring& sympath)
 		dbgHelp->SymRegisterCallbackW64(process_handle.get(), symCallback, 0);
 
 		// Add our PDB search paths.
-		// if (dbgHelp == &dbgHelpMs)
 		wenforce(dbgHelp->SymSetSearchPathW(process_handle.get(), sympath.c_str()),
 				 "SymSetSearchPathW");
 
@@ -232,7 +231,6 @@ void SymbolInfo::loadSymbols(DWORD process_id, bool download)
 		prefs.AdjustSymbolPath(sympath, download);
 	}
 
-	// loadSymbolsUsing(&dbgHelpMs, sympath);
 	loadSymbolsUsing(getGccDbgHelp(), sympath);
 
 	if (g_symLog)
@@ -325,7 +323,6 @@ const std::wstring SymbolInfo::getProcForAddr(PROFILER_ADDR addr,
 	proclinenum_out = 0;
 
 	Module *mod = getModuleForAddr(addr);
-
 	DbgHelp *dbgHelp = mod ? mod->dbghelp : &dbgHelpDrMingw;
 
 	unsigned char buffer[1024];
