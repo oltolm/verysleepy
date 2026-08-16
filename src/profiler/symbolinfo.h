@@ -25,6 +25,7 @@ http://www.gnu.org/copyleft/gpl.html
 
 
 #include <string>
+#include <unordered_map>
 #include <winsock2.h>
 #include <windows.h>
 #include <vector>
@@ -47,6 +48,8 @@ public:
 	PROFILER_ADDR base_addr;
 	std::wstring name;
 	DbgHelp *dbghelp;
+	std::unordered_map<PROFILER_ADDR, std::pair<std::wstring, DWORD>> line_cache;
+	std::unordered_map<PROFILER_ADDR, std::wstring> sym_cache;
 };
 
 /*=====================================================================
