@@ -146,19 +146,17 @@ void ThreadsView::clearSelectedThreads()
 
 void ThreadsView::focusThread(Database::ThreadID tid)
 {
-	auto it = std::find_if(threads.begin(), threads.end(), [=](ThreadRow &r) { return r.tid == tid; });
-	if (it == threads.end())
-		return;
-	long i = FindItem(-1, (wxUIntPtr) & *it);
-	if (i != wxNOT_FOUND)
+	for (int i = 0; i < GetItemCount(); ++i)
 	{
-		Focus(i);
+		auto thread = (ThreadRow *)GetItemData(i);
 
-		for (int j = 0; j < GetItemCount(); ++j)
+		if (thread->tid == tid)
 		{
-			SetItemTextColour(j, i == j ? lightOrDark(wxTheColourDatabase->Find("green"))
-										: GetTextColour());
+			Focus(i);
+			SetItemTextColour(i, lightOrDark(wxTheColourDatabase->Find("green")));
 		}
+		else
+			SetItemTextColour(i, GetTextColour());
 	}
 }
 
