@@ -718,18 +718,19 @@ bool ProfilerGUI::OnCmdLineParsed(wxCmdLineParser& parser)
 	if (parser.Found("thread", &param))
 	{
 		auto tids_str = wxSplit(param,',');
-		for (size_t i = 0; i < tids_str.size(); i++)
+		for (const auto& tid_str : tids_str)
 		{
 			long tid;
-			if (tids_str[i].ToLong(&tid))
+			if (tid_str.ToLong(&tid))
 			{
 				cmdline_thread_ids.push_back(tid);
 			}
 			else
 			{
-				wxMessageBox(wxString::Format(wxT("Ignoring malformed thread ID in /thread option: %s"), tids_str[i]),
-							 APPNAME,
-							 wxICON_WARNING);
+				wxMessageBox(
+					wxString::Format(wxT("Ignoring malformed thread ID in /thread option: %s"),
+									 tid_str),
+					APPNAME, wxICON_WARNING);
 			}
 		}
 	}
