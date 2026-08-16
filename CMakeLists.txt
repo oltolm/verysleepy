@@ -12,8 +12,8 @@ project(
 
 set(VERYSLEEPY_APPNAME "Very Sleepy")
 set(VERYSLEEPY_VENDOR "Oleg Tolmatcev")
-set(VERYSLEEPY_APPURL "https://github.com/VerySleepy/verysleepy")
-set(VERYSLEEPY_GITURL "https://github.com/VerySleepy/verysleepy")
+set(VERYSLEEPY_APPURL "https://github.com/oltolm/verysleepy")
+set(VERYSLEEPY_GITURL "https://github.com/oltolm/verysleepy")
 set(VERYSLEEPY_FORMAT_VERSION "0.92")
 set(VERYSLEEPY_BUILD_NUMBER "$ENV{GITHUB_RUN_NUMBER}" CACHE STRING "Sequential build number")
 
