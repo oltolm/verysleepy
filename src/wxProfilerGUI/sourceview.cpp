@@ -28,10 +28,9 @@ http://www.gnu.org/copyleft/gpl.html
 #include "mainwin.h"
 
 BEGIN_EVENT_TABLE(SourceView, wxStyledTextCtrl)
-	EVT_PAINT(SourceView::OnPaint)
-	EVT_UPDATE_UI(SOURCE_VIEW, SourceView::OnUpdateUI)
+EVT_PAINT(SourceView::OnPaint)
+EVT_UPDATE_UI(SOURCE_VIEW, SourceView::OnUpdateUI)
 END_EVENT_TABLE()
-
 
 StringList keywords(L"keywords.txt");
 
@@ -165,8 +164,8 @@ void SourceView::showFile(std::wstring path, int proclinenum, const std::vector<
 		const wchar_t *crtSub = L"\\crt\\src\\";
 		wchar_t *crt = wcsstr((wchar_t *)path.c_str(), crtSub);
 		if(crt) {
-			for(size_t i=0;i<msDevPaths.size();i++) {
-				std::wstring newPath(msDevPaths[i]);
+			for (auto newPath : msDevPaths)
+			{
 				newPath += crt+wcslen(crtSub);
 				path = newPath;
 				file = _wfopen(path.c_str(),L"r");
