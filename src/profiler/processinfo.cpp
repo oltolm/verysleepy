@@ -28,6 +28,7 @@ http://www.gnu.org/copyleft/gpl.html
 #include "../utils/except.h"
 #include <windows.h>
 #include <tlhelp32.h>
+#include <wx/string.h>
 
 ProcessInfo::ProcessInfo(DWORD id_, const std::wstring& name_)
 	: name(name_),
@@ -123,5 +124,6 @@ ProcessInfo ProcessInfo::FindProcessById(DWORD process_id)
 		if (process.getID() == process_id)
 			return process;
 	}
-	throw SleepyException("Could not found process with specified id: " + std::to_string((unsigned long long) process_id));
+	throw SleepyException(
+		wxString::Format("Could not found process with specified id: %lu", process_id));
 }
