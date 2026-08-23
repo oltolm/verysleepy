@@ -97,7 +97,7 @@ void ProcessList::reloadSymbols(bool download)
 	}
 	catch (SleepyException &e)
 	{
-		wxMessageBox(wxString::Format(L"Error: %s", e.wwhat()), L"Profiler Error");
+		wxMessageBox(L"Error: " + e.wwhat(), L"Profiler Error");
 		syminfo = nullptr;
 	}
 

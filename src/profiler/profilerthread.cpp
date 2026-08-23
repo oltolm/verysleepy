@@ -360,7 +360,7 @@ void ProfilerThread::error(const std::wstring& what)
 	failed = true;
 	std::wcerr << "ProfilerThread Error: " << what << std::endl;
 
-	wxMessageBox(wxString::Format(L"Error: %s", what), L"Profiler Error");
+	wxMessageBox(L"Error: " + what, L"Profiler Error");
 }
 
 void ProfilerThread::beginProgress(std::wstring stage, int total)
