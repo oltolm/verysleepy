@@ -185,14 +185,16 @@ if(WIN32)
   )
 
   # dbghelpdr.dll parses DWARF and PE exports itself and forwards everything else,
-  # CodeView/PDB included, to dbghelp.dll by name. Ship our own copy so that binds
-  # here rather than to the one in System32, which has no symsrv.dll beside it and
-  # so cannot fetch anything from a symbol server. dbghelp in turn loads these from
-  # its own directory: symsrv.dll for the symbol server, srcsrv.dll for the source
-  # server, and symsrv.yes to accept the server EULA up front rather than prompting.
+  # CodeView/PDB included, to a real dbghelp. It imports that under the private name
+  # dbghelpms.dll (see MGWHELP_DBGHELP_DLL in the drmingw submodule) rather than
+  # dbghelp.dll, because a dbghelp.dll here would shadow the OS one for the whole
+  # process and dbgeng.dll, which sleepy.exe imports, fails to load against an older
+  # copy. dbghelp finds these beside itself: symsrv.dll for the symbol server,
+  # srcsrv.dll for the source server, and symsrv.yes to accept the server EULA up
+  # front rather than prompting.
   install(
     FILES
-      "${PROJECT_SOURCE_DIR}/dbghelp_x64/dbghelp.dll"
+      "${PROJECT_SOURCE_DIR}/dbghelp_x64/dbghelpms.dll"
       "${PROJECT_SOURCE_DIR}/dbghelp_x64/symsrv.dll"
       "${PROJECT_SOURCE_DIR}/dbghelp_x64/srcsrv.dll"
       "${PROJECT_SOURCE_DIR}/dbghelp_x64/symsrv.yes"
