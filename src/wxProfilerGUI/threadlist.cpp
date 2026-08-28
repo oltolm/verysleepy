@@ -29,6 +29,7 @@ http://www.gnu.org/copyleft/gpl.html
 #include "../profiler/symbolinfo.h"
 #include <algorithm>
 #include <wx/button.h>
+#include <wx/log.h>
 
 #define UPDATE_DELAY 1000	 // 1 second interval
 #define MAX_NUM_THREAD_LOCATIONS 100 // getting location of thread is very expensive, so only show it for the first X threads in the list
@@ -300,8 +301,17 @@ std::wstring ThreadList::getLocation(DWORD thread_id)
 				}
 			}
 		}
-	} catch( ProfilerExcep &)
+	} catch (ProfilerExcep &e)
 	{
+		// sampleTarget only throws when it could not resume the thread it suspended,
+		// which leaves the target frozen for good. That is worth saying, but this runs
+		// on a one second timer, so say it once rather than queueing a dialog per tick.
+		static bool reported = false;
+		if (!reported)
+		{
+			reported = true;
+			wxLogWarning(L"Thread %lu is left suspended: %s", thread_id, e.what().c_str());
+		}
 	}
 
 	if (profaddr && syminfo)
