@@ -423,6 +423,12 @@ void ProfilerGUI::TryLoadSymbols(AttachInfo* output)
 		Sleep(10);
 		try
 		{
+			// loadSymbols is single use: it asserts it has not opened the process yet, and
+			// loadSymbolsUsing only enumerates modules while its list is empty. Retrying on
+			// the same object would keep the half built module list the failed attempt left
+			// behind and never enumerate again, against a process handle dbghelp knows
+			// nothing about. Start from a fresh one every time.
+			output->sym_info = std::make_unique<SymbolInfo>();
 			output->sym_info->loadSymbols(output->process_id, false);
 			break;
 		}
