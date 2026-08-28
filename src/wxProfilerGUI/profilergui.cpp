@@ -45,6 +45,8 @@ http://www.gnu.org/copyleft/gpl.html
 #include <wx/scopeguard.h>
 #include <wx/stopwatch.h>
 #include <wx/timer.h>
+#include <wx/ffile.h>
+#include "../profiler/symbolinfo.h"
 #include "aboutdlg.h"
 #include "../utils/except.h"
 #include "appinfo.h"
@@ -608,6 +610,41 @@ void ProfilerGUI::HandleInit()
 	wxEventLoop::GetActive()->Exit(status);
 }
 
+namespace {
+
+// dbghelp's own diagnostics (we set SYMOPT_DEBUG) reach us through g_symLog, which
+// only the thread picker installs. Command line runs have no picker, so everything
+// dbghelp reported about which modules loaded, and why they did not, was discarded.
+// Write it to a file so a capture made with /r: or /a: can be diagnosed at all.
+wxFFile g_symLogFile;
+
+void cmdlineSymLogCallback(const wchar_t *text)
+{
+	if (g_symLogFile.IsOpened())
+	{
+		g_symLogFile.Write(text);
+		g_symLogFile.Flush();
+	}
+}
+
+void startCmdlineSymLog()
+{
+	// Only worth writing next to a capture the caller asked us to keep. Without /o:
+	// there is nowhere it belongs, and a file dropped in the temp directory is one
+	// nobody goes looking for.
+	if (cmdline_save.empty())
+		return;
+
+	wxString path = wxString(cmdline_save) + ".symbols.log";
+
+	if (g_symLogFile.Open(path, "w"))
+		g_symLog = cmdlineSymLogCallback;
+	else
+		wxLogWarning("Could not open %s for symbol diagnostics.", path);
+}
+
+}
+
 /// Returns true if a frame is still active.
 bool ProfilerGUI::Run()
 {
@@ -622,6 +659,9 @@ bool ProfilerGUI::Run()
 	delete wxLog::SetActiveTarget(new wxLogGui);
 
 	std::wstring filename;
+
+	if (!cmdline_run.empty() || !cmdline_attach.empty())
+		startCmdlineSymLog();
 
 	if (!cmdline_run.empty())
 	{
