@@ -171,7 +171,9 @@ extern DbgHelp dbgHelpDrMingw;
 extern DbgHelp dbgHelpWine;
 extern DbgHelp dbgHelpWineWow64;
 
-bool dbgHelpInit();
+// useWine also decides whether the Wine dbghelp builds are loaded at all: they are
+// only shipped for Wine, and probing for them otherwise just logs warnings.
+bool dbgHelpInit(bool useWine);
 
 #ifndef _MSC_VER
 #undef __in

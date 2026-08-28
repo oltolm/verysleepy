@@ -63,16 +63,21 @@ static void dbgHelpLoad(LPCWSTR name, DbgHelp* dest, const wxString& description
 					 description);
 }
 
-bool dbgHelpInit()
+bool dbgHelpInit(bool useWine)
 {
 	// Import the DrMingw dbghelp.dll
 	dbgHelpLoad(L"dbghelpdr.dll", &dbgHelpDrMingw, "Dr. MinGW debug information");
 
-	// Import the Wine dbghelp.dll
-	dbgHelpLoad(L"dbghelpw.dll", &dbgHelpWine, "Wine debug information");
+	// The Wine builds are only shipped when running under Wine, so do not go looking
+	// for them otherwise: the load always fails and only produces warnings.
+	if (useWine)
+	{
+		// Import the Wine dbghelp.dll
+		dbgHelpLoad(L"dbghelpw.dll", &dbgHelpWine, "Wine debug information");
 
-	// Import the Wine Wow64 dbghelp.dll
-	dbgHelpLoad(L"dbghelpw_wow64.dll", &dbgHelpWineWow64, "WoW64 Wine debug information");
+		// Import the Wine Wow64 dbghelp.dll
+		dbgHelpLoad(L"dbghelpw_wow64.dll", &dbgHelpWineWow64, "WoW64 Wine debug information");
+	}
 
 	return true;
 }

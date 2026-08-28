@@ -611,7 +611,7 @@ void ProfilerGUI::HandleInit()
 /// Returns true if a frame is still active.
 bool ProfilerGUI::Run()
 {
-	if (!dbgHelpInit())
+	if (!dbgHelpInit(prefs.UseWine()))
 		return false;
 
 	// Explicitly create and set the default logger, so other threads use it.
