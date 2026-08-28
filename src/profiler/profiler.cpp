@@ -29,6 +29,7 @@ http://www.gnu.org/copyleft/gpl.html
 #include "symbolinfo.h"
 #include <process.h>
 #include <cassert>
+#include <optional>
 #include <winnt.h>
 #include "../utils/dbginterface.h"
 #include "../utils/WoW64.h"
@@ -115,6 +116,25 @@ void applyHacks(HANDLE process_handle, CONTEXT32 &context)
 	}
 }
 
+namespace {
+
+// Resumes a suspended thread on every exit path out of sampleTarget. A thread left
+// suspended freezes the target for good: the suspend count only ever goes up, and
+// nothing in the profiler brings it back down again.
+class ThreadResumer
+{
+public:
+	explicit ThreadResumer(HANDLE thread_) : thread(thread_) {}
+	~ThreadResumer() { if (thread) ResumeThread(thread); }
+	bool release() { HANDLE t = thread; thread = NULL; return t && ResumeThread(t) != (DWORD)-1; }
+	ThreadResumer(const ThreadResumer&) = delete;
+	ThreadResumer& operator=(const ThreadResumer&) = delete;
+private:
+	HANDLE thread;
+};
+
+}
+
 bool Profiler::sampleTarget(SAMPLE_TYPE timeSpent, SymbolInfo *syminfo)
 {
 	// DE: 20090325: Moved declaration of stack variables to reduce size of code inside Suspend/Resume thread
@@ -129,6 +149,7 @@ bool Profiler::sampleTarget(SAMPLE_TYPE timeSpent, SymbolInfo *syminfo)
 	DWORD machine;
 
 	handle_ptr target_thread(OpenThread(THREAD_ALL_ACCESS, FALSE, target_thread_id));
+	std::optional<ThreadResumer> resumer;
 
 	CONTEXT64 threadcontext64;
 	CONTEXT32 threadcontext32;
@@ -142,17 +163,15 @@ bool Profiler::sampleTarget(SAMPLE_TYPE timeSpent, SymbolInfo *syminfo)
 		DWORD result = SuspendThread(target_thread.get());
 		if(result == 0xffffffff)
 			return false;
+		resumer.emplace(target_thread.get());
 
 		int prev_priority = GetThreadPriority(target_thread.get());
 		SetThreadPriority(target_thread.get(), THREAD_PRIORITY_TIME_CRITICAL);
 		result = GetThreadContext(target_thread.get(), &threadcontext64);
 		SetThreadPriority(target_thread.get(), prev_priority);
 
-		if(!result){
-			// DE: 20090325: If GetThreadContext fails we must be sure to resume thread again
-			ResumeThread(target_thread.get());
+		if(!result)
 			return false;
-		}
 
 		ip = threadcontext64.Rip;
 		sp = threadcontext64.Rsp;
@@ -166,17 +185,15 @@ bool Profiler::sampleTarget(SAMPLE_TYPE timeSpent, SymbolInfo *syminfo)
 		DWORD result = fn_Wow64SuspendThread(target_thread.get());
 		if(result == 0xffffffff)
 			return false;
+		resumer.emplace(target_thread.get());
 
 		int prev_priority = GetThreadPriority(target_thread.get());
 		SetThreadPriority(target_thread.get(), THREAD_PRIORITY_TIME_CRITICAL);
 		result = fn_Wow64GetThreadContext(target_thread.get(), &threadcontext32);
 		SetThreadPriority(target_thread.get(), prev_priority);
 
-		if(!result){
-			// DE: 20090325: If GetThreadContext fails we must be sure to resume thread again
-			ResumeThread(target_thread.get());
+		if(!result)
 			return false;
-		}
 
 		ip = threadcontext32.Eip;
 		sp = threadcontext32.Esp;
@@ -245,7 +262,7 @@ bool Profiler::sampleTarget(SAMPLE_TYPE timeSpent, SymbolInfo *syminfo)
 
 	// TODO: Don't count samples for suspended threads
 
-	if (ResumeThread(target_thread.get()) == 0xffffffff)
+	if (!resumer->release())
 		throw ProfilerExcep(L"ResumeThread failed.");
 
 	//NOTE: this has to go after ResumeThread.  Otherwise mem allocation needed by std::map

@@ -79,6 +79,11 @@ ProcessList::~ProcessList() {}
 
 void ProcessList::reloadSymbols(bool download)
 {
+	// Drop the thread list's reference before the old SymbolInfo goes away. Loading
+	// symbols pumps the message loop through the progress dialog, so the thread list
+	// timer can fire partway through and sample the target with this pointer.
+	threadList->updateThreads(NULL, NULL);
+
 	syminfo = std::make_unique<SymbolInfo>();
 
 	//------------------------------------------------------------------------
