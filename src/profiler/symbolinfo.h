@@ -87,6 +87,7 @@ private:
 
 	friend BOOL CALLBACK EnumModules(PCWSTR ModuleName, DWORD64 BaseOfDll, PVOID UserContext);
 	void loadSymbolsUsing(DbgHelp* dbgHelp, const std::wstring& sympath);//throws SymbolInfoExcep
+	void primeModuleSymbols();
 };
 
 extern SymLogFn *g_symLog;

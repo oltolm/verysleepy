@@ -236,7 +236,33 @@ void SymbolInfo::loadSymbols(DWORD process_id, bool download)
 
 	if (g_symLog)
 		g_symLog(L"\nFinished.\n");
+	// Read each module's symbols now, while the target is still alive. dbghelp has
+	// already loaded the PDB based ones, but the Dr. MinGW dbghelp reads DWARF and PE
+	// symbols lazily, on the first query for an address inside the module. Those
+	// queries only happen when the capture is written, by which point a target that
+	// ran to completion is gone and the lookup fails, leaving every frame belonging
+	// to it unresolved. One throwaway query per module fills the cache up front.
+	primeModuleSymbols();
 	sortModules();
+}
+
+void SymbolInfo::primeModuleSymbols()
+{
+	unsigned char buffer[1024];
+	SYMBOL_INFOW *symbol_info = (SYMBOL_INFOW *)buffer;
+
+	for (auto& mod : modules)
+	{
+		if (!mod.dbghelp->Loaded)
+			continue;
+
+		symbol_info->SizeOfStruct = sizeof(SYMBOL_INFOW);
+		symbol_info->MaxNameLen = ((sizeof(buffer) - sizeof(SYMBOL_INFOW)) / sizeof(WCHAR)) - 1;
+
+		DWORD64 displacement = 0;
+		mod.dbghelp->SymFromAddrW(process_handle.get(), mod.base_addr, &displacement,
+								  symbol_info);
+	}
 }
 
 DbgHelp* SymbolInfo::getGccDbgHelp()
