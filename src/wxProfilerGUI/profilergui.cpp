@@ -519,7 +519,7 @@ bool ProfilerGUI::OnInit()
 
 		prefs.symSearchPath.SetConfigValue(config.Read("SymbolSearchPath", ""));
 		prefs.useSymServer.SetConfigValue(config.Read("UseSymbolServer", 1) != 0);
-		prefs.symServer.SetConfigValue(config.Read("SymbolServer", "http://msdl.microsoft.com/download/symbols"));
+		prefs.symServer.SetConfigValue(config.Read("SymbolServer", "https://msdl.microsoft.com/download/symbols"));
 		prefs.symCacheDir.SetConfigValue(config.Read("SymbolCache", symCache));
 		prefs.useWinePref = config.Read("UseWine", (long)0) != 0;
 		prefs.appearance = (Theme)config.ReadLong("Appearance", System);

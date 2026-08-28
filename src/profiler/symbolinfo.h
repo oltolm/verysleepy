@@ -72,6 +72,10 @@ public:
 
 	void getLineForAddr(PROFILER_ADDR addr, std::wstring& filepath_out, int& linenum_out);
 
+	// The dbghelp that loadSymbols initialized, and so the only one that can
+	// answer for an address outside every known module.
+	DbgHelp* getGccDbgHelp();
+
 	handle_ptr process_handle;
 
 private:
@@ -83,7 +87,6 @@ private:
 
 	friend BOOL CALLBACK EnumModules(PCWSTR ModuleName, DWORD64 BaseOfDll, PVOID UserContext);
 	void loadSymbolsUsing(DbgHelp* dbgHelp, const std::wstring& sympath);//throws SymbolInfoExcep
-	DbgHelp* getGccDbgHelp();
 };
 
 extern SymLogFn *g_symLog;

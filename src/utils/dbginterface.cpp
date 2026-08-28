@@ -23,7 +23,6 @@ http://www.gnu.org/copyleft/gpl.html
 #include "dbginterface.h"
 #include <wx/log.h>
 
-DbgHelp dbgHelpMs;
 DbgHelp dbgHelpDrMingw;
 DbgHelp dbgHelpWine;
 DbgHelp dbgHelpWineWow64;
@@ -66,15 +65,6 @@ static void dbgHelpLoad(LPCWSTR name, DbgHelp* dest, const wxString& description
 
 bool dbgHelpInit()
 {
-	// Import the Microsoft dbghelp.dll
-	if (!dbgHelpTryLoad(L"dbghelpms.dll", &dbgHelpMs))
-	{
-		// The latest version of dbghelp.dll requires a
-		// recent version of Windows to run. If loading
-		// that fails, fall back to an older version.
-		dbgHelpLoad(L"dbghelpms6.dll", &dbgHelpMs, "Microsoft debug information");
-	}
-
 	// Import the DrMingw dbghelp.dll
 	dbgHelpLoad(L"dbghelpdr.dll", &dbgHelpDrMingw, "Dr. MinGW debug information");
 

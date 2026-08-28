@@ -197,7 +197,7 @@ bool Profiler::sampleTarget(SAMPLE_TYPE timeSpent, SymbolInfo *syminfo)
 	{
 		// See which module this IP is in.
 		Module *mod = syminfo->getModuleForAddr(ip);
-		DbgHelp *dbgHelp = mod ? mod->dbghelp : &dbgHelpMs;
+		DbgHelp *dbgHelp = mod ? mod->dbghelp : syminfo->getGccDbgHelp();
 		if (!dbgHelp->Loaded)
 			break;
 

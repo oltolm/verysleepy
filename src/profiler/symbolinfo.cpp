@@ -268,11 +268,6 @@ SymbolInfo::~SymbolInfo()
 		{
 			//error
 		}
-
-		if (dbgHelpMs.Loaded && !dbgHelpMs.SymCleanup(process_handle.get()))
-		{
-			//error
-		}
 	}
 }
 
@@ -325,7 +320,7 @@ const std::wstring SymbolInfo::getProcForAddr(PROFILER_ADDR addr,
 	std::wstring name;
 
 	Module *mod = getModuleForAddr(addr);
-	DbgHelp *dbgHelp = mod ? mod->dbghelp : &dbgHelpDrMingw;
+	DbgHelp *dbgHelp = mod ? mod->dbghelp : getGccDbgHelp();
 
 	unsigned char buffer[1024];
 
@@ -382,7 +377,7 @@ const std::wstring SymbolInfo::getProcForAddr(PROFILER_ADDR addr,
 void SymbolInfo::getLineForAddr(PROFILER_ADDR addr, std::wstring& filepath_out, int& linenum_out)
 {
 	Module *mod = getModuleForAddr(addr);
-	DbgHelp *dbgHelp = mod ? mod->dbghelp : &dbgHelpDrMingw;
+	DbgHelp *dbgHelp = mod ? mod->dbghelp : getGccDbgHelp();
 
 	if (mod)
 	{
@@ -427,7 +422,7 @@ std::wstring SymbolInfo::saveMinidump()
 
 	wxFile f;
 	std::wstring dumppath = wxFileName::CreateTempFileName(wxEmptyString, &f).wc_string();
-	wenforce(dbgHelpDrMingw.MiniDumpWriteDump(
+	wenforce(getGccDbgHelp()->MiniDumpWriteDump(
 				 process_handle.get(), GetProcessId(process_handle.get()),
 				 (HANDLE)_get_osfhandle(f.fd()), MiniDumpNormal, NULL, NULL, NULL),
 			 "MiniDumpWriteDump");

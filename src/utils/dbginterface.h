@@ -167,7 +167,6 @@ struct DbgHelp
 	DbgHelp() : Loaded(false) {}
 };
 
-extern DbgHelp dbgHelpMs;
 extern DbgHelp dbgHelpDrMingw;
 extern DbgHelp dbgHelpWine;
 extern DbgHelp dbgHelpWineWow64;

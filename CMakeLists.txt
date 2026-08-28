@@ -184,12 +184,19 @@ if(WIN32)
       "${VERYSLEEPY_MINGW_BIN_DIR}"
   )
 
+  # dbghelpdr.dll parses DWARF and PE exports itself and forwards everything else,
+  # CodeView/PDB included, to dbghelp.dll by name. Ship our own copy so that binds
+  # here rather than to the one in System32, which has no symsrv.dll beside it and
+  # so cannot fetch anything from a symbol server. dbghelp in turn loads these from
+  # its own directory: symsrv.dll for the symbol server, srcsrv.dll for the source
+  # server, and symsrv.yes to accept the server EULA up front rather than prompting.
   install(
-    DIRECTORY "${PROJECT_SOURCE_DIR}/dbghelp_x64/"
+    FILES
+      "${PROJECT_SOURCE_DIR}/dbghelp_x64/dbghelp.dll"
+      "${PROJECT_SOURCE_DIR}/dbghelp_x64/symsrv.dll"
+      "${PROJECT_SOURCE_DIR}/dbghelp_x64/srcsrv.dll"
+      "${PROJECT_SOURCE_DIR}/dbghelp_x64/symsrv.yes"
     DESTINATION .
-    FILES_MATCHING
-    PATTERN "*.dll"
-    PATTERN "*.yes"
   )
 
   install(
