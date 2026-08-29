@@ -380,14 +380,17 @@ std::unique_ptr<AttachInfo> ProfilerGUI::RunProcess(const std::wstring& run_cmd,
 {
 	STARTUPINFO si = {sizeof(si)};
 	PROCESS_INFORMATION pi = {};
-	handle_ptr thread_handle(pi.hThread);
-	handle_ptr process_handle(pi.hProcess);
 
 	std::wstring run_cmd_dup = run_cmd; // CreateProcess lpCommandLine must be mutable
 	wenforce(CreateProcess( NULL, &run_cmd_dup[0], NULL, NULL, FALSE, DEBUG_ONLY_THIS_PROCESS, NULL, run_cwd.size() ? run_cwd.c_str() : NULL, &si, &pi ), "CreateProcess");
 
 	// Hold the new process until its imports are mapped, then stop debugging it. Without
 	// this the module list below is read while the loader is still working.
+	// Nothing below needs these, but CreateProcess handed them to us, so they are ours
+	// to close. Taking them before the call only ever wrapped the null they start as.
+	handle_ptr process_handle(pi.hProcess);
+	handle_ptr thread_handle(pi.hThread);
+
 	DEBUG_EVENT loaderEvent = {};
 	if (waitForLoaderBreakpoint(loaderEvent))
 		releaseFromLoaderBreakpoint(loaderEvent, pi.dwProcessId);
