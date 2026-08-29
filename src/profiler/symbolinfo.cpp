@@ -264,11 +264,13 @@ void SymbolInfo::primeModuleSymbols()
 								  symbol_info);
 
 		// Remember how far the module reaches, so getModuleForAddr can tell an address
-		// inside it from one belonging to a module we never enumerated.
-		IMAGEHLP_MODULEW64 info;
-		info.SizeOfStruct = sizeof(info);
-		if (mod.dbghelp->SymGetModuleInfoW64(process_handle.get(), mod.base_addr, &info))
-			mod.size = info.ImageSize;
+		// inside it from one belonging to a module we never enumerated. Ask the loader
+		// rather than dbghelp: a module base is its HMODULE, and this still answers for
+		// modules whose symbols failed to load, which are the ones most likely to need it.
+		MODULEINFO module_info;
+		if (GetModuleInformation(process_handle.get(), (HMODULE)mod.base_addr, &module_info,
+								 sizeof(module_info)))
+			mod.size = module_info.SizeOfImage;
 	}
 }
 
