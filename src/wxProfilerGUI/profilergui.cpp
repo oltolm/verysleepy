@@ -332,6 +332,49 @@ static std::vector<DWORD> getThreadsByAttachMode(ProcessInfo& process_info)
 	}
 }
 
+namespace {
+
+// A process created with DEBUG_ONLY_THIS_PROCESS stops at a breakpoint once the loader
+// has mapped its static imports. Waiting for that is how we know the module list is
+// worth reading: sampled a few milliseconds after CreateProcess it holds little more
+// than the executable and ntdll, so symbols come out missing whole modules and the
+// stack walker has no unwind data for the rest.
+bool waitForLoaderBreakpoint(DEBUG_EVENT& dbgEvent)
+{
+	while (WaitForDebugEvent(&dbgEvent, 30000))
+	{
+		switch (dbgEvent.dwDebugEventCode)
+		{
+		case CREATE_PROCESS_DEBUG_EVENT:
+			CloseHandle(dbgEvent.u.CreateProcessInfo.hFile);
+			break;
+
+		case LOAD_DLL_DEBUG_EVENT:
+			CloseHandle(dbgEvent.u.LoadDll.hFile);
+			break;
+
+		case EXCEPTION_DEBUG_EVENT:
+			if (dbgEvent.u.Exception.ExceptionRecord.ExceptionCode == EXCEPTION_BREAKPOINT)
+				return true; // still stopped, and the loader is done
+			break;
+		}
+
+		ContinueDebugEvent(dbgEvent.dwProcessId, dbgEvent.dwThreadId, DBG_CONTINUE);
+	}
+	return false;
+}
+
+// Hand the target back to itself: it has to outlive the debugging session, and we only
+// wanted to be its debugger for as long as it took to start up.
+void releaseFromLoaderBreakpoint(const DEBUG_EVENT& dbgEvent, DWORD process_id)
+{
+	DebugSetProcessKillOnExit(FALSE);
+	ContinueDebugEvent(dbgEvent.dwProcessId, dbgEvent.dwThreadId, DBG_CONTINUE);
+	DebugActiveProcessStop(process_id);
+}
+
+}
+
 std::unique_ptr<AttachInfo> ProfilerGUI::RunProcess(const std::wstring& run_cmd,
 													const std::wstring& run_cwd)
 {
@@ -341,7 +384,15 @@ std::unique_ptr<AttachInfo> ProfilerGUI::RunProcess(const std::wstring& run_cmd,
 	handle_ptr process_handle(pi.hProcess);
 
 	std::wstring run_cmd_dup = run_cmd; // CreateProcess lpCommandLine must be mutable
-	wenforce(CreateProcess( NULL, &run_cmd_dup[0], NULL, NULL, FALSE, 0, NULL, run_cwd.size() ? run_cwd.c_str() : NULL, &si, &pi ), "CreateProcess");
+	wenforce(CreateProcess( NULL, &run_cmd_dup[0], NULL, NULL, FALSE, DEBUG_ONLY_THIS_PROCESS, NULL, run_cwd.size() ? run_cwd.c_str() : NULL, &si, &pi ), "CreateProcess");
+
+	// Hold the new process until its imports are mapped, then stop debugging it. Without
+	// this the module list below is read while the loader is still working.
+	DEBUG_EVENT loaderEvent = {};
+	if (waitForLoaderBreakpoint(loaderEvent))
+		releaseFromLoaderBreakpoint(loaderEvent, pi.dwProcessId);
+	else
+		DebugActiveProcessStop(pi.dwProcessId);
 
 	if (!CanProfileProcess(pi.hProcess))
 	{
