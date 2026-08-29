@@ -262,6 +262,13 @@ void SymbolInfo::primeModuleSymbols()
 		DWORD64 displacement = 0;
 		mod.dbghelp->SymFromAddrW(process_handle.get(), mod.base_addr, &displacement,
 								  symbol_info);
+
+		// Remember how far the module reaches, so getModuleForAddr can tell an address
+		// inside it from one belonging to a module we never enumerated.
+		IMAGEHLP_MODULEW64 info;
+		info.SizeOfStruct = sizeof(info);
+		if (mod.dbghelp->SymGetModuleInfoW64(process_handle.get(), mod.base_addr, &info))
+			mod.size = info.ImageSize;
 	}
 }
 
@@ -305,13 +312,23 @@ Module *SymbolInfo::getModuleForAddr(PROFILER_ADDR addr)
 	if(addr < modules[0].base_addr)
 		return NULL;
 
+	Module *mod = &modules.back();
 	for(unsigned int i=1; i<modules.size(); ++i)
 		if(addr < modules[i].base_addr)
-			return &modules[i-1];
+		{
+			mod = &modules[i-1];
+			break;
+		}
 
-	//assign any addresses past the base of the last module to the last module.
-	//NOTE: this is not strictly correct, but without the sizes of the modules, a decent way of doing things.
-	return &modules[modules.size() - 1];
+	// An address past the end of the module nearest below it belongs to something we
+	// never enumerated. Naming it after that module is worse than admitting we do not
+	// know: callers fall back to asking dbghelp directly, which may well know the module
+	// even when our list does not. Modules whose size we could not learn keep the old
+	// behaviour of claiming everything above them.
+	if(mod->size && addr >= mod->base_addr + mod->size)
+		return NULL;
+
+	return mod;
 }
 
 const std::wstring SymbolInfo::getModuleNameForAddr(PROFILER_ADDR addr)

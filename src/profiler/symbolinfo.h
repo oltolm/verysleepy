@@ -46,6 +46,7 @@ public:
 		dbghelp = dbghelp_;
 	}
 	PROFILER_ADDR base_addr;
+	PROFILER_ADDR size = 0; // 0 when dbghelp would not tell us
 	std::wstring name;
 	DbgHelp *dbghelp;
 	std::unordered_map<PROFILER_ADDR, std::pair<std::wstring, DWORD>> line_cache;
