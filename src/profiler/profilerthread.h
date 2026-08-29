@@ -108,6 +108,7 @@ private:
 	DWORD target_process_id;
 	std::map<DWORD, std::wstring> thread_names;
 	std::wstring filename;
+	std::wstring target_filename; // captured up front: the target may outlive us, or not
 	std::wstring minidump;
 	SymbolInfo *sym_info;
 };

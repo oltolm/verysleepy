@@ -68,6 +68,15 @@ ProfilerThread::ProfilerThread(DWORD target_process_id_, const std::vector<DWORD
 		}
 	}
 
+	// Ask for the image path now rather than when the capture is written. A target that
+	// runs to completion is gone by then, and the answer was silently a question mark.
+	{
+		wchar_t path[MAX_PATH] = L"";
+		handle_ptr target_process(OpenProcess(PROCESS_ALL_ACCESS, FALSE, target_process_id_));
+		if (GetModuleFileNameEx(target_process.get(), NULL, path, _countof(path)))
+			target_filename = path;
+	}
+
 	numsamplessofar = 0;
 	done = false;
 	failed = false;
@@ -205,12 +214,10 @@ void ProfilerThread::saveData()
 	beginProgress(L"Saving stats", 100);
 	zip.PutNextEntry(_T("Stats.txt"));
 
-	wchar_t tmp[4096] = L"?";
-	handle_ptr target_process(OpenProcess(PROCESS_ALL_ACCESS, FALSE, target_process_id));
-	GetModuleFileNameEx(target_process.get(), NULL, tmp, 4096);
 	time_t rawtime;
 	time(&rawtime);
-	txt << "Filename: " << tmp << "\n";
+	txt << "Filename: " << (target_filename.empty() ? L"?" : target_filename.c_str())
+		<< "\n";
 	txt << "Duration: " << duration << "\n";
 	txt << "Date: " << asctime(localtime(&rawtime));
 	txt << "Samples: " << numsamplessofar << "\n";
