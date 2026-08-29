@@ -253,8 +253,13 @@ if(WIN32)
   set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "${VERYSLEEPY_APPNAME} profiler")
   set(CPACK_PACKAGE_HOMEPAGE_URL "${VERYSLEEPY_APPURL}")
   set(CPACK_RESOURCE_FILE_LICENSE "${PROJECT_SOURCE_DIR}/license.txt")
-  set(CPACK_NSIS_DISPLAY_NAME "${VERYSLEEPY_APPNAME} ${VERYSLEEPY_VERSION}")
-  set(CPACK_NSIS_PACKAGE_NAME "${VERYSLEEPY_APPNAME} ${VERYSLEEPY_VERSION}")
+  # Both of these name the product, not the build: CPACK_NSIS_PACKAGE_NAME becomes the
+  # installer title and, through it, the default start menu folder, and DISPLAY_NAME is
+  # what Add/Remove Programs lists. The build goes in DisplayVersion beside it, which is
+  # where Windows expects to find it and otherwise only ever read 0.0.0.
+  set(CPACK_NSIS_DISPLAY_NAME "${VERYSLEEPY_APPNAME}")
+  set(CPACK_NSIS_PACKAGE_NAME "${VERYSLEEPY_APPNAME}")
+  set(CPACK_PACKAGE_VERSION "${VERYSLEEPY_VERSION}")
   set(CPACK_NSIS_CONTACT "${VERYSLEEPY_VENDOR}")
   set(CPACK_NSIS_URL_INFO_ABOUT "${VERYSLEEPY_APPURL}")
   set(CPACK_NSIS_HELP_LINK "${VERYSLEEPY_APPURL}")
