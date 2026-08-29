@@ -153,6 +153,23 @@ if(WIN32 AND MINGW)
 
   if(TARGET mgwhelp)
     add_dependencies(sleepy mgwhelp)
+
+    # sleepy loads mgwhelp under the name it is shipped as, so stage a copy beside the
+    # executable whenever it is rebuilt. The install rule renames it the same way. This
+    # is driven by the output file rather than a POST_BUILD on sleepy, because sleepy
+    # does not relink when mgwhelp alone changes, and the stale copy left behind then
+    # gets loaded instead of the one just built.
+    set(VERYSLEEPY_STAGED_MGWHELP "${PROJECT_BINARY_DIR}/dbghelpdr.dll")
+    add_custom_command(
+      OUTPUT "${VERYSLEEPY_STAGED_MGWHELP}"
+      COMMAND "${CMAKE_COMMAND}" -E copy_if_different
+              "$<TARGET_FILE:mgwhelp>" "${VERYSLEEPY_STAGED_MGWHELP}"
+      DEPENDS "$<TARGET_FILE:mgwhelp>"
+      COMMENT "Staging mgwhelp as dbghelpdr.dll"
+      VERBATIM
+    )
+    add_custom_target(stage_mgwhelp ALL DEPENDS "${VERYSLEEPY_STAGED_MGWHELP}")
+    add_dependencies(sleepy stage_mgwhelp)
   else()
     message(FATAL_ERROR "The drmingw submodule did not define the mgwhelp target.")
   endif()
