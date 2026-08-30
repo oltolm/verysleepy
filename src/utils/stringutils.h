@@ -29,22 +29,11 @@ http://www.gnu.org/copyleft/gpl.html
 #include <windows.h>
 #include <string>
 #include <vector>
+#include <wx/txtstrm.h>
 
 void readQuote(std::wistream& stream, std::wstring& str_out);//reads string from between double quotes.
 
-template<typename T>
-void writeQuote(T& stream, const std::wstring& s, wchar_t escape = '\\')
-{
-	stream << '"';
-	for (size_t i = 0; i < s.length(); i++)
-	{
-		wchar_t c = s[i];
-		if (c == escape || c == '"')
-			stream << escape;
-		stream << c;
-	}
-	stream << '"';
-}
+void writeQuote(wxTextOutputStream& stream, const std::wstring& s, wchar_t escape = '\\');
 
 struct StringSet
 {

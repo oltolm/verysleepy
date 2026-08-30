@@ -66,6 +66,19 @@ void readQuote(std::wistream& stream, std::wstring& str_out)
 	}
 }
 
+void writeQuote(wxTextOutputStream& stream, const std::wstring& s, wchar_t escape)
+{
+	stream << '"';
+	for (size_t i = 0; i < s.length(); i++)
+	{
+		wchar_t c = s[i];
+		if (c == escape || c == '"')
+			stream << escape;
+		stream << c;
+	}
+	stream << '"';
+}
+
 template<typename T>
 static void Parse(const wchar_t *file, T* dst)
 {
