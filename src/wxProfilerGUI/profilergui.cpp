@@ -45,7 +45,7 @@ http://www.gnu.org/copyleft/gpl.html
 #include <wx/scopeguard.h>
 #include <wx/stopwatch.h>
 #include <wx/timer.h>
-#include <wx/ffile.h>
+#include <wx/log.h>
 #include "../profiler/symbolinfo.h"
 #include "aboutdlg.h"
 #include "../utils/except.h"
@@ -74,6 +74,7 @@ static const wxCmdLineEntryDesc g_cmdLineDesc[] =
 	{ wxCMD_LINE_OPTION, "symcachedir", "", "Specify the directory to use for the symbol cache.", wxCMD_LINE_VAL_STRING, wxCMD_LINE_PARAM_OPTIONAL|wxCMD_LINE_NEEDS_SEPARATOR },
 	{ wxCMD_LINE_SWITCH, "usesymserver", "", "Use a symbol server.",                        wxCMD_LINE_VAL_NONE, wxCMD_LINE_SWITCH_NEGATABLE },
 	{ wxCMD_LINE_OPTION, "symserver", "", "Specify the symbol server path/URL.",            wxCMD_LINE_VAL_STRING, wxCMD_LINE_PARAM_OPTIONAL|wxCMD_LINE_NEEDS_SEPARATOR },
+	{ wxCMD_LINE_SWITCH, "", "console-proxy", "",                                         wxCMD_LINE_VAL_NONE, wxCMD_LINE_HIDDEN },
 
 	{ wxCMD_LINE_PARAM, NULL, NULL, "Loads an existing profile from a file.",               wxCMD_LINE_VAL_STRING, wxCMD_LINE_PARAM_OPTIONAL},
 
@@ -82,6 +83,7 @@ static const wxCmdLineEntryDesc g_cmdLineDesc[] =
 
 wxIcon sleepy_icon;
 std::wstring cmdline_load, cmdline_save, cmdline_run, cmdline_attach;
+bool cmdline_console_proxy = false;
 long cmdline_delay = 0;
 long cmdline_timeout = -1;  // -1 means profile until cancelled
 std::vector<DWORD> cmdline_thread_ids;
@@ -382,7 +384,22 @@ std::unique_ptr<AttachInfo> ProfilerGUI::RunProcess(const std::wstring& run_cmd,
 	PROCESS_INFORMATION pi = {};
 
 	std::wstring run_cmd_dup = run_cmd; // CreateProcess lpCommandLine must be mutable
-	wenforce(CreateProcess( NULL, &run_cmd_dup[0], NULL, NULL, FALSE, DEBUG_ONLY_THIS_PROCESS, NULL, run_cwd.size() ? run_cwd.c_str() : NULL, &si, &pi ), "CreateProcess");
+
+	// The console launcher explicitly asks us to hand its stdio to the target, so
+	// it reads and writes whatever the caller gave it and redirection reaches it.
+	// A normal GUI launch does not forward handles and retains the old behaviour.
+	BOOL inherit = FALSE;
+	if (cmdline_console_proxy)
+	{
+		si.hStdInput = GetStdHandle(STD_INPUT_HANDLE);
+		si.hStdOutput = GetStdHandle(STD_OUTPUT_HANDLE);
+		si.hStdError = GetStdHandle(STD_ERROR_HANDLE);
+
+		si.dwFlags |= STARTF_USESTDHANDLES;
+		inherit = TRUE;
+	}
+
+	wenforce(CreateProcess( NULL, &run_cmd_dup[0], NULL, NULL, inherit, DEBUG_ONLY_THIS_PROCESS, NULL, run_cwd.size() ? run_cwd.c_str() : NULL, &si, &pi ), "CreateProcess");
 
 	// Hold the new process until its imports are mapped, then stop debugging it. Without
 	// this the module list below is read while the loader is still working.
@@ -669,32 +686,11 @@ namespace {
 // dbghelp's own diagnostics (we set SYMOPT_DEBUG) reach us through g_symLog, which
 // only the thread picker installs. Command line runs have no picker, so everything
 // dbghelp reported about which modules loaded, and why they did not, was discarded.
-// Write it to a file so a capture made with /r: or /a: can be diagnosed at all.
-wxFFile g_symLogFile;
-
+// Just log it; where it ends up is the log target's business, and command line runs
+// set that to stderr.
 void cmdlineSymLogCallback(const wchar_t *text)
 {
-	if (g_symLogFile.IsOpened())
-	{
-		g_symLogFile.Write(text);
-		g_symLogFile.Flush();
-	}
-}
-
-void startCmdlineSymLog()
-{
-	// Only worth writing next to a capture the caller asked us to keep. Without /o:
-	// there is nowhere it belongs, and a file dropped in the temp directory is one
-	// nobody goes looking for.
-	if (cmdline_save.empty())
-		return;
-
-	wxString path = wxString(cmdline_save) + ".symbols.log";
-
-	if (g_symLogFile.Open(path, "w"))
-		g_symLog = cmdlineSymLogCallback;
-	else
-		wxLogWarning("Could not open %s for symbol diagnostics.", path);
+	wxLogMessage(L"%s", text);
 }
 
 }
@@ -710,12 +706,18 @@ bool ProfilerGUI::Run()
 	// but only by the request of the main thread.
 	// Log messages for other threads will be discarded.
 	// note : logger was already created inside ProcessIdle that was called before Run, need to delete it
-	delete wxLog::SetActiveTarget(new wxLogGui);
+	if (cmdline_console_proxy)
+	{
+		AttachConsole(ATTACH_PARENT_PROCESS);
+		delete wxLog::SetActiveTarget(new wxLogStderr);
+	}
+	else
+		delete wxLog::SetActiveTarget(new wxLogGui);
 
 	std::wstring filename;
 
-	if (!cmdline_run.empty() || !cmdline_attach.empty())
-		startCmdlineSymLog();
+	if (cmdline_console_proxy)
+		g_symLog = cmdlineSymLogCallback;
 
 	if (!cmdline_run.empty())
 	{
@@ -788,6 +790,7 @@ bool ProfilerGUI::OnCmdLineParsed(wxCmdLineParser& parser)
 {
 	wxString param;
 	long long_param;
+	cmdline_console_proxy = parser.Found("console-proxy");
 
 	// command line options that override saved setting, will not replace
 	//   the data in the saved config.

@@ -73,6 +73,16 @@ add_executable(
 target_sources(sleepy PRIVATE src/res/sleepy.rc)
 target_compile_features(sleepy PRIVATE cxx_std_14)
 
+# Console entry point. cmd searches PATHEXT in order and .com comes before .exe, so
+# typing "sleepy" runs this and gets console behaviour, while the shortcut and the
+# file association still point at sleepy.exe.
+add_executable(sleepy_com src/launcher/sleepy_com.cpp)
+set_target_properties(
+  sleepy_com PROPERTIES
+  OUTPUT_NAME "sleepy"
+  SUFFIX ".com"
+)
+
 set(wxWidgets_USE_STATIC
   OFF
   CACHE BOOL "Link libraries statically?"
@@ -176,6 +186,8 @@ install(
   RUNTIME_DEPENDENCY_SET sleepy_runtime_dependencies
   RUNTIME DESTINATION .
 )
+
+install(TARGETS sleepy_com RUNTIME DESTINATION .)
 
 install(
   RUNTIME_DEPENDENCY_SET sleepy_runtime_dependencies
