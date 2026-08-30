@@ -655,11 +655,11 @@ void MainWin::OnExportAsCallgrind(wxCommandEvent& WXUNUSED(event))
 		txt << "events: t ps\n";
 
 		double statsDuration = 1.f;
-		for (size_t n=0;n<database->stats.size();n++)
+		for (const auto & stat : database->stats)
 		{
-			if (database->stats[n].find(_T("Filename: ")) == 0) txt << "cmd: "  << (database->stats[n].c_str() + 8+2) << "\n";
-			if (database->stats[n].find(_T("Date: "    )) == 0) txt << "desc: " << (database->stats[n].c_str() + 4+2) << "\n";
-			if (database->stats[n].find(_T("Duration: ")) == 0) std::wistringstream(database->stats[n].c_str() + 8+2) >> statsDuration;
+			if (stat.find(_T("Filename: ")) == 0) txt << "cmd: "  << (stat.c_str() + 8+2) << "\n";
+			if (stat.find(_T("Date: "    )) == 0) txt << "desc: " << (stat.c_str() + 4+2) << "\n";
+			if (stat.find(_T("Duration: ")) == 0) std::wistringstream(stat.c_str() + 8+2) >> statsDuration;
 		}
 
 		typedef std::pair<unsigned, const Database::Symbol*> LineChildPair;
@@ -1024,9 +1024,9 @@ void MainWin::OnStats(wxCommandEvent& WXUNUSED(event))
 	string += "\n";
 	string += "\n";
 
-	for (size_t n=0;n<database->stats.size();n++)
+	for (const auto & stat : database->stats)
 	{
-		string += database->stats[n];
+		string += stat;
 		string += "\n";
 	}
 
