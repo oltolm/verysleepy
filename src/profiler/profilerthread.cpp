@@ -325,7 +325,7 @@ void ProfilerThread::run()
 		debugger->attach([this](Debugger::NotifyData const &notification) {
 			if (notification.eventType != Debugger::NOTIFY_NEW_THREAD)
 				return;
-			profilers.emplace_back(target_process_id, notification.threadId, callstacks);
+			profilers.push_back(Profiler(target_process_id, notification.threadId, callstacks));
 			thread_names[notification.threadId] = getThreadDescriptorName(notification.threadHandle);
 		});
 
