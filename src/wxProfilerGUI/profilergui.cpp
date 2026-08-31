@@ -74,7 +74,6 @@ static const wxCmdLineEntryDesc g_cmdLineDesc[] =
 	{ wxCMD_LINE_OPTION, "symcachedir", "", "Specify the directory to use for the symbol cache.", wxCMD_LINE_VAL_STRING, wxCMD_LINE_PARAM_OPTIONAL|wxCMD_LINE_NEEDS_SEPARATOR },
 	{ wxCMD_LINE_SWITCH, "usesymserver", "", "Use a symbol server.",                        wxCMD_LINE_VAL_NONE, wxCMD_LINE_SWITCH_NEGATABLE },
 	{ wxCMD_LINE_OPTION, "symserver", "", "Specify the symbol server path/URL.",            wxCMD_LINE_VAL_STRING, wxCMD_LINE_PARAM_OPTIONAL|wxCMD_LINE_NEEDS_SEPARATOR },
-	{ wxCMD_LINE_SWITCH, "", "console-proxy", "",                                         wxCMD_LINE_VAL_NONE, wxCMD_LINE_HIDDEN },
 
 	{ wxCMD_LINE_PARAM, NULL, NULL, "Loads an existing profile from a file.",               wxCMD_LINE_VAL_STRING, wxCMD_LINE_PARAM_OPTIONAL},
 
@@ -83,7 +82,6 @@ static const wxCmdLineEntryDesc g_cmdLineDesc[] =
 
 wxIcon sleepy_icon;
 std::wstring cmdline_load, cmdline_save, cmdline_run, cmdline_attach;
-bool cmdline_console_proxy = false;
 long cmdline_delay = 0;
 long cmdline_timeout = -1;  // -1 means profile until cancelled
 std::vector<DWORD> cmdline_thread_ids;
@@ -385,21 +383,7 @@ std::unique_ptr<AttachInfo> ProfilerGUI::RunProcess(const std::wstring& run_cmd,
 
 	std::wstring run_cmd_dup = run_cmd; // CreateProcess lpCommandLine must be mutable
 
-	// The console launcher explicitly asks us to hand its stdio to the target, so
-	// it reads and writes whatever the caller gave it and redirection reaches it.
-	// A normal GUI launch does not forward handles and retains the old behaviour.
-	BOOL inherit = FALSE;
-	if (cmdline_console_proxy)
-	{
-		si.hStdInput = GetStdHandle(STD_INPUT_HANDLE);
-		si.hStdOutput = GetStdHandle(STD_OUTPUT_HANDLE);
-		si.hStdError = GetStdHandle(STD_ERROR_HANDLE);
-
-		si.dwFlags |= STARTF_USESTDHANDLES;
-		inherit = TRUE;
-	}
-
-	wenforce(CreateProcess( NULL, &run_cmd_dup[0], NULL, NULL, inherit, DEBUG_ONLY_THIS_PROCESS, NULL, run_cwd.size() ? run_cwd.c_str() : NULL, &si, &pi ), "CreateProcess");
+	wenforce(CreateProcess( NULL, &run_cmd_dup[0], NULL, NULL, FALSE, DEBUG_ONLY_THIS_PROCESS, NULL, run_cwd.size() ? run_cwd.c_str() : NULL, &si, &pi ), "CreateProcess");
 
 	// Hold the new process until its imports are mapped, then stop debugging it. Without
 	// this the module list below is read while the loader is still working.
@@ -706,17 +690,15 @@ bool ProfilerGUI::Run()
 	// but only by the request of the main thread.
 	// Log messages for other threads will be discarded.
 	// note : logger was already created inside ProcessIdle that was called before Run, need to delete it
-	if (cmdline_console_proxy)
-	{
-		AttachConsole(ATTACH_PARENT_PROCESS);
+	const bool from_cmdline = !cmdline_run.empty() || !cmdline_attach.empty();
+	if (from_cmdline)
 		delete wxLog::SetActiveTarget(new wxLogStderr);
-	}
 	else
 		delete wxLog::SetActiveTarget(new wxLogGui);
 
 	std::wstring filename;
 
-	if (cmdline_console_proxy)
+	if (from_cmdline)
 		g_symLog = cmdlineSymLogCallback;
 
 	if (!cmdline_run.empty())
@@ -790,7 +772,6 @@ bool ProfilerGUI::OnCmdLineParsed(wxCmdLineParser& parser)
 {
 	wxString param;
 	long long_param;
-	cmdline_console_proxy = parser.Found("console-proxy");
 
 	// command line options that override saved setting, will not replace
 	//   the data in the saved config.

@@ -37,8 +37,7 @@ if(CCACHE)
   set(CMAKE_CXX_COMPILER_LAUNCHER ccache)
 endif()
 
-add_executable(
-  sleepy WIN32
+set(VERYSLEEPY_SOURCES
   src/profiler/debugger.cpp
   src/profiler/processinfo.cpp
   src/profiler/profiler.cpp
@@ -70,29 +69,35 @@ add_executable(
   src/wxProfilerGUI/threadsview.cpp
 )
 
-target_sources(sleepy PRIVATE src/res/sleepy.rc)
-target_compile_features(sleepy PRIVATE cxx_std_14)
-
-# Console entry point. cmd searches PATHEXT in order and .com comes before .exe, so
-# typing "sleepy" runs this and gets console behaviour, while the shortcut and the
-# file association still point at sleepy.exe.
-add_executable(sleepy_com src/launcher/sleepy_com.cpp)
+# The same program twice. sleepy.exe is the GUI subsystem build; sleepy.com is the
+# console one, which cmd finds first because PATHEXT lists .com before .exe. Being a
+# console program is what makes redirection work: it has a console of its own, so
+# whatever it profiles inherits that and our standard handles along with it.
+add_executable(sleepy WIN32 ${VERYSLEEPY_SOURCES})
+add_executable(sleepy_com ${VERYSLEEPY_SOURCES})
 set_target_properties(
   sleepy_com PROPERTIES
   OUTPUT_NAME "sleepy"
   SUFFIX ".com"
 )
 
+foreach(target sleepy sleepy_com)
+  target_sources(${target} PRIVATE src/res/sleepy.rc)
+  target_compile_features(${target} PRIVATE cxx_std_14)
+endforeach()
+
 set(wxWidgets_USE_STATIC
   OFF
   CACHE BOOL "Link libraries statically?"
 )
 find_package(wxWidgets CONFIG REQUIRED COMPONENTS core base aui propgrid stc)
-target_link_libraries(sleepy PRIVATE dbgeng Shlwapi Winmm wxWidgets::wxWidgets)
+foreach(target sleepy sleepy_com)
+  target_link_libraries(${target} PRIVATE dbgeng Shlwapi Winmm wxWidgets::wxWidgets)
+  target_compile_definitions(${target} PRIVATE UNICODE _UNICODE WIN32_LEAN_AND_MEAN)
+  target_compile_options(${target} PRIVATE -Wno-missing-field-initializers)
+endforeach()
 
 # target_link_options(sleepy PRIVATE -static -static-libgcc -static-libstdc++)
-target_compile_definitions(sleepy PRIVATE UNICODE _UNICODE WIN32_LEAN_AND_MEAN)
-target_compile_options(sleepy PRIVATE -Wno-missing-field-initializers)
 
 execute_process(
   COMMAND git rev-parse --short HEAD
@@ -130,18 +135,22 @@ endif()
 
 configure_file("src/version.h.in" "${PROJECT_BINARY_DIR}/src/version.h" @ONLY)
 
-target_include_directories(sleepy PRIVATE "${PROJECT_BINARY_DIR}/src")
+foreach(target sleepy sleepy_com)
+  target_include_directories(${target} PRIVATE "${PROJECT_BINARY_DIR}/src")
+endforeach()
 
 if(NOT CMAKE_CXX_INCLUDE_WHAT_YOU_USE)
-  target_precompile_headers(
-    sleepy
-    PRIVATE
-    <algorithm>
-    <filesystem>
-    <iostream>
-    <map>
-    <wx/wxprec.h>
-  )
+  foreach(target sleepy sleepy_com)
+    target_precompile_headers(
+      ${target}
+      PRIVATE
+      <algorithm>
+      <filesystem>
+      <iostream>
+      <map>
+      <wx/wxprec.h>
+    )
+  endforeach()
 endif()
 
 if(NOT EXISTS "${PROJECT_SOURCE_DIR}/thirdparty/drmingw/CMakeLists.txt")
@@ -156,7 +165,7 @@ add_subdirectory(
 )
 
 if(TARGET mgwhelp)
-  add_dependencies(sleepy mgwhelp)
+  add_dependencies(sleepy sleepy_com mgwhelp)
 
   # sleepy loads mgwhelp under the name it is shipped as, so stage a copy beside the
   # executable whenever it is rebuilt. The install rule renames it the same way. This
@@ -173,7 +182,7 @@ if(TARGET mgwhelp)
     VERBATIM
   )
   add_custom_target(stage_mgwhelp ALL DEPENDS "${VERYSLEEPY_STAGED_MGWHELP}")
-  add_dependencies(sleepy stage_mgwhelp)
+  add_dependencies(sleepy sleepy_com stage_mgwhelp)
 else()
   message(FATAL_ERROR "The drmingw submodule did not define the mgwhelp target.")
 endif()
