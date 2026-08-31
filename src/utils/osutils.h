@@ -25,6 +25,7 @@ http://www.gnu.org/copyleft/gpl.html
 #pragma once
 
 #include <windows.h>
+#include <memory>
 
 struct HandleDeleter
 {
