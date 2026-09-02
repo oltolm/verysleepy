@@ -45,13 +45,9 @@ Profiler::Profiler(DWORD target_process_id_, DWORD target_thread_id_,
 				   std::map<CallStack, SAMPLE_TYPE>& callstacks_)
 	: callstacks(&callstacks_),
 	  is64BitProcess(Is64BitProcess(target_process_id_)),
-	  target_thread_id(target_thread_id_)
+	  target_thread_id(target_thread_id_),
+	  target_thread(OpenThread(THREAD_SAMPLE_ACCESS | THREAD_SET_INFORMATION, FALSE, target_thread_id_))
 {
-}
-
-Profiler::~Profiler()
-{
-
 }
 
 namespace {
@@ -86,7 +82,9 @@ bool Profiler::sampleTarget(SAMPLE_TYPE timeSpent, SymbolInfo *syminfo)
 	void *context;
 	DWORD machine;
 
-	handle_ptr target_thread(OpenThread(THREAD_ALL_ACCESS, FALSE, target_thread_id));
+	if (!target_thread)
+		return false;
+
 	std::optional<ThreadResumer> resumer;
 
 	CONTEXT64 threadcontext64;
@@ -215,7 +213,9 @@ bool Profiler::sampleTarget(SAMPLE_TYPE timeSpent, SymbolInfo *syminfo)
 // returns true if the target thread has finished
 bool Profiler::targetExited() const
 {
-	handle_ptr target_thread(OpenThread(THREAD_ALL_ACCESS, FALSE, target_thread_id));
+	if (!target_thread)
+		return true;
+
 	DWORD code = WaitForSingleObject(target_thread.get(), 0);
 	return code != WAIT_TIMEOUT;
 }

@@ -62,8 +62,14 @@ ProfilerThread::ProfilerThread(DWORD target_process_id_, const std::vector<DWORD
 		profilers.reserve(target_threads.size());
 		for (DWORD thread_id : target_threads)
 		{
-			profilers.push_back(Profiler(target_process_id_, thread_id, callstacks));
-			handle_ptr target_thread(OpenThread(THREAD_ALL_ACCESS, FALSE, thread_id));
+			Profiler profiler(target_process_id_, thread_id, callstacks);
+			if (!profiler.isAttached())
+			{
+				wxLogError("Cannot open thread %lu for profiling", thread_id);
+				continue;
+			}
+			profilers.push_back(std::move(profiler));
+			handle_ptr target_thread(OpenThread(THREAD_SAMPLE_ACCESS, FALSE, thread_id));
 			thread_names[thread_id] = getThreadDescriptorName(target_thread.get());
 		}
 	}
@@ -115,13 +121,12 @@ void ProfilerThread::sample(const SAMPLE_TYPE timeSpent)
 	std::default_random_engine dre;
 	std::shuffle(profilers.begin(), profilers.end(), dre);
 
-	auto hasProfilerFailed = [this, timeSpent](Profiler& p) -> bool {
+	auto targetThreadExited = [this, timeSpent](Profiler& p) -> bool {
 		try
 		{
-			bool failed = !p.sampleTarget(timeSpent, sym_info);
-			if (!failed)
+			if (p.sampleTarget(timeSpent, sym_info))
 				++numsamplessofar;
-			return failed && p.targetExited();
+			return p.targetExited();
 		}
 		catch (const ProfilerExcep& e)
 		{
@@ -130,7 +135,7 @@ void ProfilerThread::sample(const SAMPLE_TYPE timeSpent)
 			return false;
 		}
 	};
-	profilers.erase(std::remove_if(profilers.begin(), profilers.end(), hasProfilerFailed),
+	profilers.erase(std::remove_if(profilers.begin(), profilers.end(), targetThreadExited),
 					profilers.end());
 
 	numThreadsRunning = (int)profilers.size();
@@ -325,7 +330,10 @@ void ProfilerThread::run()
 		debugger->attach([this](Debugger::NotifyData const &notification) {
 			if (notification.eventType != Debugger::NOTIFY_NEW_THREAD)
 				return;
-			profilers.push_back(Profiler(target_process_id, notification.threadId, callstacks));
+			Profiler profiler(target_process_id, notification.threadId, callstacks);
+			if (!profiler.isAttached())
+				return;
+			profilers.push_back(std::move(profiler));
 			thread_names[notification.threadId] = getThreadDescriptorName(notification.threadHandle);
 		});
 

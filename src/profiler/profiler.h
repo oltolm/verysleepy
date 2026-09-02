@@ -30,6 +30,8 @@ http://www.gnu.org/copyleft/gpl.html
 #include <map>
 #include <string>
 
+#include "../utils/osutils.h"
+
 // 64 bit mode:
 typedef unsigned long long PROFILER_ADDR;
 
@@ -98,8 +100,6 @@ public:
 	Profiler(DWORD target_process_id, DWORD target_thread_id,
 			 std::map<CallStack, SAMPLE_TYPE>& callstacks);
 
-	~Profiler();
-
 	// DE: 20090325: Profiler no longer owns callstack and flatcounts since it is shared between multipler profilers
 	// AA: 20210821: Removed flatcounts since their contents can be reconstructed on load by iterating over
 	//               callstack top address samples and aggregating times for equal keys
@@ -108,6 +108,7 @@ public:
 
 	bool sampleTarget(SAMPLE_TYPE timeSpent, SymbolInfo *syminfo);//throws ProfilerExcep
 	bool targetExited() const;
+	bool isAttached() const { return target_thread != nullptr; }
 
 	//void saveIPs(std::ostream& stream);//write IP values to a stream
 
@@ -115,4 +116,5 @@ public:
 
 private:
 	DWORD target_thread_id;
+	handle_ptr target_thread;
 };
