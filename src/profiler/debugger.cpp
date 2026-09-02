@@ -149,7 +149,7 @@ void Debugger::updateFromSnapshot()
 			if (knownThreads.find(thread.th32ThreadID) != knownThreads.end())
 				continue;
 
-			HANDLE threadHandle = OpenThread(THREAD_ALL_ACCESS, FALSE, thread.th32ThreadID);
+			HANDLE threadHandle = OpenThread(THREAD_SAMPLE_ACCESS, FALSE, thread.th32ThreadID);
 			if (threadHandle)
 				notifyNewThread(thread.th32ThreadID, threadHandle);
 

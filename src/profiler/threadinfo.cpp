@@ -23,6 +23,7 @@ http://www.gnu.org/copyleft/gpl.html
 =====================================================================*/
 #include "threadinfo.h"
 #include "../utils/osutils.h"
+#include <winnt.h>
 
 static __int64 getDiff(FILETIME before, FILETIME after)
 {
@@ -72,7 +73,7 @@ ThreadInfo::ThreadInfo(DWORD id_)
 	cpuUsage = -1;
 	totalCpuTimeMs = -1;
 
-	handle_ptr thread_handle(OpenThread(THREAD_ALL_ACCESS, FALSE, id));
+	handle_ptr thread_handle(OpenThread(THREAD_QUERY_INFORMATION, FALSE, id));
 	name = getThreadDescriptorName(thread_handle.get());
 }
 
@@ -85,7 +86,7 @@ bool ThreadInfo::recalcUsage(int sampleTimeDiff)
 	cpuUsage = -1;
 	totalCpuTimeMs = -1;
 
-	handle_ptr thread_handle(OpenThread(THREAD_ALL_ACCESS, FALSE, id));
+	handle_ptr thread_handle(OpenThread(THREAD_QUERY_INFORMATION, FALSE, id));
 	if (!thread_handle)
 		return false;
 

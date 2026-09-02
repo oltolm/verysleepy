@@ -42,6 +42,9 @@ struct HandleDeleter
 
 using handle_ptr = std::unique_ptr<HANDLE, HandleDeleter>;
 
+constexpr DWORD THREAD_SAMPLE_ACCESS =
+	THREAD_SUSPEND_RESUME | THREAD_GET_CONTEXT | THREAD_QUERY_INFORMATION | SYNCHRONIZE;
+
 void InitSysInfo();
 int GetCPUCores();
 int GetCoresForProcess(HANDLE process);
