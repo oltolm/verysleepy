@@ -44,10 +44,12 @@ typedef WOW64_CONTEXT CONTEXT32;
 Profiler::Profiler(DWORD target_process_id_, DWORD target_thread_id_,
 				   std::map<CallStack, SAMPLE_TYPE>& callstacks_)
 	: callstacks(&callstacks_),
-	  is64BitProcess(Is64BitProcess(target_process_id_)),
+	  is64BitProcess(false),
+	  bitness_known(false),
 	  target_thread_id(target_thread_id_),
 	  target_thread(OpenThread(THREAD_SAMPLE_ACCESS | THREAD_SET_INFORMATION, FALSE, target_thread_id_))
 {
+	bitness_known = Is64BitProcess(target_process_id_, is64BitProcess);
 }
 
 namespace {

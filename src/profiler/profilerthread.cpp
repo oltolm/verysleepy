@@ -65,7 +65,7 @@ ProfilerThread::ProfilerThread(DWORD target_process_id_, const std::vector<DWORD
 			Profiler profiler(target_process_id_, thread_id, callstacks);
 			if (!profiler.isAttached())
 			{
-				wxLogError("Cannot open thread %lu for profiling", thread_id);
+				wxLogError("Cannot profile thread %lu", thread_id);
 				continue;
 			}
 			profilers.push_back(std::move(profiler));

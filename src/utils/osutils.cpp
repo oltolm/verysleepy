@@ -122,10 +122,14 @@ bool CanProfileProcess(HANDLE hProcess)
 	return true;
 }
 
-bool Is64BitProcess(DWORD pid)
+bool Is64BitProcess(DWORD pid, bool& is64Bit)
 {
-	handle_ptr process(OpenProcess(PROCESS_ALL_ACCESS, FALSE, pid));
-	return Is64BitProcess(process.get());
+	handle_ptr process(OpenProcess(PROCESS_QUERY_INFORMATION, FALSE, pid));
+	if (!process)
+		return false;
+
+	is64Bit = Is64BitProcess(process.get());
+	return true;
 }
 
 bool Is64BitProcess(HANDLE hProcess)

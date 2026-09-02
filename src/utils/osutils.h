@@ -49,7 +49,7 @@ void InitSysInfo();
 int GetCPUCores();
 int GetCoresForProcess(HANDLE process);
 void EnableDebugPrivilege();
-bool Is64BitProcess(DWORD pid);
+bool Is64BitProcess(DWORD pid, bool& is64Bit);
 bool Is64BitProcess(HANDLE hProcess);
 
 bool CanProfileProcess(HANDLE hProcess);

@@ -108,13 +108,14 @@ public:
 
 	bool sampleTarget(SAMPLE_TYPE timeSpent, SymbolInfo *syminfo);//throws ProfilerExcep
 	bool targetExited() const;
-	bool isAttached() const { return target_thread != nullptr; }
+	bool isAttached() const { return target_thread != nullptr && bitness_known; }
 
 	//void saveIPs(std::ostream& stream);//write IP values to a stream
 
 	DWORD getTarget() { return target_thread_id; }
 
 private:
+	bool bitness_known;
 	DWORD target_thread_id;
 	handle_ptr target_thread;
 };

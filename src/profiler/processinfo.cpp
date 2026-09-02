@@ -38,7 +38,8 @@ ProcessInfo::ProcessInfo(DWORD id_, const std::wstring& name_)
 	prevUserTime.dwHighDateTime = prevUserTime.dwLowDateTime = 0;
 	cpuUsage = -1;
 	totalCpuTimeMs = -1;
-	is64Bits = Is64BitProcess(id);
+	is64Bits = false;
+	Is64BitProcess(id, is64Bits);
 }
 
 ProcessInfo::~ProcessInfo()

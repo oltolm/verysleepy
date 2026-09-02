@@ -251,7 +251,9 @@ void ProcessList::fillList()
 
 		str = wxString::Format("%li", process->getID());
 		this->SetItem(i, COL_PID, str);
-		if (Is64BitProcess(process->getID()))
+		bool is64Bit = false;
+		Is64BitProcess(process->getID(), is64Bit);
+		if (is64Bit)
 		{
 			SetItem(i,COL_TYPE,"64-bit");
 		}
