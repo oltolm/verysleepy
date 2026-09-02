@@ -1,7 +1,7 @@
 ---
 BasedOnStyle: Microsoft
 Language: Cpp
-ColumnLimit: 100
+ColumnLimit: 80
 UseTab: Always
 IndentAccessModifiers: false
 AccessModifierOffset: -4
