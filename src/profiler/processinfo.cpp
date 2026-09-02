@@ -47,7 +47,7 @@ ProcessInfo::~ProcessInfo()
 
 std::vector<ProcessInfo> ProcessInfo::enumProcesses()
 {
-	std::vector<ProcessInfo> processes_out;
+	std::vector<ProcessInfo> processes;
 	handle_ptr snapshot(CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS | TH32CS_SNAPTHREAD, 0));
 
 	PROCESSENTRY32 processinfo = {0};
@@ -82,7 +82,7 @@ std::vector<ProcessInfo> ProcessInfo::enumProcesses()
 			}
 
 			const std::wstring processname = processinfo.szExeFile;
-			processes_out.push_back(ProcessInfo(process_id, processname));
+			processes.push_back(ProcessInfo(process_id, processname));
 
 			processinfo.dwSize = sizeof(PROCESSENTRY32);
 		} while (Process32Next(snapshot.get(), &processinfo));
@@ -100,11 +100,11 @@ std::vector<ProcessInfo> ProcessInfo::enumProcesses()
 		{
 			const DWORD owner_process_id = threadinfo.th32OwnerProcessID;
 
-			for(unsigned int i=0; i<processes_out.size(); ++i)
+			for(auto & process : processes)
 			{
-				if(processes_out[i].getID() == owner_process_id)
+				if(process.getID() == owner_process_id)
 				{
-					processes_out[i].threads.push_back(ThreadInfo(threadinfo.th32ThreadID));
+					process.threads.push_back(ThreadInfo(threadinfo.th32ThreadID));
 					break;
 				}
 			}
@@ -113,7 +113,7 @@ std::vector<ProcessInfo> ProcessInfo::enumProcesses()
 		} while (Thread32Next(snapshot.get(), &threadinfo));
 	}
 
-	return processes_out;
+	return processes;
 }
 
 ProcessInfo ProcessInfo::FindProcessById(DWORD process_id)
