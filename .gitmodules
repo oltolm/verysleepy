@@ -2,6 +2,3 @@
 	path = thirdparty/drmingw
 	url = https://github.com/oltolm/drmingw.git
 	branch = cmake
-[submodule "tests"]
-	path = tests
-	url = https://github.com/VerySleepy/tests
