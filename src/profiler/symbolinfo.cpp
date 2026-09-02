@@ -384,7 +384,7 @@ const std::wstring SymbolInfo::getProcForAddr(PROFILER_ADDR addr,
 			result = TRUE;
 			name = it->second;
 		}
-		else
+		else if (dbgHelp->Loaded)
 		{
 			result = dbgHelp->SymFromAddrW(process_handle.get(), (DWORD64)addr, &displacement,
 										   symbol_info);
@@ -395,7 +395,7 @@ const std::wstring SymbolInfo::getProcForAddr(PROFILER_ADDR addr,
 			}
 		}
 	}
-	else
+	else if (dbgHelp->Loaded)
 	{
 		result =
 			dbgHelp->SymFromAddrW(process_handle.get(), (DWORD64)addr, &displacement, symbol_info);
@@ -438,8 +438,9 @@ void SymbolInfo::getLineForAddr(PROFILER_ADDR addr, std::wstring& filepath_out, 
 	IMAGEHLP_LINEW64 lineinfo;
 	ZeroMemory(&lineinfo, sizeof(lineinfo));
 	lineinfo.SizeOfStruct = sizeof(IMAGEHLP_LINEW64);
-	BOOL result = dbgHelp->SymGetLineFromAddrW64(process_handle.get(), (DWORD64)addr, &displacement,
-												 &lineinfo);
+	BOOL result = dbgHelp->Loaded && dbgHelp->SymGetLineFromAddrW64(process_handle.get(),
+																	(DWORD64)addr, &displacement,
+																	&lineinfo);
 
 	if (result)
 	{
@@ -467,9 +468,11 @@ std::wstring SymbolInfo::saveMinidump()
 
 	wxFile f;
 	std::wstring dumppath = wxFileName::CreateTempFileName(wxEmptyString, &f).wc_string();
-	wenforce(getGccDbgHelp()->MiniDumpWriteDump(
-				 process_handle.get(), GetProcessId(process_handle.get()),
-				 (HANDLE)_get_osfhandle(f.fd()), MiniDumpNormal, NULL, NULL, NULL),
+	DbgHelp *dbgHelp = getGccDbgHelp();
+	wenforce(dbgHelp->Loaded && dbgHelp->MiniDumpWriteDump(
+								   process_handle.get(), GetProcessId(process_handle.get()),
+								   (HANDLE)_get_osfhandle(f.fd()), MiniDumpNormal, NULL, NULL,
+								   NULL),
 			 "MiniDumpWriteDump");
 	f.Close();
 	return dumppath;
