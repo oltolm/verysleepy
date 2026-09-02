@@ -246,8 +246,6 @@ void ThreadList::updateTimes()
 			continue;
 
 		DWORD thread_id = thread->getID();
-		if (!thread_id)
-			return;
 
 		thread->setLocation(L"-");
 		if (i < MAX_NUM_THREAD_LOCATIONS) {

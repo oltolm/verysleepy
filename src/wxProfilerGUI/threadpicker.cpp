@@ -425,18 +425,7 @@ void ThreadPicker::AttachToProcess(bool allThreads)
 	// DE: 20090325 attaches to specific a list of threads
 	for (auto threadInfo : selectedThreads)
 	{
-		try
-		{
-			DWORD thread_id = threadInfo->getID();
-			wenforce(thread_id, "Attaching to selected thread");
-			attach_info->thread_ids.push_back(thread_id);
-		}
-		catch (SleepyException &e)
-		{
-			wxLogError("%ls\n", e.wwhat());
-		}
+		DWORD thread_id = threadInfo->getID();
+		attach_info->thread_ids.push_back(thread_id);
 	}
-
-	// DE: 20090325 attaches to specific a list of threads
-	enforce(attach_info->thread_ids.size(), "Cannot attach to any threads");
 }
