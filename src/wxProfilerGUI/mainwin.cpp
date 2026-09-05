@@ -844,13 +844,15 @@ void MainWin::OnExportAsSpeedscope(wxCommandEvent& WXUNUSED(event))
 			txt << pad(indent) << "[\n";
 			indent++;
 			bool firstSym = true;
-			for (const auto sym : callstack.symbols)
+			// Speedscope orders a sample from the root to the leaf, whereas
+			// callstack.symbols starts at the leaf.
+			for (size_t i = callstack.symbols.size(); i-- > 0;)
 			{
 				if (firstSym)
 					firstSym = false;
 				else
 					txt << ",\n";
-				txt << pad(indent) << sym->id;
+				txt << pad(indent) << callstack.symbols[i]->id;
 			}
 			txt << "\n";
 			indent--;
@@ -903,7 +905,9 @@ void MainWin::OnExportAsFlamegraph(wxCommandEvent& WXUNUSED(event))
 
 		// Folded stack format:
 		// root;mid;leaf count
-		// The stack is bottom-to-top, semicolon-separated, with an integer weight.
+		// The stack is bottom-to-top, semicolon-separated, with an integer
+		// weight.  A sample count is a duration in seconds, so write it in
+		// microseconds to keep the weights of short stacks.
 		for (const auto& callstack : database->callstacks)
 		{
 			double count = database->getFilteredSampleCount(callstack.samples);
@@ -935,9 +939,10 @@ void MainWin::OnExportAsFlamegraph(wxCommandEvent& WXUNUSED(event))
 
 		for (const auto& entry : foldedStacks)
 		{
-			long long exportedCount = (long long)std::llround(entry.second);
+			long long exportedCount =
+				(long long)std::llround(entry.second * 1000000.0);
 			if (exportedCount <= 0)
-				exportedCount = 1;
+				continue;
 
 			wxString line(entry.first);
 			line << " " << exportedCount;
