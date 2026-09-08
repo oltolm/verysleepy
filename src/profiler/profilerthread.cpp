@@ -121,19 +121,21 @@ void ProfilerThread::sample(const SAMPLE_TYPE timeSpent)
 	std::default_random_engine dre;
 	std::shuffle(profilers.begin(), profilers.end(), dre);
 
-	auto targetThreadExited = [this, timeSpent](Profiler& p) -> bool {
+	for (auto& profiler : profilers)
+	{
 		try
 		{
-			if (p.sampleTarget(timeSpent, sym_info))
+			if (profiler.sampleTarget(timeSpent, sym_info))
 				++numsamplessofar;
-			return p.targetExited();
 		}
 		catch (const ProfilerExcep& e)
 		{
 			error(_T("ProfilerExcep: ") + e.what());
-			commit_suicide = true;
-			return false;
+			this->commit_suicide = true;
 		}
+	}
+	auto targetThreadExited = [](const Profiler& p) -> bool {
+		return p.targetExited();
 	};
 	profilers.erase(std::remove_if(profilers.begin(), profilers.end(), targetThreadExited),
 					profilers.end());
