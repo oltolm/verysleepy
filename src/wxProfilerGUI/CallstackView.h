@@ -81,6 +81,7 @@ public:
 	void OnContextMenu(wxContextMenuEvent& event);
 	void showCallStack(const Database::Symbol *symbol);
 	void reset();
+	void updateHighlight(const std::vector<Database::Address> &addresses);
 
 	DECLARE_EVENT_TABLE()
 };

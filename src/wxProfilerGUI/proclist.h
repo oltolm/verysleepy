@@ -46,6 +46,7 @@ public:
 
 	void focusSymbol(const Database::Symbol *symbol);
 	const Database::Symbol *getFocusedSymbol();
+	void updateHighlight(const std::vector<Database::Address> &addresses);
 
 	struct Column
 	{

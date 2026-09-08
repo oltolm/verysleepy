@@ -1241,7 +1241,10 @@ void MainWin::setHighlight(const std::vector<Database::Address> &addresses, bool
 {
 	for (Database::Address address : addresses)
 		set_set(viewstate.highlighted, address, set);
-	refresh();
+	proclist->updateHighlight(addresses);
+	callers->updateHighlight(addresses);
+	callees->updateHighlight(addresses);
+	callStack->updateHighlight(addresses);
 }
 
 void MainWin::updateThreads()

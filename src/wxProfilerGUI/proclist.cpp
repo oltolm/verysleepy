@@ -26,6 +26,8 @@ http://www.gnu.org/copyleft/gpl.html
 #include "../utils/container.h"
 #include "database.h"
 #include <algorithm>
+#include <wx/gdicmn.h>
+#include <wx/listbase.h>
 #include "contextmenu.h"
 #include "guiutils.h"
 #include "mainwin.h"
@@ -309,4 +311,21 @@ void ProcList::OnActivated(wxListEvent& event)
 	const Database::AddrInfo *addrinfo = database->getAddrInfo(item->address);
 	if (!isroot)
 		theMainWin->inspectSymbol(addrinfo);
+}
+
+void ProcList::updateHighlight(const std::vector<Database::Address>& addresses)
+{
+	const ViewState *viewstate = theMainWin->getViewState();
+	for (int i = 0; i < GetItemCount(); ++i)
+	{
+		const auto addr = (Database::Item *)GetItemData(i);
+		if (std::find(addresses.begin(), addresses.end(),
+					  addr->symbol->address) != addresses.end())
+		{
+			if (set_get(viewstate->highlighted, addr->symbol->address))
+				SetItemBackgroundColour(i, themed(*wxYELLOW, darkHighlight()));
+			else
+				SetItemBackgroundColour(i, GetBackgroundColour());
+		}
+	}
 }

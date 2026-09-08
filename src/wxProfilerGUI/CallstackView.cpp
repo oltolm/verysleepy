@@ -277,3 +277,24 @@ void CallstackView::OnContextMenu(wxContextMenuEvent& WXUNUSED(event))
 {
 	FunctionMenu(listCtrl, database);
 }
+
+void CallstackView::updateHighlight(
+	const std::vector<Database::Address>& addresses)
+{
+	const ViewState *viewstate = theMainWin->getViewState();
+
+	for (int i = 0; i < listCtrl->GetItemCount(); ++i)
+	{
+		const auto addrinfo = (Database::AddrInfo *)listCtrl->GetItemData(i);
+		if (std::find(addresses.begin(), addresses.end(),
+					  addrinfo->symbol->address) != addresses.end())
+		{
+			if (set_get(viewstate->highlighted, addrinfo->symbol->address))
+				listCtrl->SetItemBackgroundColour(
+					i, themed(*wxYELLOW, darkHighlight()));
+			else
+				listCtrl->SetItemBackgroundColour(
+					i, listCtrl->GetBackgroundColour());
+		}
+	}
+}
