@@ -37,8 +37,6 @@ ThreadsView::ThreadsView(wxWindow *parent, Database *database_)
 	: wxListView(parent, THREADS_VIEW), selectionTimer(this, THREADS_VIEW_TIMER)
 {
 	wxListItem itemCol;
-	itemCol.SetMask(wxLIST_MASK_TEXT);
-	itemCol.SetImage(-1);
 	itemCol.SetText(_T("TID"));
 	InsertColumn(COL_TID, itemCol);
 	itemCol.SetText(_T("Thread Name"));
@@ -197,8 +195,6 @@ ThreadSamplesView::ThreadSamplesView(wxWindow *parent, Database *database_)
 	: wxListView(parent, THREAD_SAMPLES_VIEW)
 {
 	wxListItem itemCol;
-	itemCol.SetMask(wxLIST_MASK_TEXT);
-	itemCol.SetImage(-1);
 	itemCol.SetText(_T("TID"));
 	InsertColumn(COL_TID, itemCol);
 	itemCol.SetText(_T("Thread Name"));

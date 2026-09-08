@@ -49,8 +49,6 @@ ThreadList::ThreadList(wxWindow *parent, wxButton *_ok_button, wxButton *_all_bu
 	  all_button(_all_button)
 {
 	wxListItem itemCol;
-	itemCol.SetMask(wxLIST_MASK_TEXT /* | wxLIST_MASK_IMAGE*/);
-	itemCol.SetImage(-1);
 	itemCol.SetText(_T("Location"));
 	InsertColumn(COL_LOCATION, itemCol);
 	itemCol.SetText(_T("CPU"));

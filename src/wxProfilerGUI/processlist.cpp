@@ -50,9 +50,7 @@ ProcessList::ProcessList(wxWindow *parent, ThreadList *threadList_)
 	syminfo = std::make_unique<SymbolInfo>();
 
 	wxListItem itemCol;
-	itemCol.SetMask(wxLIST_MASK_TEXT /* | wxLIST_MASK_IMAGE*/);
 	itemCol.SetText(_T("Process"));
-	itemCol.SetImage(-1);
 	InsertColumn(COL_NAME, itemCol);
 	itemCol.SetText(_T("Type"));
 	InsertColumn(COL_TYPE, itemCol);
