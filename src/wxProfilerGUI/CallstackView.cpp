@@ -33,6 +33,7 @@ http://www.gnu.org/copyleft/gpl.html
 #include <wx/wfstream.h>
 #include <wx/listctrl.h>
 #include "contextmenu.h"
+#include "database.h"
 #include "mainwin.h"
 #include "persistentlistctrl.h"
 #include "../utils/container.h"
@@ -189,12 +190,12 @@ void CallstackView::updateList()
 			listCtrl->SetItem(i, COL_NAME, snow->procname);
 
 		if (snow->isCollapseFunction || snow->isCollapseModule)
-			listCtrl->SetItemTextColour(i, lightOrDark(wxTheColourDatabase->Find("green")));
+			listCtrl->SetItemTextColour(i, themed(wxTheColourDatabase->Find("green")));
 		else
 			listCtrl->SetItemTextColour(i, listCtrl->GetTextColour());
 
 		if (set_get(viewstate->highlighted, snow->address))
-			listCtrl->SetItemBackgroundColour(i, lightOrDark(*wxYELLOW));
+			listCtrl->SetItemBackgroundColour(i, themed(*wxYELLOW, darkHighlight()));
 		else
 			listCtrl->SetItemBackgroundColour(i, listCtrl->GetBackgroundColour());
 

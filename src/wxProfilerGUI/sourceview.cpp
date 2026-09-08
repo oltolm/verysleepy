@@ -95,31 +95,35 @@ void SourceView::setCppMode()
 
 	SetMarginType	(0, wxSTC_MARGIN_NUMBER);
 	SetMarginWidth	(0, FromDIP(40));
-	StyleSetForeground(wxSTC_STYLE_LINENUMBER, lightOrDark(wxColour(32, 32, 32)));
-	StyleSetBackground(wxSTC_STYLE_LINENUMBER, lightOrDark(wxTheColourDatabase->Find("silver")));
+	StyleSetForeground(wxSTC_STYLE_LINENUMBER, themed(wxColour(32, 32, 32)));
+	StyleSetBackground(wxSTC_STYLE_LINENUMBER, themed(wxTheColourDatabase->Find("silver")));
 
 	SetMarginType	(1, wxSTC_MARGIN_RTEXT);
 	SetMarginWidth	(1, FromDIP(50));
-	StyleSetForeground(MARGIN_TEXT_STYLE, lightOrDark(*wxRED));
-	StyleSetBackground(MARGIN_TEXT_STYLE, lightOrDark(wxTheColourDatabase->Find("silver")));
+	StyleSetForeground(MARGIN_TEXT_STYLE, themed(*wxRED));
+	StyleSetBackground(MARGIN_TEXT_STYLE, themed(wxTheColourDatabase->Find("silver")));
 
-	StyleSetForeground(wxSTC_C_DEFAULT, lightOrDark(*wxBLACK));
-	StyleSetForeground(wxSTC_C_STRING, lightOrDark(wxColour(163, 21, 21)));
-	StyleSetForeground(wxSTC_C_PREPROCESSOR, lightOrDark(*wxBLUE));
+	// Pure blue stays pure blue when its lightness is flipped, which is unreadable on a
+	// dark background.
+	const wxColour darkKeyword(86, 156, 214);
 
-	StyleSetForeground(wxSTC_C_IDENTIFIER, lightOrDark(*wxBLACK));
+	StyleSetForeground(wxSTC_C_DEFAULT, themed(*wxBLACK));
+	StyleSetForeground(wxSTC_C_STRING, themed(wxColour(163, 21, 21)));
+	StyleSetForeground(wxSTC_C_PREPROCESSOR, themed(*wxBLUE, darkKeyword));
 
-	StyleSetForeground(wxSTC_C_WORD, lightOrDark(*wxBLUE));
-	StyleSetForeground(wxSTC_C_WORD2, lightOrDark(*wxBLUE));
-	StyleSetForeground(wxSTC_C_NUMBER, lightOrDark(*wxBLACK));
-	StyleSetForeground(wxSTC_C_CHARACTER, lightOrDark(*wxBLACK));
+	StyleSetForeground(wxSTC_C_IDENTIFIER, themed(*wxBLACK));
 
-	StyleSetForeground(wxSTC_C_COMMENT, lightOrDark(wxTheColourDatabase->Find("green")));
-	StyleSetForeground(wxSTC_C_COMMENTLINE, lightOrDark(wxTheColourDatabase->Find("green")));
-	StyleSetForeground(wxSTC_C_COMMENTDOC, lightOrDark(wxTheColourDatabase->Find("green")));
-	StyleSetForeground(wxSTC_C_COMMENTDOCKEYWORD, lightOrDark(wxTheColourDatabase->Find("green")));
+	StyleSetForeground(wxSTC_C_WORD, themed(*wxBLUE, darkKeyword));
+	StyleSetForeground(wxSTC_C_WORD2, themed(*wxBLUE, darkKeyword));
+	StyleSetForeground(wxSTC_C_NUMBER, themed(*wxBLACK));
+	StyleSetForeground(wxSTC_C_CHARACTER, themed(*wxBLACK));
+
+	StyleSetForeground(wxSTC_C_COMMENT, themed(wxTheColourDatabase->Find("green")));
+	StyleSetForeground(wxSTC_C_COMMENTLINE, themed(wxTheColourDatabase->Find("green")));
+	StyleSetForeground(wxSTC_C_COMMENTDOC, themed(wxTheColourDatabase->Find("green")));
+	StyleSetForeground(wxSTC_C_COMMENTDOCKEYWORD, themed(wxTheColourDatabase->Find("green")));
 	StyleSetForeground(wxSTC_C_COMMENTDOCKEYWORDERROR,
-					   lightOrDark(wxTheColourDatabase->Find("green")));
+					   themed(wxTheColourDatabase->Find("green")));
 	StyleSetBold(wxSTC_C_WORD, true);
 	StyleSetBold(wxSTC_C_WORD2, true);
 	StyleSetBold(wxSTC_C_COMMENTDOCKEYWORD, true);
@@ -205,7 +209,7 @@ void SourceView::showFile(std::wstring path, int proclinenum, const std::vector<
 	GotoLine(proclinenum);
 	SetYCaretPolicy(wxSTC_CARET_EVEN, 0);
 
-	MarkerDefine(1, wxSTC_MARK_BACKGROUND, wxNullColour, lightOrDark(*wxYELLOW));
+	MarkerDefine(1, wxSTC_MARK_BACKGROUND, wxNullColour, themed(*wxYELLOW, darkHighlight()));
 	MarkerAdd(proclinenum-1, 1);
 }
 void SourceView::reset()

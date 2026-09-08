@@ -204,13 +204,13 @@ void ProcList::displayList()
 		item.SetText(sym->procname);
 
 		if (sym->isCollapseFunction || sym->isCollapseModule)
-			item.SetTextColour(lightOrDark(wxTheColourDatabase->Find("green")));
+			item.SetTextColour(themed(wxTheColourDatabase->Find("green")));
 		else
 		if (i->inclusive == 0 && i->exclusive == 0)
 			item.SetTextColour(wxColor(128, 128, 128)); // gray
 
 		if (set_get(viewstate->highlighted, sym->address))
-			item.SetBackgroundColour(lightOrDark(*wxYELLOW));
+			item.SetBackgroundColour(themed(*wxYELLOW, darkHighlight()));
 
 		const Database::AddrInfo *addrinfo = database->getAddrInfo(i->address);
 		int state = map_get(item_state, addrinfo, 0);
@@ -280,7 +280,7 @@ void ProcList::focusSymbol(const Database::Symbol *symbol)
 const Database::Symbol * ProcList::getFocusedSymbol()
 {
 	long i = GetFocusedItem();
-	return i != wxNOT_FOUND ? ((const Database::AddrInfo *)GetItemData(i))->symbol : NULL;
+	return i != wxNOT_FOUND ? ((const Database::Item *)GetItemData(i))->symbol : NULL;
 }
 
 void ProcList::OnSelected(wxListEvent& event)

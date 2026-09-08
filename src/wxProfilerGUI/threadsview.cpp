@@ -149,7 +149,7 @@ void ThreadsView::focusThread(Database::ThreadID tid)
 		if (thread->tid == tid)
 		{
 			Focus(i);
-			SetItemTextColour(i, lightOrDark(wxTheColourDatabase->Find("green")));
+			SetItemTextColour(i, themed(wxTheColourDatabase->Find("green")));
 		}
 		else
 			SetItemTextColour(i, GetTextColour());
