@@ -75,7 +75,6 @@ class CallstackView : public wxWindow
 
 public:
 	CallstackView(wxWindow *parent, Database *database);
-	virtual ~CallstackView();
 	void OnSize(wxSizeEvent& event);
 	void OnTool(wxCommandEvent &event);
 	void OnSelected(wxListEvent& event);

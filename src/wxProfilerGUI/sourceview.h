@@ -40,8 +40,6 @@ public:
 	=====================================================================*/
 	SourceView(wxWindow *parent);
 
-	virtual ~SourceView();
-
 	void OnPaint(wxPaintEvent& event);
 	void OnUpdateUI(wxUpdateUIEvent& event);
 

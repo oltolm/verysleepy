@@ -70,10 +70,6 @@ SourceView::SourceView(wxWindow *parent)
 	reset();
 }
 
-SourceView::~SourceView()
-{
-}
-
 void SourceView::updateText(const wxString& text)
 {
 	SetEditable(true);

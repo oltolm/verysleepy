@@ -84,11 +84,6 @@ ThreadList::ThreadList(wxWindow *parent, wxButton *_ok_button, wxButton *_all_bu
 	timer.Start(UPDATE_DELAY);
 }
 
-ThreadList::~ThreadList()
-{
-
-}
-
 void ThreadList::OnSelected(wxListEvent&)
 {
 	ok_button->Enable(true);

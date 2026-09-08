@@ -242,10 +242,6 @@ OptionsDlg::OptionsDlg()
 	Centre();
 }
 
-OptionsDlg::~OptionsDlg()
-{
-}
-
 void OptionsDlg::OnOk(wxCommandEvent& WXUNUSED(event))
 {
 	if ( Validate() && TransferDataFromWindow() )

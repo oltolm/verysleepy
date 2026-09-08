@@ -162,7 +162,6 @@ class ProfilerGUI : public wxApp
 {
 public:
 	ProfilerGUI();
-	virtual ~ProfilerGUI();
 	bool OnInit() override;
 	bool OnExceptionInMainLoop() override;
 	bool ProcessIdle() override;

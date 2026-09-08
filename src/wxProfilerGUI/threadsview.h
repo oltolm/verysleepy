@@ -30,7 +30,6 @@ class ThreadsView : public wxListView
 {
 public:
 	ThreadsView(wxWindow *parent, Database *database);
-	virtual ~ThreadsView();
 
 	void OnSelected(wxListEvent &event);
 	void OnDeSelected(wxListEvent &event);
@@ -73,7 +72,6 @@ class ThreadSamplesView : public wxListView
 {
 public:
 	ThreadSamplesView(wxWindow *parent, Database *database);
-	virtual ~ThreadSamplesView();
 
 	void OnSort(wxListEvent &event);
 	void OnActivated(wxListEvent &event);

@@ -77,10 +77,6 @@ ThreadInfo::ThreadInfo(DWORD id_)
 	name = getThreadDescriptorName(thread_handle.get());
 }
 
-ThreadInfo::~ThreadInfo()
-{
-}
-
 bool ThreadInfo::recalcUsage(int sampleTimeDiff)
 {
 	cpuUsage = -1;

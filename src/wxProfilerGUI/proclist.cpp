@@ -76,8 +76,6 @@ ProcList::ProcList(wxWindow *parent, bool isroot, Database *database, const wxSt
 	ShowSortIndicator(columns[isroot ? COL_EXCLUSIVE : COL_SAMPLES].listctrl_column, false);
 }
 
-ProcList::~ProcList() {}
-
 void ProcList::setupColumn(ColumnType id, int width, bool defsort, const wxString& name)
 {
 	int index = GetColumnCount();

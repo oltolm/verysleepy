@@ -31,7 +31,6 @@ class CaptureWin : public wxDialog
 {
 public:
 	CaptureWin();
-	virtual ~CaptureWin();
 
 	bool UpdateProgress(std::wstring status, double progress);
 

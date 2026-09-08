@@ -42,8 +42,6 @@ public:
 	=====================================================================*/
 	ProcessInfo(DWORD id, const std::wstring& name);
 
-	~ProcessInfo();
-
 	static std::vector<ProcessInfo> enumProcesses();
 	static ProcessInfo FindProcessById(DWORD process_id);
 

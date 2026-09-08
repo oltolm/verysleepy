@@ -42,10 +42,6 @@ ProcessInfo::ProcessInfo(DWORD id_, const std::wstring& name_)
 	Is64BitProcess(id, is64Bits);
 }
 
-ProcessInfo::~ProcessInfo()
-{
-}
-
 std::vector<ProcessInfo> ProcessInfo::enumProcesses()
 {
 	std::vector<ProcessInfo> processes;

@@ -36,8 +36,6 @@ class ProcList : public wxListView
 public:
 	ProcList(wxWindow *parent, bool isroot, Database *database, const wxString& persistentName);
 
-	virtual ~ProcList();
-
 	void OnSelected(wxListEvent& event);
 	void OnActivated(wxListEvent& event);
 	void OnSort(wxListEvent& event);

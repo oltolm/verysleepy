@@ -49,8 +49,6 @@ public:
 	// DE: 20090325 ProcessList knows about threadlist and updates it based on process selection
 	ProcessList(wxWindow *parent, ThreadList *threadList);
 
-	virtual ~ProcessList();
-
 	void OnSelected(wxListEvent& event);
 	void OnTimer(wxTimerEvent& event);
 	void OnSort(wxListEvent& event);

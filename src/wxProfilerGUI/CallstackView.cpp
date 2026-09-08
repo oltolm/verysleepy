@@ -98,8 +98,6 @@ void CallstackView::setupColumn(ColumnType index, int width, const wxString &nam
 	listCtrl->InsertColumn(index, itemCol);
 }
 
-CallstackView::~CallstackView() {}
-
 void CallstackView::showCallStack(const Database::Symbol *symbol)
 {
 	updateTools();

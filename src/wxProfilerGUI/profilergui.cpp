@@ -97,11 +97,6 @@ ProfilerGUI::ProfilerGUI()
 }
 
 
-ProfilerGUI::~ProfilerGUI()
-{
-
-}
-
 wxIMPLEMENT_APP(ProfilerGUI);
 
 class ProfilerAppTraits : public wxGUIAppTraits
@@ -277,7 +272,7 @@ AttachInfo::AttachInfo()
 	limit_profile_time = cmdline_timeout;
 }
 
-AttachInfo::~AttachInfo() {}
+AttachInfo::~AttachInfo() = default;
 
 static DWORD getMostBusyThread(ProcessInfo& process_info)
 {

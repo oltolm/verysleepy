@@ -45,8 +45,6 @@ public:
 	=====================================================================*/
 	ThreadInfo(DWORD id);
 
-	~ThreadInfo();
-
 	DWORD getID() const { return id; }
 
 	const std::wstring& getLocation() const { return location; }

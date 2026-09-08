@@ -76,7 +76,6 @@ class ProfilerExcep
 {
 public:
 	ProfilerExcep(const std::wstring& s_) : s(s_) {}
-	~ProfilerExcep(){}
 
 	const std::wstring& what() const { return s; }
 private:

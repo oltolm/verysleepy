@@ -94,8 +94,6 @@ CaptureWin::CaptureWin()
 	Centre();
 }
 
-CaptureWin::~CaptureWin() {}
-
 bool CaptureWin::UpdateProgress(std::wstring status, double progress)
 {
 	progressText->SetLabel(status);

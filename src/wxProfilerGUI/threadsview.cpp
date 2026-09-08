@@ -52,10 +52,6 @@ ThreadsView::ThreadsView(wxWindow *parent, Database *database_)
 	ShowSortIndicator(COL_TID, true);
 }
 
-ThreadsView::~ThreadsView()
-{
-}
-
 void ThreadsView::OnSelected(wxListEvent &WXUNUSED(event))
 {
 	startSelectionTimer();
@@ -226,10 +222,6 @@ ThreadSamplesView::ThreadSamplesView(wxWindow *parent, Database *database_)
 	database = database_;
 	RegisterListCtrlPersistence(this, "ThreadSamplesList");
 	ShowSortIndicator(COL_EXCLUSIVE, false);
-}
-
-ThreadSamplesView::~ThreadSamplesView()
-{
 }
 
 static int ThreadSampleComparator(wxIntPtr item1, wxIntPtr item2, wxIntPtr data)

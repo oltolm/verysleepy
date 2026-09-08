@@ -75,8 +75,6 @@ ProcessList::ProcessList(wxWindow *parent, ThreadList *threadList_)
 	timer.Start(1000); // 1 second interval
 }
 
-ProcessList::~ProcessList() {}
-
 void ProcessList::reloadSymbols(bool download)
 {
 	// Drop the thread list's reference before the old SymbolInfo goes away. Loading

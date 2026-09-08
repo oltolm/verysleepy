@@ -35,7 +35,6 @@ class OptionsDlg : public wxDialog
 {
 public:
 	OptionsDlg();
-	virtual ~OptionsDlg();
 
 private:
 	void OnOk( wxCommandEvent & event );

@@ -46,8 +46,6 @@ public:
 	=====================================================================*/
 	ThreadList(wxWindow *parent, wxButton *ok_button, wxButton *all_button);
 
-	virtual ~ThreadList();
-
 	void OnSelected(wxListEvent& event);
 	void OnDeSelected(wxListEvent& event);
 	void OnTimer(wxTimerEvent& event);
