@@ -171,6 +171,8 @@ void ProcessList::OnTimer(wxTimerEvent& WXUNUSED(event))
 	}
 
 	updateTimes();
+
+	fillList();
 }
 
 static int ProcessComparator(wxIntPtr item1, wxIntPtr item2, wxIntPtr data)
@@ -350,6 +352,4 @@ void ProcessList::updateTimes()
 
 		process->totalCpuTimeMs = (getTotal(KernelTime) + getTotal(UserTime)) / 10000;
 	}
-
-	fillList();
 }

@@ -144,6 +144,8 @@ void ThreadList::OnTimer(wxTimerEvent& WXUNUSED(event))
 {
 	updateTimes();
 	SortItems(ThreadComparator, (wxIntPtr)this);
+
+	fillList();
 }
 
 void ThreadList::OnSort(wxListEvent& event)
@@ -246,8 +248,6 @@ void ThreadList::updateTimes()
 			thread->setLocation(loc);
 		}
 	}
-
-	fillList();
 }
 
 std::wstring ThreadList::getLocation(DWORD thread_id)
