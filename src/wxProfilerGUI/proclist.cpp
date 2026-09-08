@@ -26,8 +26,10 @@ http://www.gnu.org/copyleft/gpl.html
 #include "../utils/container.h"
 #include "database.h"
 #include <algorithm>
+#include <cstddef>
 #include <wx/gdicmn.h>
 #include <wx/listbase.h>
+#include <wx/types.h>
 #include "contextmenu.h"
 #include "guiutils.h"
 #include "mainwin.h"
@@ -185,47 +187,45 @@ void ProcList::displayList()
 			item_state[addrinfo] = state;
 		}
 
-	theMainWin->setProgress(L"Clearing list...");
 	Freeze();
-	DeleteAllItems();
 
 	theMainWin->setProgress(L"Populating list...", list.items.size());
 	const ViewState *viewstate = theMainWin->getViewState();
 
-	for (auto i = list.items.begin(); i != list.items.end(); ++i)
+	int c = 0;
+	for (auto & i : list.items)
 	{
-		const Database::Symbol *sym = i->symbol;
+		const Database::Symbol *sym = i.symbol;
 
 		if (isroot && set_get(viewstate->filtered, sym->address))
 			continue;
 
-		long c = GetItemCount();
-
-		wxListItem item;
-		item.SetId(c);
-		item.SetText(sym->procname);
+		if ((int)c == GetItemCount())
+			InsertItem(c, sym->procname);
+		else
+			SetItem(c, COL_NAME, sym->procname);
 
 		if (sym->isCollapseFunction || sym->isCollapseModule)
-			item.SetTextColour(themed(wxTheColourDatabase->Find("green")));
+			SetItemTextColour(c, themed(wxTheColourDatabase->Find("green")));
+		else if (i.inclusive == 0 && i.exclusive == 0)
+			SetItemTextColour(c, wxColor(128, 128, 128)); // gray
 		else
-		if (i->inclusive == 0 && i->exclusive == 0)
-			item.SetTextColour(wxColor(128, 128, 128)); // gray
+			SetItemTextColour(c, GetTextColour());
 
 		if (set_get(viewstate->highlighted, sym->address))
-			item.SetBackgroundColour(themed(*wxYELLOW, darkHighlight()));
+			SetItemBackgroundColour(c, themed(*wxYELLOW, darkHighlight()));
+		else
+			SetItemBackgroundColour(c, GetBackgroundColour());
 
-		const Database::AddrInfo *addrinfo = database->getAddrInfo(i->address);
+		const Database::AddrInfo *addrinfo = database->getAddrInfo(i.address);
 		int state = map_get(item_state, addrinfo, 0);
-		item.SetData((void *)&*i);
-		item.SetState(state);
-		item.SetStateMask(wxLIST_STATE_FOCUSED|wxLIST_STATE_SELECTED);
+		SetItemPtrData(c, (wxUIntPtr)&i);
+		SetItemState(c, state, wxLIST_STATE_FOCUSED|wxLIST_STATE_SELECTED);
 
-		InsertItem(item);
-
-		wxString inclusive = wxString::Format("%0.2fs", i->inclusive);
-		wxString exclusive = wxString::Format("%0.2fs", i->exclusive);
-		wxString inclusivepercent = wxString::Format("%0.2f%%", i->inclusive * 100.0f / list.totalcount);
-		wxString exclusivepercent = wxString::Format("%0.2f%%", i->exclusive * 100.0f / list.totalcount);
+		wxString inclusive = wxString::Format("%0.2fs", i.inclusive);
+		wxString exclusive = wxString::Format("%0.2fs", i.exclusive);
+		wxString inclusivepercent = wxString::Format("%0.2f%%", i.inclusive * 100.0f / list.totalcount);
+		wxString exclusivepercent = wxString::Format("%0.2f%%", i.exclusive * 100.0f / list.totalcount);
 
 		setColumnValue(c, COL_EXCLUSIVE,	exclusive);
 		setColumnValue(c, COL_INCLUSIVE,	inclusive);
@@ -236,13 +236,18 @@ void ProcList::displayList()
 		setColumnValue(c, COL_MODULE,		database->getModuleName(sym->module));
 		setColumnValue(c, COL_SOURCEFILE,	database->getFileName  (sym->sourcefile));
 		setColumnValue(c, COL_SOURCELINE,	wxString::Format("%u", addrinfo->sourceline));
-		setColumnValue(c, COL_ADDRESS,	    wxString::Format("%#llx", i->address));
+		setColumnValue(c, COL_ADDRESS,	    wxString::Format("%#llx", i.address));
 
 		if (state & wxLIST_STATE_FOCUSED)
 			EnsureVisible(c);
 
-		theMainWin->updateProgress(i-list.items.begin());
+		theMainWin->updateProgress(c);
+
+		c++;
 	}
+
+	while (GetItemCount() > c)
+		DeleteItem(GetItemCount()-1);
 
 	Thaw();
 	theMainWin->setProgress(NULL);
