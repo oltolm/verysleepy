@@ -66,7 +66,6 @@ class CallstackView : public wxWindow
 	size_t									callstackActive;
 	wxString								callstackStats;
 	const Database::Symbol					*currSymbol;
-	size_t									itemSelected;
 
 	void setupColumn(ColumnType id, int width, const wxString &name);
 	void updateList();

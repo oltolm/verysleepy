@@ -48,7 +48,7 @@ EVT_CONTEXT_MENU(CallstackView::OnContextMenu)
 END_EVENT_TABLE()
 
 CallstackView::CallstackView(wxWindow *parent,Database *_database)
-:	wxWindow(parent,wxID_ANY), database(_database), callstackActive(0), currSymbol(NULL), itemSelected(~0u)
+:	wxWindow(parent,wxID_ANY), database(_database), callstackActive(0), currSymbol(NULL)
 {
 	listCtrl = new wxListView(this, LIST_CTRL, wxDefaultPosition, wxDefaultSize, wxLC_REPORT | wxLC_SINGLE_SEL);
 	setupColumn(COL_NAME,			170,	_T("Name"));
@@ -76,13 +76,12 @@ CallstackView::CallstackView(wxWindow *parent,Database *_database)
 
 void CallstackView::OnSelected(wxListEvent& event)
 {
-	itemSelected = event.GetIndex();
+	long itemSelected = event.GetIndex();
 	if (callstackActive < callstacks.size() && (size_t)itemSelected < callstacks[callstackActive]->symbols.size())
 	{
 		const Database::AddrInfo *addrinfo = database->getAddrInfo(callstacks[callstackActive]->addresses[itemSelected]);
 		theMainWin->focusSymbol(addrinfo);
 	}
-	itemSelected = ~0u;
 }
 
 void CallstackView::OnSize(wxSizeEvent& WXUNUSED(event))
@@ -143,7 +142,6 @@ void CallstackView::reset()
 	callstackActive = 0;
 	callstackStats.clear();
 	currSymbol = NULL;
-	itemSelected = ~0u;
 	listCtrl->DeleteAllItems();
 }
 
@@ -211,12 +209,7 @@ void CallstackView::updateList()
 			font.SetWeight(wxFONTWEIGHT_NORMAL);
 
 		listCtrl->SetItemFont(i, font);
-		if(i == itemSelected) {
-			listCtrl->Select(i);
-			listCtrl->Focus(i);
-		} else {
-			listCtrl->Select(i, false);
-		}
+		listCtrl->Select(i, false);
 		listCtrl->SetItemPtrData(i, (wxUIntPtr)addrinfo);
 	}
 
