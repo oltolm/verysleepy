@@ -134,10 +134,10 @@ void ProfilerThread::sample(const SAMPLE_TYPE timeSpent)
 			this->commit_suicide = true;
 		}
 	}
-	auto targetThreadExited = [](const Profiler& p) -> bool {
-		return p.targetExited();
-	};
-	profilers.erase(std::remove_if(profilers.begin(), profilers.end(), targetThreadExited),
+	profilers.erase(std::remove_if(profilers.begin(), profilers.end(),
+								   [](const Profiler& p) -> bool {
+									   return p.targetExited();
+								   }),
 					profilers.end());
 
 	numThreadsRunning = (int)profilers.size();
