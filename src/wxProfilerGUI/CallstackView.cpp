@@ -150,7 +150,7 @@ void CallstackView::reset()
 void CallstackView::updateTools()
 {
 	toolBar->EnableTool(TOOL_PREV,callstackActive != 0);
-	toolBar->EnableTool(TOOL_NEXT,int(callstackActive) < int(callstacks.size()-1));
+	toolBar->EnableTool(TOOL_NEXT, !callstacks.empty() && callstackActive < callstacks.size()-1);
 	toolBar->EnableTool(TOOL_EXPORT_CSV,!callstacks.empty());
 	toolBar->SetToolLabel(TOOL_LABEL, callstackStats);
 	toolBar->Realize();

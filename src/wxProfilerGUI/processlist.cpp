@@ -278,7 +278,7 @@ void ProcessList::updateProcesses()
 	this->processes = ProcessInfo::enumProcesses();
 	for(int i=0; i<(int)processes.size(); ++i)
 	{
-		this->InsertItem(i, "", -1);
+		this->InsertItem(i, "");
 		SetItemPtrData(i, (wxUIntPtr)&processes[i]);
 	}
 

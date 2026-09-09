@@ -173,7 +173,7 @@ void ThreadsView::fillList()
 
 	for (int i = 0; i < (int)threads.size(); ++i)
 	{
-		InsertItem(i, "", -1);
+		InsertItem(i, "");
 		SetItemPtrData(i, (wxUIntPtr)&threads[i]);
 
 		wxString tid = wxString::Format("%d", threads[i].tid);
@@ -315,7 +315,7 @@ void ThreadSamplesView::fillList()
 
 	for (int i = 0; i < (int)threads.size(); ++i)
 	{
-		InsertItem(i, "", -1);
+		InsertItem(i, "");
 		SetItemPtrData(i, (wxUIntPtr)&threads[i]);
 
 		wxString tid = wxString::Format("%d", threads[i].tid);

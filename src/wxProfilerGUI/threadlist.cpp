@@ -215,7 +215,7 @@ void ThreadList::updateThreads(const ProcessInfo* processInfo, SymbolInfo *symIn
 		int numDisplayedThreads = getNumDisplayedThreads();
 		for(int i=0; i<numDisplayedThreads; ++i)
 		{
-			this->InsertItem(i, "", -1);
+			this->InsertItem(i, "");
 			SetItemPtrData(i, (wxUIntPtr)&threads[i]);
 		}
 
