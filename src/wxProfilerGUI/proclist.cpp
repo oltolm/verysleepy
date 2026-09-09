@@ -31,7 +31,7 @@ http://www.gnu.org/copyleft/gpl.html
 #include <wx/listbase.h>
 #include <wx/types.h>
 #include "contextmenu.h"
-#include "guiutils.h"
+#include "palette.h"
 #include "mainwin.h"
 #include "persistentlistctrl.h"
 
@@ -206,14 +206,14 @@ void ProcList::displayList()
 			SetItem(c, COL_NAME, sym->procname);
 
 		if (sym->isCollapseFunction || sym->isCollapseModule)
-			SetItemTextColour(c, themed(wxTheColourDatabase->Find("green")));
+			SetItemTextColour(c, palette::collapsed());
 		else if (i.inclusive == 0 && i.exclusive == 0)
-			SetItemTextColour(c, wxColor(128, 128, 128)); // gray
+			SetItemTextColour(c, palette::dimmed());
 		else
 			SetItemTextColour(c, GetTextColour());
 
 		if (set_get(viewstate->highlighted, sym->address))
-			SetItemBackgroundColour(c, themed(*wxYELLOW, darkHighlight()));
+			SetItemBackgroundColour(c, palette::highlight());
 		else
 			SetItemBackgroundColour(c, GetBackgroundColour());
 
@@ -328,7 +328,7 @@ void ProcList::updateHighlight(const std::vector<Database::Address>& addresses)
 					  addr->symbol->address) != addresses.end())
 		{
 			if (set_get(viewstate->highlighted, addr->symbol->address))
-				SetItemBackgroundColour(i, themed(*wxYELLOW, darkHighlight()));
+				SetItemBackgroundColour(i, palette::highlight());
 			else
 				SetItemBackgroundColour(i, GetBackgroundColour());
 		}

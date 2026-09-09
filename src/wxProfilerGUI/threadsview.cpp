@@ -21,7 +21,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 http://www.gnu.org/copyleft/gpl.html
 =====================================================================*/
 #include "threadsview.h"
-#include "guiutils.h"
+#include "palette.h"
 #include "mainwin.h"
 #include "persistentlistctrl.h"
 #include <wx/types.h>
@@ -147,7 +147,7 @@ void ThreadsView::focusThread(Database::ThreadID tid)
 		if (thread->tid == tid)
 		{
 			Focus(i);
-			SetItemTextColour(i, themed(wxTheColourDatabase->Find("green")));
+			SetItemTextColour(i, palette::collapsed());
 		}
 		else
 			SetItemTextColour(i, GetTextColour());

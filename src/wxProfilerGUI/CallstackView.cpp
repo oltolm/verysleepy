@@ -38,7 +38,7 @@ http://www.gnu.org/copyleft/gpl.html
 #include "persistentlistctrl.h"
 #include "../utils/container.h"
 #include "../utils/stringutils.h"
-#include "guiutils.h"
+#include "palette.h"
 
 BEGIN_EVENT_TABLE(CallstackView, wxWindow)
 EVT_SIZE(CallstackView::OnSize)
@@ -190,12 +190,12 @@ void CallstackView::updateList()
 			listCtrl->SetItem(i, COL_NAME, snow->procname);
 
 		if (snow->isCollapseFunction || snow->isCollapseModule)
-			listCtrl->SetItemTextColour(i, themed(wxTheColourDatabase->Find("green")));
+			listCtrl->SetItemTextColour(i, palette::collapsed());
 		else
 			listCtrl->SetItemTextColour(i, listCtrl->GetTextColour());
 
 		if (set_get(viewstate->highlighted, snow->address))
-			listCtrl->SetItemBackgroundColour(i, themed(*wxYELLOW, darkHighlight()));
+			listCtrl->SetItemBackgroundColour(i, palette::highlight());
 		else
 			listCtrl->SetItemBackgroundColour(i, listCtrl->GetBackgroundColour());
 
@@ -290,8 +290,7 @@ void CallstackView::updateHighlight(
 					  addrinfo->symbol->address) != addresses.end())
 		{
 			if (set_get(viewstate->highlighted, addrinfo->symbol->address))
-				listCtrl->SetItemBackgroundColour(
-					i, themed(*wxYELLOW, darkHighlight()));
+				listCtrl->SetItemBackgroundColour(i, palette::highlight());
 			else
 				listCtrl->SetItemBackgroundColour(
 					i, listCtrl->GetBackgroundColour());
