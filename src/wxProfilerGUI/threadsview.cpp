@@ -87,7 +87,7 @@ static int ThreadComparator(wxIntPtr item1, wxIntPtr item2, wxIntPtr data)
 	case ThreadsView::COL_TID:
 		return a->tid < b->tid ? -1 : a->tid > b->tid ? 1 : 0;
 	case ThreadsView::COL_NAME:
-		return wcsicmp(a->name.c_str(), b->name.c_str());
+		return _wcsicmp(a->name.c_str(), b->name.c_str());
 	case ThreadsView::MAX_COLUMNS:
 		break;
 	}
@@ -234,7 +234,7 @@ static int ThreadSampleComparator(wxIntPtr item1, wxIntPtr item2, wxIntPtr data)
 	case ThreadSamplesView::COL_TID:
 		return a->tid < b->tid ? -1 : a->tid > b->tid ? 1 : 0;
 	case ThreadSamplesView::COL_NAME:
-		return wcsicmp(a->name.c_str(), b->name.c_str());
+		return _wcsicmp(a->name.c_str(), b->name.c_str());
 	case ThreadSamplesView::COL_EXCLUSIVE:
 	case ThreadSamplesView::COL_EXCLUSIVEPCT:
 		if (a->exclusive != b->exclusive)

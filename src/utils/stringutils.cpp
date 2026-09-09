@@ -130,9 +130,9 @@ StringSet::StringSet(const wchar_t *file, bool caseCheck)
 
 void StringSet::Add(const wchar_t *string)
 {
-	wchar_t *tmp = wcsdup(string);
+	wchar_t *tmp = _wcsdup(string);
 	if (!caseCheck)
-		wcslwr(tmp);
+		_wcslwr(tmp);
 	strings.push_back(tmp);
 	free(tmp);
 
@@ -141,9 +141,9 @@ void StringSet::Add(const wchar_t *string)
 
 void StringSet::Remove(const wchar_t *string)
 {
-	wchar_t *tmp = wcsdup(string);
+	wchar_t *tmp = _wcsdup(string);
 	if (!caseCheck)
-		wcslwr(tmp);
+		_wcslwr(tmp);
 
 	for (size_t n=0;n<strings.size();n++)
 	{
@@ -170,7 +170,7 @@ bool StringSet::Contains(const wchar_t *str) const
 		if (caseCheck)
 			match = wcscmp(str, cmp);
 		else
-			match = wcsicmp(str, cmp);
+			match = _wcsicmp(str, cmp);
 
 		if (match < 0)
 			high = guess;

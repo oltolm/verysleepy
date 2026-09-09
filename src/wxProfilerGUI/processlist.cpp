@@ -187,7 +187,7 @@ static int ProcessComparator(wxIntPtr item1, wxIntPtr item2, wxIntPtr data)
 	switch (sort_column)
 	{
 	case ProcessList::COL_NAME:
-		return wcsicmp(a->getName().c_str(), b->getName().c_str());
+		return _wcsicmp(a->getName().c_str(), b->getName().c_str());
 	case ProcessList::COL_TYPE: {
 		if (a->getIs64Bits() == b->getIs64Bits())
 			return a->cpuUsage < b->cpuUsage ? -1 : a->cpuUsage > b->cpuUsage ? 1 : 0;
