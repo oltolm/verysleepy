@@ -252,13 +252,9 @@ void ProcessList::fillList()
 		bool is64Bit = false;
 		Is64BitProcess(process->getID(), is64Bit);
 		if (is64Bit)
-		{
 			SetItem(i,COL_TYPE,"64-bit");
-		}
 		else
-		{
 			SetItem(i,COL_TYPE,"32-bit");
-		}
 	}
 	Thaw();
 }

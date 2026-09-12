@@ -408,8 +408,10 @@ void Database::loadCallstacks(wxInputStream &file,bool collapseKernelCalls)
 	{
 		bool operator () (const CallStack &a, const CallStack &b)
 		{
-			long l = a.addresses.size() - b.addresses.size();
-			return l ? l<0 : a.addresses < b.addresses;
+			if (a.addresses.size() != b.addresses.size())
+				return a.addresses.size() < b.addresses.size();
+
+			return a.addresses < b.addresses;
 		}
 	};
 

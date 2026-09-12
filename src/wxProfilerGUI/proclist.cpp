@@ -200,7 +200,7 @@ void ProcList::displayList()
 		if (isroot && set_get(viewstate->filtered, sym->address))
 			continue;
 
-		if ((int)c == GetItemCount())
+		if (c == GetItemCount())
 			InsertItem(c, sym->procname);
 		else
 			SetItem(c, COL_NAME, sym->procname);

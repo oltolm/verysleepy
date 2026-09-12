@@ -387,7 +387,7 @@ static wxArrayString arrayFromSet( const wxStringHashSet& set )
 
 	for (const auto& item : set)
 	{
-		if (item != "")
+		if (!item.empty())
 			dest.Add(item);
 	}
 

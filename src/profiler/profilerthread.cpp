@@ -223,7 +223,7 @@ void ProfilerThread::saveData()
 
 	time_t rawtime;
 	time(&rawtime);
-	txt << "Filename: " << (target_filename.empty() ? L"?" : target_filename.c_str())
+	txt << "Filename: " << (target_filename.empty() ? L"?" : target_filename)
 		<< "\n";
 	txt << "Duration: " << duration << "\n";
 	txt << "Date: " << asctime(localtime(&rawtime));
