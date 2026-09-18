@@ -43,7 +43,9 @@ http://www.gnu.org/copyleft/gpl.html
 #include <timeapi.h>
 #include "appinfo.h"
 
+#ifdef _MSC_VER
 #pragma comment(lib, "winmm.lib")
+#endif
 
 // DE: 20090325: Profiler has a list of threads to profile
 // RM: 20130614: Profiler time can now be limited (-1 = until cancelled)

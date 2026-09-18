@@ -94,7 +94,6 @@ find_package(wxWidgets CONFIG REQUIRED COMPONENTS core base aui propgrid stc)
 foreach(target sleepy sleepy_com)
   target_link_libraries(${target} PRIVATE dbgeng Shlwapi Winmm wxWidgets::wxWidgets)
   target_compile_definitions(${target} PRIVATE UNICODE _UNICODE WIN32_LEAN_AND_MEAN)
-  target_compile_options(${target} PRIVATE -Wno-missing-field-initializers)
 endforeach()
 
 # target_link_options(sleepy PRIVATE -static -static-libgcc -static-libstdc++)
@@ -163,6 +162,8 @@ add_subdirectory(
   "${PROJECT_BINARY_DIR}/thirdparty/drmingw"
   EXCLUDE_FROM_ALL
 )
+
+target_compile_options(mgwhelp PRIVATE -w)
 
 if(TARGET mgwhelp)
   add_dependencies(sleepy sleepy_com mgwhelp)

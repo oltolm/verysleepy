@@ -47,7 +47,7 @@ std::vector<ProcessInfo> ProcessInfo::enumProcesses()
 	std::vector<ProcessInfo> processes;
 	handle_ptr snapshot(CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS | TH32CS_SNAPTHREAD, 0));
 
-	PROCESSENTRY32 processinfo = {0};
+	PROCESSENTRY32 processinfo = {};
 	processinfo.dwSize = sizeof(PROCESSENTRY32);
 
 	if (Process32First(snapshot.get(), &processinfo))

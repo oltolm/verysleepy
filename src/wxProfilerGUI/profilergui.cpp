@@ -61,11 +61,11 @@ static const wxCmdLineEntryDesc g_cmdLineDesc[] =
 	{ wxCMD_LINE_OPTION, "o", "", "Saves the captured profile to the given file.",          wxCMD_LINE_VAL_STRING, wxCMD_LINE_PARAM_OPTIONAL|wxCMD_LINE_NEEDS_SEPARATOR },
 	{ wxCMD_LINE_OPTION, "d", "", "Waits N seconds before beginning capture.",              wxCMD_LINE_VAL_NUMBER, wxCMD_LINE_PARAM_OPTIONAL },
 	{ wxCMD_LINE_OPTION, "t", "", "Stops capturing automatically after N seconds time.",    wxCMD_LINE_VAL_NUMBER, wxCMD_LINE_PARAM_OPTIONAL },
-	{ wxCMD_LINE_SWITCH, "q", "", "Quiet mode (no error messages will be shown).",          wxCMD_LINE_VAL_NONE },
-	{wxCMD_LINE_SWITCH, "", "wine", "Use Wine DbgHelp.", wxCMD_LINE_VAL_NONE},
-	{wxCMD_LINE_SWITCH, "", "mingw", "Use Dr. MinGW DbgHelp.", wxCMD_LINE_VAL_NONE},
-	{ wxCMD_LINE_SWITCH, "mt", "", "When attaching a process, profiles only main thread.",  wxCMD_LINE_VAL_NONE },
-	{ wxCMD_LINE_SWITCH, "mbt", "", "When attaching a process, profiles only most busy thread.",    wxCMD_LINE_VAL_NONE },
+	{ wxCMD_LINE_SWITCH, "q", "", "Quiet mode (no error messages will be shown).",          wxCMD_LINE_VAL_NONE, 0 },
+	{wxCMD_LINE_SWITCH, "", "wine", "Use Wine DbgHelp.", wxCMD_LINE_VAL_NONE, 0 },
+	{wxCMD_LINE_SWITCH, "", "mingw", "Use Dr. MinGW DbgHelp.", wxCMD_LINE_VAL_NONE, 0 },
+	{ wxCMD_LINE_SWITCH, "mt", "", "When attaching a process, profiles only main thread.",  wxCMD_LINE_VAL_NONE, 0 },
+	{ wxCMD_LINE_SWITCH, "mbt", "", "When attaching a process, profiles only most busy thread.",    wxCMD_LINE_VAL_NONE, 0 },
 	{ wxCMD_LINE_OPTION, "thread", "", "Profiles the specified thread(s) in the process, multiple threads must be in a comma-delimited list without spaces (See /a for specifying the process ID). Examples: `/thread:2124` or `/thread:8086,24601,42`",    wxCMD_LINE_VAL_STRING, wxCMD_LINE_PARAM_OPTIONAL|wxCMD_LINE_NEEDS_SEPARATOR },
 
 	{ wxCMD_LINE_OPTION, "minidump", "", "capture a minidump after N seconds time.",        wxCMD_LINE_VAL_NUMBER, wxCMD_LINE_PARAM_OPTIONAL },
@@ -77,7 +77,7 @@ static const wxCmdLineEntryDesc g_cmdLineDesc[] =
 
 	{ wxCMD_LINE_PARAM, NULL, NULL, "Loads an existing profile from a file.",               wxCMD_LINE_VAL_STRING, wxCMD_LINE_PARAM_OPTIONAL},
 
-	{ wxCMD_LINE_NONE }
+	wxCMD_LINE_DESC_END
 };
 
 wxIcon sleepy_icon;
@@ -373,7 +373,8 @@ void releaseFromLoaderBreakpoint(const DEBUG_EVENT& dbgEvent, DWORD process_id)
 std::unique_ptr<AttachInfo> ProfilerGUI::RunProcess(const std::wstring& run_cmd,
 													const std::wstring& run_cwd)
 {
-	STARTUPINFO si = {sizeof(si)};
+	STARTUPINFO si = {};
+	si.cb = sizeof(si);
 	PROCESS_INFORMATION pi = {};
 
 	std::wstring run_cmd_dup = run_cmd; // CreateProcess lpCommandLine must be mutable

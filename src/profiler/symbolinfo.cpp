@@ -211,7 +211,7 @@ void SymbolInfo::loadSymbols(DWORD process_id, bool download)
 		{
 			typedef BOOL WINAPI QueryFullProcessImageNameFn(HANDLE hProcess, DWORD dwFlags, LPTSTR lpExeName, PDWORD lpdwSize);
 
-			QueryFullProcessImageNameFn *fn = (QueryFullProcessImageNameFn *)GetProcAddress(GetModuleHandle(L"kernel32"), "QueryFullProcessImageNameW");
+			QueryFullProcessImageNameFn *fn = (QueryFullProcessImageNameFn *)(void *)GetProcAddress(GetModuleHandle(L"kernel32"), "QueryFullProcessImageNameW");
 			if (fn)
 				gotImageName = fn(process_handle.get(), 0, szExePath, &pathsize);
 		}

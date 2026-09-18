@@ -34,13 +34,13 @@ static IsWow64Process_t *IsWow64ProcessPtr = NULL;
 
 void InitSysInfo()
 {
-	SYSTEM_INFO systemInfo = { 0 };
+	SYSTEM_INFO systemInfo = {};
 	GetNativeSystemInfo(&systemInfo);
 	totalCpuCount = systemInfo.dwNumberOfProcessors;
 	is64BitOS = (systemInfo.wProcessorArchitecture == PROCESSOR_ARCHITECTURE_AMD64);
 
 	is64BitProfiler = (sizeof(void*) > 4);
-	IsWow64ProcessPtr = (IsWow64Process_t *)GetProcAddress(GetModuleHandle(L"kernel32"), "IsWow64Process");
+	IsWow64ProcessPtr = (IsWow64Process_t *)(void *)GetProcAddress(GetModuleHandle(L"kernel32"), "IsWow64Process");
 }
 
 int GetCPUCores()

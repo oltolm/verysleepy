@@ -38,7 +38,7 @@ static __int64 getTotal(FILETIME time)
 }
 
 typedef HRESULT( WINAPI *GetThreadDescriptionFunc )(HANDLE, PWSTR*);
-static GetThreadDescriptionFunc GetThreadDescription_ = reinterpret_cast<GetThreadDescriptionFunc>(GetProcAddress( GetModuleHandle( TEXT( "Kernel32.dll" ) ), "GetThreadDescription" ));
+static GetThreadDescriptionFunc GetThreadDescription_ = reinterpret_cast<GetThreadDescriptionFunc>((void *)GetProcAddress( GetModuleHandle( TEXT( "Kernel32.dll" ) ), "GetThreadDescription" ));
 
 bool hasThreadDescriptionAPI()
 {
