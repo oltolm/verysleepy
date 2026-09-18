@@ -123,8 +123,9 @@ void CallstackView::showCallStack(const Database::Symbol *symbol)
 		callstackCosts[i].second = database->getFilteredSampleCount(callstacks[i]->samples);
 	}
 
-	std::sort(callstackCosts.begin(), callstackCosts.end(),
-			  [](auto const& a, auto const& b) { return a.second > b.second; });
+	std::sort(callstackCosts.begin(), callstackCosts.end(), [](std::pair<const Database::CallStack *, double> const& a, std::pair<const Database::CallStack *, double> const& b) {
+		return a.second > b.second;
+	});
 
 	callstackActive = 0;
 
