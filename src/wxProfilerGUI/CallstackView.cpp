@@ -23,6 +23,7 @@ http://www.gnu.org/copyleft/gpl.html
 
 #include "CallstackView.h"
 #include <algorithm>
+#include <cstddef>
 #include <wx/aui/auibar.h>
 #include <wx/filedlg.h>
 #include <wx/dcclient.h>
@@ -213,7 +214,7 @@ void CallstackView::updateList()
 		listCtrl->SetItemPtrData(i, (wxUIntPtr)addrinfo);
 	}
 
-	while (listCtrl->GetItemCount() > int(now->symbols.size()))
+	while ((size_t)listCtrl->GetItemCount() > now->symbols.size())
 		listCtrl->DeleteItem(listCtrl->GetItemCount()-1);
 }
 
