@@ -184,6 +184,20 @@ if(TARGET mgwhelp)
   )
   add_custom_target(stage_mgwhelp ALL DEPENDS "${VERYSLEEPY_STAGED_MGWHELP}")
   add_dependencies(sleepy sleepy_com stage_mgwhelp)
+
+  # dbghelpdr.dll imports dbghelpms.dll, and dbghelp finds symsrv.dll, srcsrv.dll and
+  # symsrv.yes beside itself, so stage them next to the executable as well.
+  add_custom_command(
+    TARGET sleepy POST_BUILD
+    COMMAND "${CMAKE_COMMAND}" -E copy_if_different
+            "${PROJECT_SOURCE_DIR}/dbghelp_x64/dbghelpms.dll"
+            "${PROJECT_SOURCE_DIR}/dbghelp_x64/symsrv.dll"
+            "${PROJECT_SOURCE_DIR}/dbghelp_x64/srcsrv.dll"
+            "${PROJECT_SOURCE_DIR}/dbghelp_x64/symsrv.yes"
+            "${PROJECT_BINARY_DIR}"
+    COMMENT "Staging dbghelp runtime files"
+    VERBATIM
+  )
 else()
   message(FATAL_ERROR "The drmingw submodule did not define the mgwhelp target.")
 endif()
