@@ -49,7 +49,6 @@ static bool dbgHelpTryLoad(LPCWSTR name, DbgHelp* dest)
 	IMPORT(SymGetLineFromAddrW64);
 	IMPORT(SymRegisterCallbackW64);
 	IMPORT(SymRefreshModuleList);
-	IMPORT(SymLoadModuleExW);
 	IMPORT(SymSetDbgPrint); // Custom Wine extension
 	IMPORT(MiniDumpWriteDump);
 	dest->Loaded = true;

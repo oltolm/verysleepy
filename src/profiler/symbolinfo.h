@@ -39,16 +39,14 @@ struct DbgHelp;
 class Module
 {
 public:
-	Module(PROFILER_ADDR base_addr_, const std::wstring& name_, DbgHelp *dbghelp_)
+	Module(PROFILER_ADDR base_addr_, const std::wstring& name_)
 	{
 		base_addr = base_addr_;
 		name = name_;
-		dbghelp = dbghelp_;
 	}
 	PROFILER_ADDR base_addr;
 	PROFILER_ADDR size = 0; // 0 when dbghelp would not tell us
 	std::wstring name;
-	DbgHelp *dbghelp;
 	std::unordered_map<PROFILER_ADDR, std::pair<std::wstring, DWORD>> line_cache;
 	std::unordered_map<PROFILER_ADDR, std::wstring> sym_cache;
 };
@@ -73,21 +71,21 @@ public:
 
 	void getLineForAddr(PROFILER_ADDR addr, std::wstring& filepath_out, int& linenum_out);
 
-	// The dbghelp that loadSymbols initialized, and so the only one that can
-	// answer for an address outside every known module.
-	DbgHelp* getGccDbgHelp();
+	// The dbghelp that loadSymbols initialized for this process.
+	DbgHelp* getDbgHelp() const { return dbgHelp; }
 
 	handle_ptr process_handle;
 
 private:
 	std::vector<Module> modules;
 	bool is64BitProcess;
+	DbgHelp *dbgHelp = nullptr;
 
 	void addModule(const Module& module);
 	void sortModules();
 
 	friend BOOL CALLBACK EnumModules(PCWSTR ModuleName, DWORD64 BaseOfDll, PVOID UserContext);
-	void loadSymbolsUsing(DbgHelp* dbgHelp, const std::wstring& sympath);//throws SymbolInfoExcep
+	void loadModules(const std::wstring& sympath);//throws SymbolInfoExcep
 	void primeModuleSymbols();
 };
 

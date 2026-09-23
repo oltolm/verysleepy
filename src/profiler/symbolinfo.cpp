@@ -38,24 +38,14 @@ http://www.gnu.org/copyleft/gpl.html
 
 SymLogFn *g_symLog = NULL;
 
-struct SymbolInfoContext
-{
-	SymbolInfo* syminfo;
-	DbgHelp* dbgHelp;
-};
-
 BOOL CALLBACK EnumModules(
 	PCWSTR   ModuleName,
 	DWORD64 BaseOfDll,
 	PVOID   UserContext )
 {
-	SymbolInfoContext* context = static_cast<SymbolInfoContext*>(UserContext);
+	SymbolInfo* syminfo = static_cast<SymbolInfo*>(UserContext);
 
-	HMODULE hMod;
-	GetModuleHandleEx(GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT, ModuleName, &hMod);
-
-	Module mod((PROFILER_ADDR)BaseOfDll, ModuleName, context->dbgHelp);
-	context->syminfo->addModule(mod);
+	syminfo->addModule(Module((PROFILER_ADDR)BaseOfDll, ModuleName));
 
 	return TRUE;
 }
@@ -99,7 +89,7 @@ void symWineCallback(const char *msg)
 	}
 }
 
-void SymbolInfo::loadSymbolsUsing(DbgHelp* dbgHelp, const std::wstring& sympath)
+void SymbolInfo::loadModules(const std::wstring& sympath)
 {
 	if (!dbgHelp->Loaded)
 	{
@@ -135,44 +125,13 @@ void SymbolInfo::loadSymbolsUsing(DbgHelp* dbgHelp, const std::wstring& sympath)
 		wenforce(dbgHelp->SymSetSearchPathW(process_handle.get(), sympath.c_str()),
 				 "SymSetSearchPathW");
 
-		if (modules.empty())
-		{
-			// Load symbol information for all modules.
-			// Normally SymInitialize would do this, but we instead do it ourselves afterwards
-			// so that we can hook the debug output for it.
-			wenforce(dbgHelp->SymRefreshModuleList(process_handle.get()), "SymRefreshModuleList");
+		// Load symbol information for all modules.
+		// Normally SymInitialize would do this, but we instead do it ourselves afterwards
+		// so that we can hook the debug output for it.
+		wenforce(dbgHelp->SymRefreshModuleList(process_handle.get()), "SymRefreshModuleList");
 
-			SymbolInfoContext context;
-			context.syminfo = this;
-			context.dbgHelp = dbgHelp;
-
-			wenforce(dbgHelp->SymEnumerateModulesW64(process_handle.get(), EnumModules, &context),
-					 "SymEnumerateModules64");
-		}
-		else
-		{
-			// This is a secondary dbgHelp, so just complement debug
-			// information for modules that have none.
-
-			for (auto& mod : modules)
-			{
-				IMAGEHLP_MODULEW64 info;
-				info.SizeOfStruct = sizeof(info);
-				if (!mod.dbghelp->SymGetModuleInfoW64(process_handle.get(), mod.base_addr, &info))
-					continue;
-
-				// If we have a module with no symbol information from the previous (MS) dbghelp,
-				// let the current one handle it instead.
-				if (info.SymType == SymNone)
-				{
-					DWORD64 ret = dbgHelp->SymLoadModuleExW(
-						process_handle.get(), NULL, info.ImageName, info.ModuleName,
-						info.BaseOfImage, info.ImageSize, NULL, 0);
-					if (ret)
-						mod.dbghelp = dbgHelp;
-				}
-			}
-		}
+		wenforce(dbgHelp->SymEnumerateModulesW64(process_handle.get(), EnumModules, this),
+				 "SymEnumerateModules64");
 
 		if (!modules.empty())
 			break;
@@ -232,13 +191,24 @@ void SymbolInfo::loadSymbols(DWORD process_id, bool download)
 		prefs.AdjustSymbolPath(sympath, download);
 	}
 
-	loadSymbolsUsing(getGccDbgHelp(), sympath);
+	if (prefs.UseWine())
+	{
+		// We can't use the regular dbghelpw to profile 32-bit applications,
+		// as it's got compiled-in things that assume 64-bit. So we instead have
+		// a special Wow64 build, which is compiled as 64-bit code but using 32-bit
+		// definitions. We load that instead.
+		dbgHelp = is64BitProcess ? &dbgHelpWine : &dbgHelpWineWow64;
+	}
+	else
+		dbgHelp = &dbgHelpDrMingw;
+
+	loadModules(sympath);
 
 	if (g_symLog)
 		g_symLog(L"\nFinished.\n");
-	// Read each module's symbols now, while the target is still alive. dbghelp has
-	// already loaded the PDB based ones, but the Dr. MinGW dbghelp reads DWARF and PE
-	// symbols lazily, on the first query for an address inside the module. Those
+	// Read each module's symbols now, while the target is still alive. PDB symbols
+	// are loaded up front, but the Dr. MinGW dbghelp reads DWARF and PE symbols
+	// lazily, on the first query for an address inside the module. Those
 	// queries only happen when the capture is written, by which point a target that
 	// ran to completion is gone and the lookup fails, leaving every frame belonging
 	// to it unresolved. One throwaway query per module fills the cache up front.
@@ -253,15 +223,11 @@ void SymbolInfo::primeModuleSymbols()
 
 	for (auto& mod : modules)
 	{
-		if (!mod.dbghelp->Loaded)
-			continue;
-
 		symbol_info->SizeOfStruct = sizeof(SYMBOL_INFOW);
 		symbol_info->MaxNameLen = ((sizeof(buffer) - sizeof(SYMBOL_INFOW)) / sizeof(WCHAR)) - 1;
 
 		DWORD64 displacement = 0;
-		mod.dbghelp->SymFromAddrW(process_handle.get(), mod.base_addr, &displacement,
-								  symbol_info);
+		dbgHelp->SymFromAddrW(process_handle.get(), mod.base_addr, &displacement, symbol_info);
 
 		// Remember how far the module reaches, so getModuleForAddr can tell an address
 		// inside it from one belonging to a module we never enumerated. Ask the loader
@@ -274,36 +240,10 @@ void SymbolInfo::primeModuleSymbols()
 	}
 }
 
-DbgHelp* SymbolInfo::getGccDbgHelp()
-{
-	if (prefs.UseWine())
-	{
-		// We can't use the regular dbghelpw to profile 32-bit applications,
-		// as it's got compiled-in things that assume 64-bit. So we instead have
-		// a special Wow64 build, which is compiled as 64-bit code but using 32-bit
-		// definitions. We load that instead.
-		if (!is64BitProcess)
-			return &dbgHelpWineWow64;
-		else
-			return &dbgHelpWine;
-	}
-	else
-		return &dbgHelpDrMingw;
-}
-
 SymbolInfo::~SymbolInfo()
 {
-	//------------------------------------------------------------------------
-	//clean up
-	//------------------------------------------------------------------------
-	if (process_handle)
-	{
-		DbgHelp *gcc = getGccDbgHelp();
-		if (gcc->Loaded && !gcc->SymCleanup(process_handle.get()))
-		{
-			//error
-		}
-	}
+	if (process_handle && dbgHelp && dbgHelp->Loaded)
+		dbgHelp->SymCleanup(process_handle.get());
 }
 
 Module *SymbolInfo::getModuleForAddr(PROFILER_ADDR addr)
@@ -365,7 +305,6 @@ const std::wstring SymbolInfo::getProcForAddr(PROFILER_ADDR addr,
 	std::wstring name;
 
 	Module *mod = getModuleForAddr(addr);
-	DbgHelp *dbgHelp = mod ? mod->dbghelp : getGccDbgHelp();
 
 	unsigned char buffer[1024];
 
@@ -384,23 +323,17 @@ const std::wstring SymbolInfo::getProcForAddr(PROFILER_ADDR addr,
 			result = TRUE;
 			name = it->second;
 		}
-		else if (dbgHelp->Loaded)
-		{
-			result = dbgHelp->SymFromAddrW(process_handle.get(), (DWORD64)addr, &displacement,
-										   symbol_info);
-			if (result)
-			{
-				name = symbol_info->Name;
-				mod->sym_cache.emplace(addr, name);
-			}
-		}
 	}
-	else if (dbgHelp->Loaded)
+	if (!result && dbgHelp->Loaded)
 	{
 		result =
 			dbgHelp->SymFromAddrW(process_handle.get(), (DWORD64)addr, &displacement, symbol_info);
 		if (result)
+		{
 			name = symbol_info->Name;
+			if (mod)
+				mod->sym_cache.emplace(addr, name);
+		}
 	}
 
 	if(!result)
@@ -422,7 +355,6 @@ const std::wstring SymbolInfo::getProcForAddr(PROFILER_ADDR addr,
 void SymbolInfo::getLineForAddr(PROFILER_ADDR addr, std::wstring& filepath_out, int& linenum_out)
 {
 	Module *mod = getModuleForAddr(addr);
-	DbgHelp *dbgHelp = mod ? mod->dbghelp : getGccDbgHelp();
 
 	if (mod)
 	{
@@ -468,7 +400,6 @@ std::wstring SymbolInfo::saveMinidump()
 
 	wxFile f;
 	std::wstring dumppath = wxFileName::CreateTempFileName(wxEmptyString, &f).wc_string();
-	DbgHelp *dbgHelp = getGccDbgHelp();
 	wenforce(dbgHelp->Loaded && dbgHelp->MiniDumpWriteDump(
 								   process_handle.get(), GetProcessId(process_handle.get()),
 								   (HANDLE)_get_osfhandle(f.fd()), MiniDumpNormal, NULL, NULL,

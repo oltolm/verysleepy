@@ -35,7 +35,7 @@ http://www.gnu.org/copyleft/gpl.html
 #endif
 
 // We provide a wrapper around the dbghelp functions we need, so that
-// we can switch to either the MS or Wine versions at runtime.
+// we can switch to either the Dr. MinGW or Wine versions at runtime.
 
 struct DbgHelp
 {
@@ -132,18 +132,6 @@ struct DbgHelp
 	BOOL
 	(WINAPI *SymRefreshModuleList)(
 		__in HANDLE hProcess
-		);
-
-	DWORD64
-	(WINAPI *SymLoadModuleExW)(
-		__in HANDLE hProcess,
-		__in_opt HANDLE hFile,
-		__in_opt PCTSTR ImageName,
-		__in_opt PCTSTR ModuleName,
-		__in DWORD64 BaseOfDll,
-		__in DWORD DllSize,
-		__in_opt PMODLOAD_DATA Data,
-		__in_opt DWORD Flags
 		);
 
 	void

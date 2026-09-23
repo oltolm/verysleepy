@@ -138,7 +138,7 @@ bool Profiler::sampleTarget(SAMPLE_TYPE timeSpent, SymbolInfo *syminfo)
 		bp = threadcontext32.Ebp;
 	}
 
-	DbgHelp *prevDbgHelp = NULL;
+	DbgHelp *dbgHelp = syminfo->getDbgHelp();
 	bool first = true;
 
 	// dbghelp keys its per-process symbol context off the raw HANDLE value that was
@@ -148,29 +148,15 @@ bool Profiler::sampleTarget(SAMPLE_TYPE timeSpent, SymbolInfo *syminfo)
 	// stack, which produces callstacks full of junk addresses. So reuse SymbolInfo's handle.
 	HANDLE target_process = syminfo->process_handle.get();
 
-	for (;;)
+	memset(&frame, 0, sizeof(frame));
+	frame.AddrStack.Offset = sp;
+	frame.AddrPC.Offset = ip;
+	frame.AddrFrame.Offset = bp;
+	frame.AddrStack.Mode = frame.AddrPC.Mode = frame.AddrFrame.Mode = AddrModeFlat;
+	frame.AddrReturn.Offset = ip;
+
+	while (dbgHelp->Loaded)
 	{
-		// See which module this IP is in.
-		Module *mod = syminfo->getModuleForAddr(ip);
-		DbgHelp *dbgHelp = mod ? mod->dbghelp : syminfo->getGccDbgHelp();
-		if (!dbgHelp->Loaded)
-			break;
-
-		// Use whichever dbghelp stack walker is best for this module type.
-		// If we're switching between types, restart the stack walk from
-		// the current place.
-		if (dbgHelp != prevDbgHelp)
-		{
-			prevDbgHelp = dbgHelp;
-			memset(&frame, 0, sizeof(frame));
-			frame.AddrStack.Offset = sp;
-			frame.AddrPC.Offset = ip;
-			frame.AddrFrame.Offset = bp;
-			frame.AddrStack.Mode = frame.AddrPC.Mode = frame.AddrFrame.Mode = AddrModeFlat;
-			frame.AddrReturn.Offset = ip;
-			first = true;
-		}
-
 		// Add this IP to the stack trace.
 		// We skip the first one, as the first call to StackWalk64
 		// simply fills in more registers for the current frame,
