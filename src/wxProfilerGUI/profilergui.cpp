@@ -672,6 +672,17 @@ void cmdlineSymLogCallback(const wchar_t *text)
 	wxLogMessage(L"%s", text);
 }
 
+// wxLogStderr also copies every message to wxMessageOutputDebug in GUI apps,
+// which on Windows writes it to stderr a second time.
+class CmdlineLog : public wxLogStderr
+{
+protected:
+	void DoLogText(const wxString& msg) override
+	{
+		wxMessageOutputStderr::Output(msg);
+	}
+};
+
 }
 
 /// Returns true if a frame is still active.
@@ -687,7 +698,7 @@ bool ProfilerGUI::Run()
 	// note : logger was already created inside ProcessIdle that was called before Run, need to delete it
 	const bool from_cmdline = !cmdline_run.empty() || !cmdline_attach.empty();
 	if (from_cmdline)
-		delete wxLog::SetActiveTarget(new wxLogStderr);
+		delete wxLog::SetActiveTarget(new CmdlineLog);
 	else
 		delete wxLog::SetActiveTarget(new wxLogGui);
 
