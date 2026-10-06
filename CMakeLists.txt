@@ -302,7 +302,9 @@ string(CONCAT CPACK_NSIS_DEFINES
   "VIAddVersionKey \\\"CompanyName\\\" \\\"${VERYSLEEPY_VENDOR}\\\"\n"
   "VIAddVersionKey \\\"FileDescription\\\" \\\"${VERYSLEEPY_APPNAME} installer\\\"\n"
   "VIAddVersionKey \\\"FileVersion\\\" \\\"${VERYSLEEPY_VERSION}\\\"\n"
-  "VIAddVersionKey \\\"OriginalFilename\\\" \\\"${VERYSLEEPY_PACKAGE_FILE_NAME}.exe\\\""
+  "VIAddVersionKey \\\"OriginalFilename\\\" \\\"${VERYSLEEPY_PACKAGE_FILE_NAME}.exe\\\"\n"
+  "Target amd64-unicode"
 )
 
+# set(CPACK_NSIS_EXECUTABLE_PRE_ARGUMENTS "\\\"XTarget amd64-unicode\\\"")
 include(CPack)
