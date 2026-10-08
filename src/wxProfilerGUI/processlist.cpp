@@ -163,6 +163,12 @@ void ProcessList::updateThreadList()
 
 void ProcessList::OnTimer(wxTimerEvent& WXUNUSED(event))
 {
+	GUITHREADINFO guiInfo{};
+	guiInfo.cbSize = sizeof(guiInfo);
+	if (GetGUIThreadInfo(GetCurrentThreadId(), &guiInfo) &&
+		(guiInfo.flags & GUI_INMENUMODE))
+		return;
+
 	if (firstUpdate)
 	{
 		firstUpdate = false;
