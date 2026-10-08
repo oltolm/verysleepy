@@ -889,7 +889,7 @@ void MainWin::OnExportAsFlamegraph(wxCommandEvent& WXUNUSED(event))
 {
 	wxFileDialog dlg(
 		this, "Export File As", wxEmptyString, "flamegraph.txt",
-		"Folded Stack Files (*.txt)|*.txt|Folded Stack Files for flameshow (*.txt)|*.txt",
+		"Folded Stack Files (*.txt)|*.txt",
 		wxFD_SAVE | wxFD_OVERWRITE_PROMPT);
 	if (dlg.ShowModal() != wxID_CANCEL)
 	{
@@ -900,8 +900,6 @@ void MainWin::OnExportAsFlamegraph(wxCommandEvent& WXUNUSED(event))
 			return;
 		}
 		std::map<std::wstring, double> foldedStacks;
-		const wxString lineEnding = dlg.GetFilterIndex() == 1 ? "\r\n" : "\n";
-		const wxScopedCharBuffer lineEndingBytes = lineEnding.utf8_str();
 
 		// Folded stack format:
 		// root;mid;leaf count
@@ -938,23 +936,20 @@ void MainWin::OnExportAsFlamegraph(wxCommandEvent& WXUNUSED(event))
 			foldedStacks[folded] += count;
 		}
 
+		wxTextOutputStream txt(file);
+
 		for (const auto& entry : foldedStacks)
 		{
-			long long exportedCount =
-				(long long)std::llround(entry.second * 1000.0);
+			long long exportedCount = std::llround(entry.second * 1000.0);
 			if (exportedCount <= 0)
 				continue;
 
-			wxString line(entry.first);
-			line << " " << exportedCount;
-			const wxScopedCharBuffer utf8Line = line.utf8_str();
-			if (!file.Write(utf8Line.data(), utf8Line.length()).IsOk() ||
-				!file.Write(lineEndingBytes.data(), lineEndingBytes.length()).IsOk())
-			{
-				wxLogSysError("Could not export profile data.\n");
-				return;
-			}
+			txt << entry.first << " " << exportedCount << "\n";
 		}
+
+		txt.Flush();
+		if (!file.IsOk())
+			wxLogSysError("Could not export profile data.\n");
 	}
 }
 
