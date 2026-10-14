@@ -30,6 +30,7 @@ http://www.gnu.org/copyleft/gpl.html
 #include <algorithm>
 #include <wx/aui/auibook.h>
 #include <wx/aui/framemanager.h>
+#include <wx/gdicmn.h>
 #include <wx/hashset.h>
 #include <wx/menu.h>
 #include <wx/filedlg.h>
@@ -361,13 +362,14 @@ MainWin::MainWin(const wxString& title,
 	filters->FitColumns();
 
 	wxStatusBar *statusBar = GetStatusBar();
+	gauge = new wxGauge(statusBar, wxID_ANY, 0xFFFF, wxDefaultPosition,
+						wxDefaultSize, wxGA_HORIZONTAL | wxGA_SMOOTH);
+
 	wxRect gaugeRect;
 	statusBar->GetFieldRect(1, gaugeRect);
 	int margin = FromDIP(2);
-	gauge = new wxGauge(statusBar, wxID_ANY, 0xFFFF,
-						wxPoint(gaugeRect.x + margin, gaugeRect.y + margin),
-						wxSize(gaugeRect.width - 2 * margin, gaugeRect.height - 2 * margin),
-						wxGA_HORIZONTAL | wxGA_SMOOTH);
+	gauge->SetPosition(wxPoint(gaugeRect.x + margin, gaugeRect.y + margin));
+	gauge->SetSize(wxSize(gaugeRect.width - 2 * margin, gaugeRect.height - 2 * margin));
 }
 
 WX_DECLARE_HASH_SET(wxString, wxStringHash, wxStringEqual, wxStringHashSet);
