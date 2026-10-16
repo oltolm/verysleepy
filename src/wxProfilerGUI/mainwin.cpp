@@ -293,7 +293,8 @@ MainWin::MainWin(const wxString& title,
 		.Name(wxT("CalledFrom"))
 		.Caption(wxT("Called From"))
 		.CloseButton(false)
-		.Center()
+		.Left()
+		.BestSize(rightPaneWidth / 3, wxDefaultCoord)
 		.PaneBorder(false)
 		);
 
@@ -309,7 +310,8 @@ MainWin::MainWin(const wxString& title,
 		.Name("ThreadSamples")
 		.Caption(wxT("Per Thread Samples"))
 		.CloseButton(false)
-		.Center()
+		.Right()
+		.BestSize(rightPaneWidth / 3, wxDefaultCoord)
 		.PaneBorder(false)
 	);
 
