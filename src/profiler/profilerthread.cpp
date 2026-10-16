@@ -27,6 +27,7 @@ http://www.gnu.org/copyleft/gpl.html
 #include "../wxProfilerGUI/profilergui.h"
 #include "debugger.h"
 #include "threadinfo.h"
+#include <iostream>
 #include <random>
 #include <set>
 #include <wx/msgdlg.h>

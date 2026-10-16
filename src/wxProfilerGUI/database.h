@@ -23,10 +23,12 @@ http://www.gnu.org/copyleft/gpl.html
 =====================================================================*/
 #pragma once
 
+#include <map>
 #include <memory>
 #include <string>
 #include <unordered_map>
 #include <vector>
+#include <wx/string.h>
 
 class wxInputStream;
 
