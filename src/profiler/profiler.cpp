@@ -161,8 +161,12 @@ bool Profiler::sampleTarget(SAMPLE_TYPE timeSpent, SymbolInfo *syminfo)
 		// We skip the first one, as the first call to StackWalk64
 		// simply fills in more registers for the current frame,
 		// rather than walking down to the next one.
+		// Caller frames hold return addresses; step back into the call instruction.
 		if (!first)
-			stack.addr[stack.depth++] = ip;
+		{
+			stack.addr[stack.depth] = stack.depth == 0 ? ip : ip - 1;
+			stack.depth++;
+		}
 		first = false;
 
 		BOOL result = dbgHelp->StackWalk64(machine, target_process, target_thread.get(),
@@ -179,7 +183,8 @@ bool Profiler::sampleTarget(SAMPLE_TYPE timeSpent, SymbolInfo *syminfo)
 		// Stop once we hit the end of the stack.
 		if (frame.AddrReturn.Offset == 0)
 		{
-			stack.addr[stack.depth++] = ip;
+			stack.addr[stack.depth] = stack.depth == 0 ? ip : ip - 1;
+			stack.depth++;
 			break;
 		}
 	}
