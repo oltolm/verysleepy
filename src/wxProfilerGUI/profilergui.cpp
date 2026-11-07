@@ -46,6 +46,7 @@ http://www.gnu.org/copyleft/gpl.html
 #include <wx/stopwatch.h>
 #include <wx/timer.h>
 #include <wx/log.h>
+#include <wx/msgout.h>
 #include "../profiler/symbolinfo.h"
 #include "aboutdlg.h"
 #include "../utils/except.h"
@@ -55,6 +56,7 @@ http://www.gnu.org/copyleft/gpl.html
 static const wxCmdLineEntryDesc g_cmdLineDesc[] =
 {
 	{ wxCMD_LINE_SWITCH, "h", "", "Displays help on the command line parameters.",          wxCMD_LINE_VAL_NONE, wxCMD_LINE_OPTION_HELP },
+	{ wxCMD_LINE_SWITCH, "?", "", "",                                                       wxCMD_LINE_VAL_NONE, wxCMD_LINE_OPTION_HELP | wxCMD_LINE_HIDDEN },
 	{ wxCMD_LINE_OPTION, "r", "", "Runs an executable and profiles it.",                    wxCMD_LINE_VAL_STRING, wxCMD_LINE_PARAM_OPTIONAL|wxCMD_LINE_NEEDS_SEPARATOR },
 	{ wxCMD_LINE_OPTION, "a", "", "Attaches to a process (by its PID) and profiles it.",    wxCMD_LINE_VAL_STRING, wxCMD_LINE_PARAM_OPTIONAL|wxCMD_LINE_NEEDS_SEPARATOR },
 	{ wxCMD_LINE_OPTION, "i", "", "Loads an existing profile from a file.",                 wxCMD_LINE_VAL_STRING, wxCMD_LINE_PARAM_OPTIONAL|wxCMD_LINE_NEEDS_SEPARATOR },
@@ -87,6 +89,20 @@ long cmdline_timeout = -1;  // -1 means profile until cancelled
 std::vector<DWORD> cmdline_thread_ids;
 std::vector<std::wstring> tmp_files;
 Prefs prefs;
+#ifdef SLEEPY_CONSOLE
+// wxGUIAppTraits probes for stderr by attaching to the parent console. The
+// console build is already attached, so that probe fails and wxWidgets uses
+// dialogs instead. Install console output before wxConfig is constructed: it
+// can log during static initialization, before the application exists.
+struct ConsoleOutputInitializer
+{
+	ConsoleOutputInitializer()
+	{
+		delete wxMessageOutput::Set(new wxMessageOutputStderr);
+		delete wxLog::SetActiveTarget(new wxLogStderr);
+	}
+} consoleOutputInitializer;
+#endif
 wxConfig config(_T(APPNAME), _T(VENDOR));
 
 ProfilerGUI::ProfilerGUI()

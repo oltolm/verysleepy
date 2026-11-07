@@ -75,6 +75,7 @@ set(VERYSLEEPY_SOURCES
 # whatever it profiles inherits that and our standard handles along with it.
 add_executable(sleepy WIN32 ${VERYSLEEPY_SOURCES})
 add_executable(sleepy_com ${VERYSLEEPY_SOURCES})
+target_compile_definitions(sleepy_com PRIVATE SLEEPY_CONSOLE)
 set_target_properties(
   sleepy_com PROPERTIES
   OUTPUT_NAME "sleepy"
